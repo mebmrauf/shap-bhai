@@ -1,0 +1,15 @@
+{
+  "voice": "Piya, local macOS Bangla speech synthesis",
+  "script": "Original lines written for Snake Arena",
+  "music": "Original synthesized pentatonic pluck and percussion loop in audio.js; no sampled songs",
+  "lines": {
+    "start": "চল ভাই, খেলা শুরু!",
+    "eat": "বাহ! মজা তো!",
+    "combo": "ওস্তাদ! দারুণ খেলছো!",
+    "wall": "আরে ভাই! সামনে দেয়াল!",
+    "self": "নিজের লেজই খেয়ে ফেললে!",
+    "win": "জিতছো ভাই! মিষ্টি খাওয়াও!",
+    "lose": "আহারে! আরেকবার হবে নাকি?",
+    "draw": "দুইজনই ওস্তাদ! আবার খেলো!"
+  }
+}

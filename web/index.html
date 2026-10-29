@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f3eb"><meta name="description" content="Snake, rebuilt for a fair fight. Play solo or face a friend, with original Bangla reactions.">
+  <title>Snake Arena — Eat. Grow. Outlast.</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Snake Arena home"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 29h17a6 6 0 0 0 0-12H15a5 5 0 0 1 0-10h15"/><circle cx="29" cy="6" r="1.3"/><circle cx="29" cy="10" r="1.3"/></svg><span>SNAKE<span class="brand-light">ARENA</span></span></a>
+    <div class="header-actions"><span class="edition">A fresh take on a classic</span><button id="soundButton" class="quiet" type="button">Sound settings</button></div>
+  </header>
+  <main id="app">
+    <section id="setup" class="setup" aria-labelledby="title">
+      <div class="eyebrow"><span class="live-dot"></span> SMALL GAME. BIG RIVALRY.</div>
+      <h1 id="title"><span>Eat.</span><span>Grow.</span><span class="accent">Outlast.</span></h1>
+      <p class="intro">One more apple. One smarter turn.</p>
+      <div class="mode-switch" role="group" aria-label="Game mode"><button type="button" id="soloMode" aria-pressed="true">Solo</button><button type="button" id="duelMode" aria-pressed="false">1 vs 1</button></div>
+      <div id="soloFields" class="fields">
+        <label for="style">Play style</label><select id="style"><option value="classic">Classic</option><option value="arcade">Arcade combos</option><option value="ghost">Race your ghost</option></select>
+        <label for="speed">Starting speed</label><select id="speed"><option value="relaxed">Relaxed</option><option value="normal" selected>Standard</option><option value="fast">Fast</option></select>
+      </div>
+      <div id="duelFields" class="fields" hidden>
+        <label for="opponent">Opponent</label><select id="opponent"><option value="bot">Computer</option><option value="local">Friend · same keyboard</option><option value="online">Friend · online room</option></select>
+        <div id="onlineFields" class="fields" hidden><label for="roomAction">Online play</label><select id="roomAction"><option value="create">Create a room</option><option value="join">Join a room</option></select><div id="codeField" class="fields" hidden><label for="roomCode">Room code</label><input id="roomCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="8-character code" aria-describedby="setupError"></div></div>
+      </div>
+      <p id="modeDescription" class="mode-description"></p>
+      <p id="setupError" class="error" role="alert" hidden></p>
+      <button id="startButton" class="primary start" type="button">Play Classic <span aria-hidden="true">↗</span></button>
+      <div class="setup-footer"><span id="bestLabel">Personal best <b id="bestValue">0</b></span><span>Saved on this device</span></div>
+      <details class="rules"><summary>How to play</summary><div id="rulesText"></div></details>
+    </section>
+    <section class="game-area" aria-label="Game arena">
+      <div class="arena-top"><span id="arenaLabel" class="eyebrow">THE PRACTICE GREEN</span><div class="board-actions"><button id="viewButton" class="quiet" type="button" aria-pressed="false">Flat view</button><button id="pauseButton" class="quiet" type="button" hidden>Pause</button><button id="exitButton" class="quiet" type="button" hidden>Leave</button></div></div>
+      <div id="scoreboard" class="scoreboard"><div class="score-player"><span class="player-mark p1">1</span><span id="p1Name">Your snake</span><strong id="p1Score">0</strong></div><div id="middleScore" class="round-label">CLASSIC</div><div class="score-player second"><span id="p2Name">Best</span><strong id="p2Score">0</strong><span id="p2Mark" class="player-mark p2" hidden>2</span></div></div>
+      <div class="arena" id="arena">
+        <canvas id="board" role="img" aria-label="Snake game board. Your snake is green. Apples are red."></canvas>
+        <div id="previewTag" class="preview-tag"><span class="live-dot"></span> YOUR NEXT MOVE STARTS HERE</div>
+        <div id="overlay" class="overlay" hidden><div class="overlay-panel"><span id="overlayEyebrow" class="eyebrow"></span><h2 id="overlayTitle" tabindex="-1"></h2><p id="overlayText"></p><div id="roomShare" hidden><label for="shareCode">ROOM CODE</label><input id="shareCode" readonly aria-label="Your room code"><button id="copyButton" class="secondary" type="button">Copy invite link</button></div><div class="overlay-actions"><button id="continueButton" class="primary" type="button"></button><button id="menuButton" class="text-button" type="button">Back to menu</button></div></div></div>
+        <div id="countdown" class="countdown" hidden role="status"><strong id="countdownNumber">3</strong><span id="countdownText">Get ready</span></div>
+      </div>
+      <div class="arena-bottom"><div id="statusText">Eat the red apples. Keep your head clear.</div><div id="comboWrap" class="combo" hidden><span id="comboText">×1</span><progress id="comboMeter" value="0" max="8000" aria-label="Time left in combo"></progress></div><span id="timerText" class="timer"></span></div>
+      <div id="controlsHint" class="controls-hint"><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>W A S D</kbd> to steer</span><span><kbd>Esc</kbd> pause</span></div>
+      <div id="touchControls" class="touch-controls" hidden><button data-dir="up" class="up" aria-label="Turn up">↑</button><button data-dir="left" class="left" aria-label="Turn left">←</button><button data-dir="down" class="down" aria-label="Turn down">↓</button><button data-dir="right" class="right" aria-label="Turn right">→</button></div>
+      <p id="caption" class="caption" lang="bn" role="status"></p>
+      <p id="connectionStatus" class="connection-status" role="status"></p>
+    </section>
+  </main>
+  <footer class="site-footer"><span>Good turns. Friendly competition.</span><span lang="bn">আরেকবার হবে নাকি?</span></footer>
+  <dialog id="soundDialog" aria-labelledby="soundTitle"><form method="dialog"><div class="dialog-heading"><h2 id="soundTitle">Make some noise.</h2><button class="quiet" aria-label="Close sound settings">Close</button></div><p>Original Bangla reactions. A little rhythm. Your call.</p><label class="toggle"><span>Game sounds<small>Apples, countdowns, and collisions</small></span><input id="effectsSetting" type="checkbox" checked></label><label class="toggle"><span>Bangla reactions<small lang="bn">চল ভাই, খেলা শুরু!</small></span><input id="voiceSetting" type="checkbox" checked></label><label class="toggle"><span>Background music<small>A light, original plucked melody and drum loop</small></span><input id="musicSetting" type="checkbox"></label><button id="previewSound" class="secondary" type="button">Hear a Bangla reaction</button><p class="audio-note">Synthesized Bangla voice · Original script and music</p></form></dialog>
+  <dialog id="leaveDialog" aria-labelledby="leaveTitle"><h2 id="leaveTitle">Leave this game?</h2><p id="leaveText">This run will end without saving a ghost.</p><div class="dialog-buttons"><button id="stayButton" class="secondary">Keep playing</button><button id="confirmLeave" class="primary">Leave game</button></div></dialog>
+  <noscript>This game needs JavaScript to run.</noscript>
+</body>
+</html>
