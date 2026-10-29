@@ -16,6 +16,11 @@ export function createServer() {
     function json(status, value) { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); }
     try {
       const url = new URL(req.url, 'http://localhost');
+      if (['/health', '/healthz', '/api/health'].includes(url.pathname)) {
+        if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); return json(405, { error: 'Use GET or HEAD.' }); }
+        if (req.method === 'HEAD') { res.writeHead(200); return res.end(); }
+        return json(200, { status: 'ok', uptime: Math.floor(process.uptime()), timestamp: Date.now() });
+      }
       if (url.pathname === '/api/rooms') {
         if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return json(405, { error: 'Use POST.' }); }
         if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return json(403, { error: 'Origin not allowed.' });

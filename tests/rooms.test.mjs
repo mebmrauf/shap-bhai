@@ -37,6 +37,8 @@ test('HTTP boundary validates methods, JSON, origins and room requests',async t=
   assert.equal((await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://evil.invalid'},body:'{}'})).status,403);
   assert.equal((await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:'{' })).status,400);
   const response=await fetch(base+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create'})});assert.equal(response.status,200);assert.equal((await response.json()).phase,'waiting');
+  assert.equal((await fetch(base+'/health')).status,200);
+  assert.equal((await (await fetch(base+'/api/health')).json()).status,'ok');
   assert.equal((await fetch(base+'/.env')).status,404);assert.equal((await fetch(base+'/')).status,200);assert.match((await fetch(base+'/audio/win.wav')).headers.get('content-type'),/audio/);
 });
 test('snapshots reveal neither room credentials nor queued future turns',()=>{
