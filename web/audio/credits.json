@@ -1,15 +1,34 @@
 {
-  "voice": "Piya, local macOS Bangla speech synthesis",
-  "script": "Original lines written for Snake Arena",
-  "music": "Original synthesized pentatonic pluck and percussion loop in audio.js; no sampled songs",
+  "voice": "Microsoft bn-BD-PradeepNeural (Bangladeshi Bangla, male)",
+  "type": "AI-generated neural speech, not a human actor recording",
+  "generated": "2026-10-29",
+  "script": "User-requested Bangla reactions and original game lines",
+  "music": {
+    "title": "Been / pungi background loop",
+    "sourceTitle": "Snake charmer in Jaipur, Rajasthan.webm",
+    "creator": "Ktorrespr",
+    "source": "https://commons.wikimedia.org/wiki/File:Snake_charmer_in_Jaipur,_Rajasthan.webm",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "changes": "Audio excerpt extracted at 1.0–14.7 seconds, converted to mono 24 kHz PCM, filtered, lightly denoised, crossfaded into a 13.35-second loop, normalized to -20 LUFS / -3 dB true peak.",
+    "file": "pungi-loop.wav",
+    "adaptationLicense": "CC BY-SA 4.0",
+    "note": "Live field recording; the performer is not identified in the source. No endorsement is implied."
+  },
+  "processing": "24 kHz mono PCM; silence trimmed at ends; normalized to -18 LUFS, -2 dB true peak; natural pitch preserved",
+  "source": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=text-to-speech",
   "lines": {
     "start": "চল ভাই, খেলা শুরু!",
-    "eat": "বাহ! মজা তো!",
+    "eat": "উউহু!",
     "combo": "ওস্তাদ! দারুণ খেলছো!",
-    "wall": "আরে ভাই! সামনে দেয়াল!",
-    "self": "নিজের লেজই খেয়ে ফেললে!",
-    "win": "জিতছো ভাই! মিষ্টি খাওয়াও!",
-    "lose": "আহারে! আরেকবার হবে নাকি?",
-    "draw": "দুইজনই ওস্তাদ! আবার খেলো!"
+    "wall": "ওমাগো! মরে গেলাম গো!",
+    "self": "আই ইয়ো!",
+    "win": "জিতছি রে! মিষ্টি খাওয়াও!",
+    "lose": "ও আল্লাহ! কী মারটাই না মারলো!",
+    "draw": "দুইজনই শেষ! আবার হবে নাকি?",
+    "scream": "আআআআআ!",
+    "ah": "আআআহহ!",
+    "help": "ও বাবা গো! কেউ বাঁচাও আমাকে!",
+    "run": "পালাওওওও!"
   }
 }

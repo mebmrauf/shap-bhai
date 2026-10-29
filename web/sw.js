@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snake-arena-v2.1';
+const CACHE_NAME = 'snake-arena-v2.3-pungi';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -14,14 +14,19 @@ const PRECACHE = [
   '/js/network.js',
   '/fonts/NotoSansBengali-Regular.ttf',
   '/audio/credits.json',
-  '/audio/eat.wav',
-  '/audio/start.wav',
-  '/audio/wall.wav',
-  '/audio/self.wav',
-  '/audio/lose.wav',
-  '/audio/win.wav',
-  '/audio/draw.wav',
-  '/audio/combo.wav'
+  '/audio/pungi-loop.wav?v=pungi-1',
+  '/audio/eat.wav?v=neural-bn-1',
+  '/audio/start.wav?v=neural-bn-1',
+  '/audio/wall.wav?v=neural-bn-1',
+  '/audio/self.wav?v=neural-bn-1',
+  '/audio/lose.wav?v=neural-bn-1',
+  '/audio/win.wav?v=neural-bn-1',
+  '/audio/draw.wav?v=neural-bn-1',
+  '/audio/combo.wav?v=neural-bn-1',
+  '/audio/scream.wav?v=neural-bn-1',
+  '/audio/ah.wav?v=neural-bn-1',
+  '/audio/help.wav?v=neural-bn-1',
+  '/audio/run.wav?v=neural-bn-1'
 ];
 
 self.addEventListener('install', event => {
@@ -61,3 +66,4 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+

@@ -1,15 +1,15 @@
 import { createGame, queueTurn, clearTurns, step, stepDuration, chooseBotTurn, makeRecording, replayRecording, COMBO_MS, ROUND_MS } from './engine.js';
 import { ArenaRenderer } from './render.js';
 import { RoomConnection } from './network.js';
-import { GameAudio } from './audio.js';
+import { GameAudio, escapedDanger } from './audio.js';
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(el => [el.id, el]));
 const get = (key, fallback) => { try { const raw = localStorage.getItem(`snake-arena.v2.${key}`); return raw && raw.length < 2000000 ? JSON.parse(raw) : fallback; } catch { return fallback; } };
 const put = (key, value) => { try { localStorage.setItem(`snake-arena.v2.${key}`, JSON.stringify(value)); return true; } catch { return false; } };
 const saved = get('sound', {});
-const sound = { effects: saved?.effects !== false, voice: saved?.voice !== false, music: saved?.music === true };
+const sound = { effects: saved?.effects !== false, voice: saved?.voice !== false, music: saved?.music !== false };
 let captionTimer;
-const audio = new GameAudio(sound, text => { clearTimeout(captionTimer); ui.caption.textContent = text; if (text) captionTimer = setTimeout(() => ui.caption.textContent = '', 5000); });
+const audio = new GameAudio(sound, text => { clearTimeout(captionTimer); ui.caption.textContent = text; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = text; if (text) captionTimer = setTimeout(() => { ui.caption.textContent = ''; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = ''; }, 6500); });
 const renderer = new ArenaRenderer(ui.board);
 let selectedMode = 'solo', session = null, game = null, previous = null, screen = 'menu';
 let frameAt = performance.now(), accumulator = 0, countdownEnd = 0, lastCount = null;
@@ -171,6 +171,8 @@ function handleEvents(events) {
     if (e.type === 'eat') { audio.effect('eat'); if (e.id === (connection?.state?.player ?? 0)) audio.voice(e.points >= 3 ? 'combo' : 'eat'); }
     if (e.type === 'crash') audio.effect('crash');
   }
+  const players = session?.opponent === 'local' ? [0, 1] : [connection?.state?.player ?? 0];
+  if (players.some(id => escapedDanger(previous, game, id))) audio.voice('danger');
 }
 function saveRun() {
   const score = game.snakes[0].score, key = bestKey(session.style, session.speed);
@@ -288,7 +290,7 @@ for (const [name, id] of [['effects','effectsSetting'], ['voice','voiceSetting']
   ui[id].checked = sound[name];
   ui[id].onchange = () => { sound[name] = ui[id].checked; put('sound', sound); audio.unlock(); audio.update(); };
 }
-ui.previewSound.onclick = () => { audio.unlock(); if (!sound.voice) { sound.voice = true; ui.voiceSetting.checked = true; put('sound', sound); } audio.voice('win', true); };
+ui.previewSound.onclick = () => { audio.unlock(); if (!sound.voice) { sound.voice = true; ui.voiceSetting.checked = true; put('sound', sound); } audio.voice('preview', true); ui.previewSound.textContent = 'Next Bangla reaction'; };
 const keyDirs = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
 window.addEventListener('keydown', event => {
   if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || document.querySelector('dialog[open]')) return;
