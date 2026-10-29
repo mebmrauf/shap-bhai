@@ -316,6 +316,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { pau
 window.addEventListener('pagehide', () => connection?.close());
 const initialCode = new URLSearchParams(location.search).get('room');
 if (initialCode) { selectedMode = 'duel'; ui.opponent.value = 'online'; ui.roomAction.value = 'join'; ui.roomCode.value = initialCode.toUpperCase().slice(0, 8); }
-// Retire the previous game's cache so localhost cannot serve its old entry point.
-if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(registrations => { for (const registration of registrations) registration.unregister(); }).catch(() => {});
+// Register service worker for PWA mobile installation and offline caching
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 updateSetup(); requestAnimationFrame(frame);
