@@ -70,7 +70,7 @@ function musicFixture() {
     createBufferSource() { const source = { starts: 0, stops: 0, connect() {}, disconnect() {}, start() { this.starts++; }, stop() { this.stops++; } }; sources.push(source); return source; },
     createGain() { return { gain: { value: 0, setTargetAtTime(value) { targets.push(value); }, cancelScheduledValues() {} }, connect() {}, disconnect() {} }; }
   };
-  f.a.musicBuffer = { duration: 13.35 };
+  f.a.musicBuffer = { duration: 14.25 };
   return { ...f, sources, targets };
 }
 test('pungi loops once across repeated updates, and stops on pause or mute', async () => {
@@ -85,7 +85,7 @@ test('music finishing its load after pause, mute, or hiding does not start', asy
   for (const cancel of [f => f.a.setActive(false), f => { f.settings.music = false; f.a.update(); }, () => { document.hidden = true; }]) {
     const f = musicFixture(); let resolve;
     f.a.loadMusic = () => new Promise(done => resolve = done);
-    f.a.setActive(true); cancel(f); resolve({ duration: 13.35 }); await Promise.resolve();
+    f.a.setActive(true); cancel(f); resolve({ duration: 14.25 }); await Promise.resolve();
     assert.equal(f.sources.length, 0);
   }
   document.hidden = false;

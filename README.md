@@ -21,7 +21,7 @@ Open http://localhost:8124. Run `npm test` for the rule, replay, room, input-ret
 
 Arrow keys / WASD steer. Escape or P pauses local games. Touch direction buttons and board swipes are available. Shared keyboard uses WASD for Player 1 and arrows for Player 2. Online play cannot pause. Both players must ready for another round or match.
 
-Sound settings separately control game effects, Bangla reactions, and music. Music defaults on for new players after pressing Play; an existing saved mute choice is respected. The live been/pungi loop pauses with gameplay and automatically ducks under Bangla reactions. Bangla clips use the Bangladeshi `bn-BD-PradeepNeural` voice, generated ahead of time and served locally. They are AI-generated, not recordings of a human actor or movie clips. Crashes and narrow escapes rotate through reactions; voices do not overlap. The sound preview button cycles through all 12 clips. No speech service is contacted during play. See `web/audio/credits.json` for the original text.
+Sound settings separately control game effects, Bangla reactions, and music. Music defaults on for new players after pressing Play; an existing saved mute choice is respected. The user-supplied Nagin been loop pauses with gameplay and automatically ducks under Bangla reactions. Bangla clips use the Bangladeshi `bn-BD-PradeepNeural` voice, generated ahead of time and served locally. They are AI-generated, not recordings of a human actor or movie clips. Crashes and narrow escapes rotate through reactions; voices do not overlap. The sound preview button cycles through all 12 clips. No speech service is contacted during play. See `web/audio/credits.json` for the original text.
 
 ## Rules that matter
 
@@ -36,7 +36,7 @@ The input buffer accepts two turns and applies one each movement step. Reverse t
 - `web/js/engine.js` — deterministic rules, queued input, AI, and replay verification. No DOM, timers, rendering, or network calls.
 - `web/js/app.js` — menu, game lifecycle, input, local saves, and presentation.
 - `web/js/render.js` — Canvas rendering with raised tiles, interpolation, flat view, and a translucent ghost. This is a 2.5D presentation, not a WebGL engine.
-- `web/js/audio.js` — synthesized game effects, a live pungi loop, and prerecorded Bangla neural reactions.
+- `web/js/audio.js` — synthesized game effects, a Nagin been reference loop, and prerecorded Bangla neural reactions.
 - `web/js/network.js` — a single in-flight room connection, acknowledgements, retries, and ready/leave actions.
 - `scripts/rooms.mjs` — authoritative online match clock, seat authentication, countdown, rounds, and disconnect cleanup.
 - `scripts/server.mjs` — static hosting and bounded same-origin JSON requests.
@@ -58,4 +58,4 @@ See `docs/VERIFICATION.md` for browser playtests, test results, and known covera
 
 ## Pungi recording credit
 
-The background loop adapts [“Snake charmer in Jaipur, Rajasthan.webm” by Ktorrespr](https://commons.wikimedia.org/wiki/File:Snake_charmer_in_Jaipur,_Rajasthan.webm), licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Audio was excerpted, filtered, lightly denoised, normalized, and crossfaded. The adapted `web/audio/pungi-loop.wav` is also CC BY-SA 4.0; it is separate from the code's MIT license. Full provenance is in `web/audio/credits.json` and `web/audio/PUNGI-LICENSE.md`.
+The local prototype loop uses the user-supplied [“Nagin Been music | sapera” reference, uploaded by Rajhans Raju](https://www.youtube.com/shorts/Gs7qKgMGgT4). Pitch and tempo are preserved; the loop is crossfaded and normalized. The source does not specify a reuse licence, and redistribution rights are unverified. Obtain permission or use cleared audio before public distribution. This replacement is not covered by the previous recording’s CC BY-SA licence or the code’s MIT licence. Provenance is in `web/audio/credits.json` and `web/audio/PUNGI-LICENSE.md`.

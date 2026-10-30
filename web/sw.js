@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snake-arena-v2.3-pungi';
+const CACHE_NAME = 'snake-arena-v2.4-nagin-been';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -14,7 +14,7 @@ const PRECACHE = [
   '/js/network.js',
   '/fonts/NotoSansBengali-Regular.ttf',
   '/audio/credits.json',
-  '/audio/pungi-loop.wav?v=pungi-1',
+  '/audio/pungi-loop.wav?v=nagin-been-2',
   '/audio/eat.wav?v=neural-bn-1',
   '/audio/start.wav?v=neural-bn-1',
   '/audio/wall.wav?v=neural-bn-1',

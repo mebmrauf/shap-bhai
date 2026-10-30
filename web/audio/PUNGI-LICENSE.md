@@ -1,11 +1,9 @@
-# Been / pungi background recording
+# Nagin been reference audio
 
-Source: [Snake charmer in Jaipur, Rajasthan.webm](https://commons.wikimedia.org/wiki/File:Snake_charmer_in_Jaipur,_Rajasthan.webm)
+Source: [Nagin Been music | sapera](https://www.youtube.com/shorts/Gs7qKgMGgT4), uploaded by **Rajhans Raju**. The uploader is not verified as the composer or rights holder.
 
-Recording author: **Ktorrespr**. Source recording date: 7 November 2016.
+This is the reference the user supplied for the local Snake Arena prototype. The source metadata does not specify a reuse licence. **Redistribution rights are unverified.** Obtain permission or substitute cleared audio before public distribution. Neither the code MIT licence nor the previous recording's CC BY-SA 4.0 licence covers this replacement. Attribution alone does not grant permission.
 
-Source and adapted audio license: **[Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/)**. The code's MIT license does not replace this audio license.
+Changes: excerpt 0.08–14.48 seconds, mono 24 kHz PCM, 150 ms loop crossfade, normalized to -18 LUFS / -3 dB true peak. Pitch and tempo preserved. Result: 14.25-second `pungi-loop.wav`.
 
-Changes: extracted 1.0–14.7 seconds of the recording's audio; converted to mono 24 kHz PCM; high-pass/low-pass filtering and light noise reduction; 350 ms loop crossfade; normalized to -20 LUFS with -3 dB true-peak limit. Result: 13.35-second `pungi-loop.wav`.
-
-Credit is also displayed in the game's Sound settings. No endorsement by the recorder or performer is implied. The source does not identify the performer.
+Source video ID: `Gs7qKgMGgT4`. Asset hash is in `credits.json`.

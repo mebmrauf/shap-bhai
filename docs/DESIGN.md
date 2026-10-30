@@ -6,6 +6,6 @@ The menu uses two top-level choices and progressive native selects. A single pri
 
 Visual direction: warm paper, forest green, lime player 1, amber player 2, red apples, cyan ghost. Player numbers, names, and outline shape supplement color. No decorative emoji. The raised board keeps screen-aligned directions; flat view uses the same controls. Reduced motion disables interpolation.
 
-Assets are local. The interface uses native font stacks plus a bundled Bengali font. Sound uses original Bengali scripts, prerecorded Bangladeshi neural speech clips (AI-generated, not human performances), original oscillator effects, and a licensed live been/pungi loop, with automatic volume reduction during reactions. Music and voice can be disabled independently.
+Assets are local. The interface uses native font stacks plus a bundled Bengali font. Sound uses original Bengali scripts, prerecorded Bangladeshi neural speech clips (AI-generated, not human performances), original oscillator effects, and the user-supplied Nagin been reference loop (reuse rights unverified; see audio credits), with automatic volume reduction during reactions. Music and voice can be disabled independently.
 
 The UI/UX skill's arcade guidance informed clear contrast, keyboard operation, responsive spacing, and visible focus. Its pixel-font and flashy-effect suggestions were not adopted because they conflict with the requested simpler interface. The 21st CLI was unavailable; no 21st components or hosted generation were used.
