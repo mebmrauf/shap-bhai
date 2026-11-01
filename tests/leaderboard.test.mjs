@@ -120,7 +120,7 @@ test('the offline cache is named after the current game files', async () => {
 test('text assets are gzipped when asked and vendor files cache for good', async () => {
   const { server, base } = await serve(null);
   try {
-    const vendor = await fetch(`${base}/vendor/three-0.187.0/three.min.js`);
+    const vendor = await fetch(`${base}/vendor/three-0.187.0-r2/three.min.js`);
     assert.equal(vendor.headers.get('content-encoding'), 'gzip');
     assert.match(vendor.headers.get('cache-control'), /immutable/);
     assert.ok((await vendor.text()).length > 100000);

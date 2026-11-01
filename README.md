@@ -62,7 +62,9 @@ The input buffer accepts two turns and applies one each movement step. Reverse t
 
 - `web/js/engine.js` — deterministic rules, queued input, AI, and replay verification. No DOM, timers, rendering, or network calls.
 - `web/js/app.js` — menu, game lifecycle, input, local saves, and presentation.
-- `web/js/render3d.js` — the Three.js board, food, skins and effects. `web/vendor/` holds a bundle of only the classes it uses.
+- `web/js/render3d.js` — lighting, shadows, camera, and the snake's smooth body. It steps down automatically on slow devices: shadows, then scenery, then resolution.
+- `web/js/world3d.js` — procedural models and textures: food, vehicles, buildings and the four worlds. There are no image or model downloads.
+- `web/vendor/` — a Three.js bundle of only the classes the renderer uses. Rename its folder whenever the bundle changes, because that path is cached for good.
 - `web/js/render.js` — the 2D fallback and flat view, used when WebGL is unavailable.
 - `web/js/i18n.js` — Bangla and English text, keyed by the English.
 - `web/js/social.js` — leaderboard calls and the share card.

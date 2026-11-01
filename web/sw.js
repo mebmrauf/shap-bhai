@@ -16,6 +16,7 @@ const CORE = [
   '/js/engine.js',
   '/js/render.js',
   '/js/render3d.js',
+  '/js/world3d.js',
   '/js/audio.js',
   '/js/network.js',
   '/js/themes.js',
@@ -23,7 +24,7 @@ const CORE = [
   '/js/social.js',
   '/js/i18n.js',
   '/js/update.js',
-  '/vendor/three-0.187.0/three.min.js',
+  '/vendor/three-0.187.0-r2/three.min.js',
   '/fonts/NotoSansBengali-Regular.ttf'
 ];
 const VOICES = ['start', 'eat', 'combo', 'wall', 'self', 'win', 'lose', 'draw', 'scream', 'ah', 'help', 'run', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'duelStart', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'duelWinWall', 'duelWinSelf', 'duelWinHit', 'duelLoseWall', 'duelLoseSelf', 'duelLoseHit', 'duelWinTime', 'duelLoseTime', 'duelMatchWin', 'duelMatchLose', 'duelHeadOn', 'duelTie', 'playerOneWin', 'playerTwoWin', 'momGone', 'rankOne', 'kalNagini'];

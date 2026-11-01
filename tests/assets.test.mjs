@@ -14,7 +14,7 @@ test('every Bangla reaction ships as an MP3 with its script, and the offline cac
 test('the offline cache lists every script the app loads',async()=>{
   const worker=await readFile(new URL('../web/sw.js',import.meta.url),'utf8');
   for(const file of await readdir(new URL('../web/js/',import.meta.url)))assert.ok(worker.includes(`/js/${file}`),`${file} must be cached for offline play`);
-  assert.ok(worker.includes('/vendor/three-0.187.0/three.min.js'));
+  assert.ok(worker.includes('/vendor/three-0.187.0-r2/three.min.js'));
 });
 test('pungi loop ships as audible PCM with attribution and a smooth wrap', async () => {
   const base = new URL('../web/audio/', import.meta.url);
