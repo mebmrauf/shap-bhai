@@ -124,7 +124,7 @@ export class Arena3D {
     this.canvas = canvas; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false, failIfMajorPerformanceCaveat: true, preserveDrawingBuffer: false });
     this.pixelRatio = Math.min(devicePixelRatio || 1, 1.75); this.renderer.setPixelRatio(this.pixelRatio);
-    this.scene = new Scene(); this.camera = new PerspectiveCamera(36, 1, .1, 200);
+    this.scene = new Scene(); this.camera = new PerspectiveCamera(36, 1, .1, 500);
     this.hemi = new HemisphereLight(0xffffff, 0x665544, 2.1); this.sun = new DirectionalLight(0xfff0d8, 2); this.sun.position.set(-6, 18, 9);
     this.headLight = new PointLight(0xfff3b0, 0, 11, 1.6); this.scene.add(this.hemi, this.sun, this.headLight);
     this.width = 0; this.height = 0; this.clock = performance.now(); this.time = 0; this.shakeAmount = 0; this.dark = 0; this.slowFrames = 0; this.frames = 0;
@@ -158,7 +158,7 @@ export class Arena3D {
     if (this.world) { this.scene.remove(this.world); this.world.traverse(o => { o.geometry?.dispose(); o.material?.map?.dispose(); o.material?.dispose(); }); }
     this.world = new Group(); this.animated = []; this.sky = new Color(t.sky);
     this.scene.background = this.sky.clone(); this.scene.fog = new Fog(t.sky, 48, 100);
-    const ground = new Mesh(new PlaneGeometry(200, 200), lambert(t.ground)); ground.rotation.x = -Math.PI / 2; ground.position.y = -.02; this.world.add(ground);
+    const ground = new Mesh(new PlaneGeometry(500, 500), lambert(t.ground)); ground.rotation.x = -Math.PI / 2; ground.position.y = -.02; this.world.add(ground);
     const tiles = canvasTexture(1024, 1024, (c, w) => {
       const u = w / SIZE;
       for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) { c.fillStyle = t.tiles[(x + y) % 2]; c.fillRect(x * u, y * u, u, u); }
@@ -184,7 +184,7 @@ export class Arena3D {
     }
     decorate(this.themeName, this.world, this.animated);
     this.scene.add(this.world);
-    this.camera.userData.base = null;
+    if (this.width) this.fit();
   }
   resize() {
     const { width, height } = this.canvas.getBoundingClientRect();
@@ -195,14 +195,31 @@ export class Arena3D {
     }
     return true;
   }
-  // Walk the camera back along a fixed tilt until the rim's corners are all inside the frame.
+  setFree(free) {
+    const old = this.free;
+    if (old && ['left', 'right', 'top', 'bottom'].every(side => Math.abs(old[side] - free[side]) < 1)) return;
+    this.free = free;
+    if (this.width) this.fit();
+  }
+  // Walk the camera back along a fixed tilt until the rim's corners sit inside the free part of the screen.
   fit() {
+    const w = this.width, h = this.height, free = this.free ?? { left: 0, right: 0, top: 0, bottom: 0 };
+    // A sliver of free space must not push the board out of sight.
+    const roomW = Math.max(w * .35, w - free.left - free.right), roomH = Math.max(h * .3, h - free.top - free.bottom);
+    const dx = (free.right - free.left) / 2, dy = (free.bottom - free.top) / 2;
     const half = SIZE / 2 + .9, direction = new Vector3(0, 1.32, 1).normalize(), target = new Vector3(0, 0, .55), v = new Vector3();
-    for (let distance = 20; distance < 90; distance += .5) {
-      this.camera.position.copy(direction).multiplyScalar(distance).add(target); this.camera.lookAt(target); this.camera.updateProjectionMatrix(); this.camera.updateMatrixWorld();
-      if ([[-half, half], [half, half], [-half, -half], [half, -half]].every(([x, z]) => { v.set(x, 0, z).project(this.camera); return Math.abs(v.x) < .97 && Math.abs(v.y) < .93; })) break;
+    const cx = -2 * dx / w, cy = 2 * dy / h, spanX = roomW / w * .97, spanY = roomH / h * .95;
+    this.camera.setViewOffset(w, h, dx, dy, w, h);
+    let distance = 20;
+    for (; distance < 240; distance += .5) {
+      this.camera.position.copy(direction).multiplyScalar(distance).add(target); this.camera.lookAt(target); this.camera.updateMatrixWorld();
+      if ([[-half, half], [half, half], [-half, -half], [half, -half]].every(([x, z]) => { v.set(x, 0, z).project(this.camera); return Math.abs(v.x - cx) < spanX && Math.abs(v.y - cy) < spanY; })) break;
     }
-    this.camera.userData.base = this.camera.position.clone(); this.camera.userData.target = target;
+    this.camera.userData.target = target;
+    this.goal = { position: this.camera.position.clone(), dx, dy };
+    this.view ??= { position: this.goal.position.clone(), dx, dy };
+    // Keep the board clear of the haze however far back the camera had to go.
+    this.scene.fog.near = distance + 12; this.scene.fog.far = distance + 75;
   }
   effect(name, data = {}) {
     if (name === 'eat') {
@@ -301,9 +318,12 @@ export class Arena3D {
     this.particles = this.particles.filter(p => (p.life -= dt) > 0);
     this.particles.forEach((p, i) => { p.vy -= 11 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; this.dummy.position.set(p.x, Math.max(.05, p.y), p.z); this.dummy.scale.setScalar(Math.max(.15, p.life * 2)); this.dummy.updateMatrix(); this.particleMesh.setMatrixAt(i, this.dummy.matrix); this.bodyColor.set(p.color); this.particleMesh.setColorAt(i, this.bodyColor); });
     this.particleMesh.count = this.particles.length; this.particleMesh.instanceMatrix.needsUpdate = true; if (this.particleMesh.instanceColor) this.particleMesh.instanceColor.needsUpdate = true; this.particleMesh.frustumCulled = false;
-    const base = this.camera.userData.base;
-    if (base) {
-      this.camera.position.copy(base);
+    if (this.goal) {
+      // Glide when a panel opens or closes instead of snapping.
+      const ease = this.reduced ? 1 : Math.min(1, dt * 9), view = this.view;
+      view.position.lerp(this.goal.position, ease); view.dx += (this.goal.dx - view.dx) * ease; view.dy += (this.goal.dy - view.dy) * ease;
+      this.camera.setViewOffset(this.width, this.height, view.dx, view.dy, this.width, this.height);
+      this.camera.position.copy(view.position);
       if (preview && !this.reduced) this.camera.position.x += Math.sin(this.time * .35) * 1.1;
       if (this.shakeAmount > .01) { this.camera.position.x += Math.sin(this.time * 61) * this.shakeAmount * .55; this.camera.position.y += Math.cos(this.time * 47) * this.shakeAmount * .4; this.shakeAmount *= Math.pow(.02, dt); }
       this.camera.lookAt(this.camera.userData.target);

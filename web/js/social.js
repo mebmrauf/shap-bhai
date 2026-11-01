@@ -53,7 +53,7 @@ export async function makeCard({ line, sentence, score, shot, host }) {
     }
   };
   band(0); band(1828);
-  c.textAlign = 'center'; c.fillStyle = '#fff4d6'; c.font = '700 44px system-ui, sans-serif'; c.fillText('SNAKE ARENA', 540, 180);
+  c.textAlign = 'center'; c.fillStyle = '#fff4d6'; c.font = '700 44px system-ui, sans-serif'; c.fillText('DHAKA IN 3D', 540, 180);
   c.font = '700 74px Bangla, sans-serif'; c.fillStyle = '#fff';
   let y = 300; for (const row of wrap(c, line, 940)) { c.fillText(row, 540, y); y += 104; }
   const top = Math.max(y, 500), width = 940, height = 700;
@@ -71,11 +71,11 @@ export async function makeCard({ line, sentence, score, shot, host }) {
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not draw the card.')), 'image/png'));
 }
 export async function shareCard(blob, text, url) {
-  const file = new File([blob], 'snake-arena.png', { type: 'image/png' });
+  const file = new File([blob], 'dhaka-in-3d.png', { type: 'image/png' });
   if (navigator.canShare?.({ files: [file] })) {
     try { await navigator.share({ files: [file], text: `${text} ${url}` }); return 'shared'; } catch (error) { if (isCancel(error)) return 'cancelled'; }
   }
-  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'snake-arena.png'; link.click();
+  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'dhaka-in-3d.png'; link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 10000);
   return 'saved';
 }

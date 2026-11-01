@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "snake-arena",
+      "name": "dhaka-in-3d",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 8124

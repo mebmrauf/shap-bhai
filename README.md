@@ -1,4 +1,4 @@
-# Snake Arena
+# Dhaka in 3D
 
 3D Snake through the streets of Bangladesh, in Bangla by default with an English option. Solo, computer, local two-player and online rooms all share one deterministic simulation. The whole game works offline after the first visit.
 
@@ -40,7 +40,8 @@ Clips use `bn-BD-PradeepNeural` and, for `roast*` and `chaos*` lines, `bn-BD-Nab
 
 ## Offline and weak connections
 
-- The service worker caches all game files by a content hash the server stamps into `sw.js`, so a player always runs one complete version and any change reaches them as a new one.
+- The service worker caches all game files by a content hash the server stamps into `sw.js`, so a player always runs one complete version.
+- Installed apps update themselves. `web/js/update.js` checks for a new version whenever the app returns to the foreground, comes back online, and every 15 minutes while open, then reloads at the next safe moment. A game in progress is never interrupted. Just deploy; there is nothing to bump.
 - Daily runs finished offline are stored and posted when the connection returns.
 - Online rooms send a turn as soon as it is pressed, compress snapshots, and draw through `SmoothView` in `web/js/network.js`: a steady clock, up to six ticks of display-only prediction, and slides instead of jumps when a guess was wrong. The server still decides every move, so a turn on a very slow link lands late.
 - Rooms use plain HTTPS through this server. No WebRTC, so no STUN or TURN service is needed.
@@ -80,7 +81,7 @@ Rooms are kept in memory in one Node process. Restarting the server ends those r
 
 Online clients send directions only. The server owns movement, collisions, apple placement, clocks, and results. Snapshots omit credentials, queued future turns, and random generator state. Disconnects close a room after 20 seconds. Temporary failures retry the same input sequence without applying it twice.
 
-Local scores and ghosts use a `snake-arena.v2` namespace. Old-game data is preserved but not imported because its rules differ. Recordings are versioned and fully replay-verified before use. A ghost shares the starting seed but runs its own simulation: different player routes can change later apple placement. Aborted runs do not replace recordings. No currencies, abilities or hazards are mixed into 1 vs 1, or into daily leaderboard runs.
+Local scores and ghosts use a `snake-arena.v2` storage namespace, kept from the game's earlier name so nobody loses progress. The daily seed and the Render service name keep the old name for the same kind of reason. Old-game data is preserved but not imported because its rules differ. Recordings are versioned and fully replay-verified before use. A ghost shares the starting seed but runs its own simulation: different player routes can change later apple placement. Aborted runs do not replace recordings. No currencies, abilities or hazards are mixed into 1 vs 1, or into daily leaderboard runs.
 
 ## Verification
 

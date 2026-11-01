@@ -2,7 +2,8 @@ import { SIZE, DIRECTIONS } from './engine.js';
 import { foodKind } from './themes.js';
 const FOOD_COLORS = [['#b9782f', '#e0a55c'], ['#d9cfa8', '#f6efd2'], ['#d8d4c2', '#fffdf2'], ['#8fa1aa', '#cfd8dc']];
 export class ArenaRenderer {
-  constructor(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.flat = false; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; this.width = 0; this.height = 0; }
+  constructor(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.flat = false; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; this.width = 0; this.height = 0; this.free = { left: 0, right: 0, top: 0, bottom: 0 }; }
+  setFree(free) { this.free = free; }
   resize() {
     const { width, height } = this.canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
     if (width !== this.width || height !== this.height || dpr !== this.dpr) {
@@ -16,11 +17,12 @@ export class ArenaRenderer {
     const c = this.ctx, w = this.width, h = this.height;
     if (!w || !h || !game) return;
     const tilt = this.flat ? 1 : .82;
-    const u = Math.min((w - 52) / SIZE, (h - 82) / (SIZE * tilt));
-    const left = (w - SIZE * u) / 2, top = (h - SIZE * u * tilt) / 2 - (preview ? 4 : 0);
+    const { left: freeL, right: freeR, top: freeT, bottom: freeB } = this.free, roomW = Math.max(120, w - freeL - freeR), roomH = Math.max(120, h - freeT - freeB);
+    const u = Math.min((roomW - 20) / SIZE, (roomH - 30) / (SIZE * tilt));
+    const left = freeL + (roomW - SIZE * u) / 2, top = freeT + (roomH - SIZE * u * tilt) / 2;
     const depth = this.flat ? 2 : u * .48;
     const project = (x, y, z = 0) => [left + x * u, top + y * u * tilt - z * u];
-    c.clearRect(0, 0, w, h); c.fillStyle = '#162f29'; c.fillRect(0, 0, w, h);
+    c.clearRect(0, 0, w, h); c.fillStyle = '#1a1430'; c.fillRect(0, 0, w, h);
     // A raised board with orthographic controls: screen up always means up.
     c.fillStyle = '#0d211b'; c.beginPath(); c.roundRect(left - 7, top + 8, SIZE * u + 14, SIZE * u * tilt + depth + 8, 8); c.fill();
     c.fillStyle = '#3c5c49'; c.beginPath(); c.roundRect(left - 5, top - 5, SIZE * u + 10, SIZE * u * tilt + depth + 10, 6); c.fill();

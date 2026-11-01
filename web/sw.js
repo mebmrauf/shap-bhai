@@ -1,5 +1,5 @@
 // The server stamps this with a hash of the game files, so any change is a whole new version.
-const CACHE_NAME = 'snake-arena-__BUILD__';
+const CACHE_NAME = 'dhaka-in-3d-__BUILD__';
 // Everything needed to start and play. One failure here retries the whole install.
 const CORE = [
   '/',
@@ -9,6 +9,9 @@ const CORE = [
   '/icon.svg',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon-maskable-192.png',
+  '/icon-maskable-512.png',
+  '/apple-touch-icon.png',
   '/js/app.js',
   '/js/engine.js',
   '/js/render.js',
@@ -19,6 +22,7 @@ const CORE = [
   '/js/districts.js',
   '/js/social.js',
   '/js/i18n.js',
+  '/js/update.js',
   '/vendor/three-0.187.0/three.min.js',
   '/fonts/NotoSansBengali-Regular.ttf'
 ];
@@ -31,7 +35,8 @@ const EXTRAS = [...VOICES.map(name => `/audio/${name}.mp3?v=neural-bn-2`), '/aud
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async cache => {
-      await cache.addAll(CORE);
+      // no-cache makes sure a version is built from fresh files, never an old copy along the way.
+      await cache.addAll(CORE.map(url => new Request(url, { cache: url.startsWith('/vendor/') ? 'default' : 'no-cache' })));
       // Voices rarely change, so an update on mobile data reuses what the phone already has.
       for (const url of EXTRAS) { const kept = await caches.match(url); if (kept) await cache.put(url, kept); }
     }).then(() => self.skipWaiting())

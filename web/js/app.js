@@ -5,10 +5,13 @@ import { GameAudio, escapedDanger, roastBank, duelBank, biteBank, startBank, phr
 import { THEMES, SKINS, foodKind } from './themes.js';
 import { DISTRICTS } from './districts.js';
 import { t, num, lang, applyLanguage } from './i18n.js';
+import { keepUpdated } from './update.js';
 import { saveProfile, submitDaily, fetchBoard, createGhost, fetchGhost, sendLink, makeCard, shareCard, bnDigits } from './social.js';
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(el => [el.id, el]));
 applyLanguage();
+// Decides the controls and layout for tablets, whose width alone says nothing about touch.
+if (matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !matchMedia('(hover: hover)').matches)) document.documentElement.dataset.touch = '';
 const get = (key, fallback) => { try { const raw = localStorage.getItem(`snake-arena.v2.${key}`); return raw && raw.length < 2000000 ? JSON.parse(raw) : fallback; } catch { return fallback; } };
 const put = (key, value) => { try { localStorage.setItem(`snake-arena.v2.${key}`, JSON.stringify(value)); return true; } catch { return false; } };
 const saved = get('sound', {});
@@ -60,7 +63,7 @@ function updateSetup() {
     opponent === 'local' ? t('Player 1: W A S D. Player 2: arrow keys. Escape pauses both players.') : opponent === 'online' ? t('Use arrow keys or W A S D. Online matches keep running if you change tabs. Both players must agree to the next round.') : t('Use arrow keys or W A S D. Escape pauses. The computer sees the board, not your next input.')
   ] : [t('Use arrow keys, W A S D, the direction buttons, or swipe on the board. You cannot reverse into your neck.'), t('One turn is applied per movement step. Two quick turns can be queued. Escape or P pauses; switching tabs also pauses.'), t('Each bite adds a body segment. Speed increases slightly every 5 bites. Fill the board to win.'), ...(style === 'chaos' ? [t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')] : style === 'daily' ? [t('Everyone gets the same food order today, until the snake paths differ. You can retry as often as you like; only your best run counts. Bangladesh time decides the day.')] : style === 'arcade' ? [t('Combos reset after 8 seconds of active play. Pausing does not consume your combo. Arcade records are separate.')] : style === 'ghost' ? [t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')] : [])];
   for (const text of paragraphs) { const p = document.createElement('p'); p.textContent = text; ui.rulesText.append(p); }
-  ui.board.setAttribute('aria-label', duel ? t('Snake arena preview. Player 1 is green; Player 2 is amber.') : t('Snake arena preview. Your snake is ready.'));
+  ui.board.setAttribute('aria-label', duel ? t('Board preview. Player 1 is green; Player 2 is amber.') : t('Board preview. Your snake is ready.'));
   preview = createGame({ mode: duel ? 'duel' : 'classic', seed: 1 });
   if (!duel) { preview.snakes[0].body = [{x:8,y:8},{x:7,y:8},{x:6,y:8},{x:5,y:8},{x:4,y:8},{x:4,y:9},{x:4,y:10},{x:4,y:11},{x:5,y:11},{x:6,y:11},{x:7,y:11}]; preview.food = [{x:13,y:8}]; }
   ui.p1Name.textContent = duel ? t('Player 1') : t('Your snake'); ui.p2Name.textContent = duel ? opponent === 'bot' ? t('Computer') : t('Player 2') : t('Best'); ui.p2Mark.hidden = !duel;
@@ -126,7 +129,7 @@ function renderCards() {
   const swatch = colors => card => { const chip = document.createElement('i'); chip.className = 'swatch'; chip.style.background = `linear-gradient(135deg,${colors.join(',')})`; card.prepend(chip); };
   cardsFor(ui.theme, ui.themeCards, (card, value) => swatch([THEMES[value].sky, THEMES[value].tiles[0], THEMES[value].edge])(card));
   cardsFor(ui.skin, ui.skinCards, (card, value) => swatch(SKINS[value].body)(card));
-  ui.looksSummary.textContent = t(THEMES[prefs.theme]?.label ?? '');
+  const chosen = SKINS[prefs.skin] ?? SKINS.nagin; ui.looksSummary.textContent = t(chosen.label); ui.snakeDot.style.background = `linear-gradient(135deg,${chosen.body.join(',')})`;
 }
 function showScreen(name) {
   for (const id of ['home', 'solo', 'duel', 'looks', 'how']) ui[`${id}Screen`].hidden = id !== name;
@@ -139,7 +142,7 @@ function setupBusy(busy) {
   if (busy) playLabel(t('Connecting…'));
 }
 async function start() {
-  if (ui.startButton.disabled) return;
+  if (ui.startButton.disabled || updater.applyPending(true)) return;
   error(); audio.unlock();
   session = { mode: selectedMode, style: ui.style.value, speed: ui.style.value === 'daily' ? 'normal' : ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value, opponent: selectedMode === 'duel' ? ui.opponent.value : null };
   if (session.opponent === 'online') {
@@ -216,7 +219,7 @@ function updateHud() {
   if (!ui.comboWrap.hidden) { ui.comboText.textContent = `×${Math.max(1, game.snakes[0].combo)}`; ui.comboMeter.value = Math.max(0, game.snakes[0].comboUntil - game.elapsedMs); }
   ui.timerText.textContent = duel ? t('{n}s left', { n: Math.ceil(Math.max(0, ROUND_MS - game.elapsedMs) / 1000) }) : t('{n} segments', { n: game.snakes[0].body.length });
   ui.statusText.textContent = duel ? t('Last snake moving wins. First to 3 rounds.') : game.chaos ? t(CHAOS_STATUS[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'arcade' ? t('Keep eating. Combos last 8 seconds.') : session.style === 'ghost' ? recording ? ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.') : t('Finish this run to save your first ghost.') : t('Find your rhythm. Watch your tail.');
-  ui.board.setAttribute('aria-label', duel ? `Snake arena. Player 1: ${game.snakes[0].score} points. Player 2: ${game.snakes[1].score} points.` : `Snake arena. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
+  ui.board.setAttribute('aria-label', duel ? `Board. Player 1: ${game.snakes[0].score} points. Player 2: ${game.snakes[1].score} points.` : `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
 }
 function handleEvents(events) {
   for (const e of events ?? []) {
@@ -266,7 +269,7 @@ function showResults() {
     const ghostResult = recording ? score > recording.score ? t('You beat {rival}.', { rival }) : score === recording.score ? t('A tie with {rival}.', { rival }) : t('{rival} keeps the crown.', { rival }) : null;
     const line = audio.pick(roastBank({ reason: game.reason, score, newBest: score > 0 && lastRun.newBest, ghost: !recording ? null : score > recording.score ? 'won' : score === recording.score ? 'tie' : 'lost' }));
     lastRun.line = phrases[line];
-    overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { audio.unlock(); beginLocalRound(); });
+    overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
     ui.overlayTitle.lang = 'bn'; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
     ui.resultActions.hidden = false; ui.shareButton.hidden = false; ui.challengeButton.hidden = !lastRun.record; ui.joinButton.hidden = true;
     ui.shareButton.textContent = t('Share card'); ui.challengeButton.textContent = t('Send my ghost');
@@ -292,7 +295,7 @@ function menu() {
   screen = 'menu'; ui.controlsHint.hidden = false; audio.stop(); ui.app.classList.remove('playing'); ui.overlay.hidden = true; ui.countdown.hidden = true; ui.previewTag.hidden = false;
   ui.pauseButton.hidden = true; ui.exitButton.hidden = true; ui.touchControls.hidden = true; ui.comboWrap.hidden = true; ui.timerText.textContent = ''; ui.connectionStatus.textContent = '';
   ui.startButton.disabled = false; ui.continueButton.disabled = false; ui.board.removeAttribute('tabindex'); ui.menuButton.textContent = t('Back to menu');
-  if (!friendGhost) history.replaceState(null, '', location.pathname); updateSetup(); window.scrollTo({ top: 0, behavior: 'instant' }); showScreen('home');
+  if (!friendGhost) history.replaceState(null, '', location.pathname); updateSetup(); window.scrollTo({ top: 0, behavior: 'instant' }); showScreen('home'); updater.applyPending(); updater.applyPending();
 }
 function requestLeave() {
   if (['result', 'waiting'].includes(screen)) { menu(); return; }
@@ -340,8 +343,36 @@ function frame(now) {
     ui.connectionStatus.textContent = view.stale ? t('Weak connection. Reconnecting…') : '';
   }
   const scene = view3d && !prefs.flat ? view3d : renderer;
+  const free = freeSpace();
+  document.documentElement.style.setProperty('--inset-b', `${free.bottom}px`);
+  scene.setFree(free);
   scene.draw(shown, shownBefore, fraction, ghost, screen === 'menu');
   requestAnimationFrame(frame);
+}
+// The world fills the screen, so the camera needs to know which part the panels and HUD leave free.
+let lastFree = null;
+function freeSpace() {
+  // The controls hide under a result card; the camera must not jump behind it.
+  if (!ui.overlay.hidden && lastFree) return lastFree;
+  return lastFree = measureFree();
+}
+function measureFree() {
+  const vw = innerWidth, vh = innerHeight, gap = 10, free = { left: 0, right: 0, top: 0, bottom: 0 };
+  const visible = el => { if (!el || el.hidden) return null; const r = el.getBoundingClientRect(); return r.width && r.height ? r : null; };
+  if (!ui.app.classList.contains('playing')) {
+    const panel = visible(ui.setup);
+    free.top = (visible(document.querySelector('.site-header'))?.bottom ?? 0) * .75;
+    if (panel) { if (panel.width > vw * .8) free.bottom = vh - panel.top + gap; else free.left = panel.right + gap; }
+    return free;
+  }
+  const hud = ['.arena-top', '.scoreboard', '.arena-bottom', '.controls-hint', '.touch-controls'].map(selector => visible(document.querySelector(selector))).filter(Boolean);
+  if (getComputedStyle(document.querySelector('.game-area')).getPropertyValue('--hud').trim() === 'side') {
+    free.right = vw - Math.min(...hud.map(r => r.left)) + gap; free.top = free.bottom = gap;
+    return free;
+  }
+  free.top = Math.max(gap, ...hud.filter(r => r.top < vh / 2).map(r => r.bottom)) + gap;
+  free.bottom = vh - Math.min(vh - gap, ...hud.filter(r => r.top >= vh / 2).map(r => r.top)) + gap;
+  return free;
 }
 function syncView() {
   renderer.flat = prefs.flat; ui.board3d.hidden = !view3d || prefs.flat;
@@ -427,7 +458,7 @@ ui.profileForm.addEventListener('submit', async event => {
   ui.profileSave.disabled = false;
 });
 ui.momButton.onclick = openStudy; ui.studyClose.onclick = () => { ui.studyDialog.close(); audio.unlock(); audio.voice('momGone', true); };
-ui.studyDialog.addEventListener('close', () => { document.title = 'Snake Arena'; });
+ui.studyDialog.addEventListener('close', () => { document.title = 'Dhaka in 3D'; });
 ui.shareButton.onclick = async () => {
   const run = lastRun; if (!run) return;
   ui.shareButton.disabled = true;
@@ -450,7 +481,7 @@ ui.challengeButton.onclick = async () => {
 };
 ui.soloMode.onclick = () => { selectedMode = 'solo'; updateSetup(); showScreen('solo'); };
 ui.duelMode.onclick = () => { selectedMode = 'duel'; updateSetup(); showScreen('duel'); };
-ui.looksButton.onclick = () => showScreen('looks'); ui.howButton.onclick = () => showScreen('how');
+ui.looksButton.onclick = () => showScreen('looks'); ui.snakeChip.onclick = () => showScreen('looks'); ui.howButton.onclick = () => showScreen('how');
 for (const button of document.querySelectorAll('[data-back]')) button.onclick = () => showScreen('home');
 for (const button of document.querySelectorAll('[data-play]')) button.onclick = start;
 for (const id of ['speed', 'opponent', 'roomAction']) ui[id].onchange = updateSetup;
@@ -508,14 +539,10 @@ if (initialGhost) fetchGhost(initialGhost).then(({ name, record }) => {
   replayRecording(record); // Never trust a stored replay: it must rebuild the same run here too.
   friendGhost = { name, record }; selectedMode = 'solo'; ui.style.value = 'ghost'; updateSetup();
 }).catch(e => { history.replaceState(null, '', location.pathname); ui.style.value = 'daily'; updateSetup(); error(e.status ? t(e.message) : t("That friend's ghost needs internet to download. Everything else works offline.")); });
-// Register service worker for PWA mobile installation and offline caching
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}
+const updater = keepUpdated({ isBusy: () => screen !== 'menu' || !!document.querySelector('dialog[open]') });
+window.addEventListener('load', () => updater.start());
 window.addEventListener('online', () => postDaily()); postDaily();
-renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); ui.style.value = selectedMode === 'solo' && !initialGhost ? 'daily' : ui.style.value;
+renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = selectedMode === 'solo' && !initialGhost ? ['daily', 'chaos'].includes(initialStyle) ? initialStyle : 'daily' : ui.style.value;
 updateSetup(); requestAnimationFrame(frame);
 if (initialCode) showScreen('duel');
 // The 2D board stays the fallback, so 3D is only ever an upgrade.

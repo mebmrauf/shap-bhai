@@ -13,7 +13,7 @@ function buildId() {
   const hash = createHash('sha256');
   for (const name of fs.readdirSync(ROOT, { recursive: true }).map(String).sort()) {
     const file = path.join(ROOT, name);
-    if (fs.statSync(file).isFile() && name !== 'sw.js') hash.update(name).update(fs.readFileSync(file));
+    if (fs.statSync(file).isFile() && name !== 'sw.js' && !path.basename(name).startsWith('.')) hash.update(name).update(fs.readFileSync(file));
   }
   return hash.digest('hex').slice(0, 12);
 }
@@ -115,5 +115,5 @@ export function createServer({ leaderboard = null } = {}) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try { process.loadEnvFile(new URL('../.env', import.meta.url)); } catch { /* Hosted platforms set real environment variables. */ }
   const port = Number(process.env.PORT || 8124), host = process.env.HOST || '127.0.0.1';
-  createServer({ leaderboard: await connectLeaderboard() }).listen(port, host, () => console.log(`Snake Arena: http://${host}:${port}`));
+  createServer({ leaderboard: await connectLeaderboard() }).listen(port, host, () => console.log(`Dhaka in 3D: http://${host}:${port}`));
 }

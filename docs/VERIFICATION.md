@@ -51,3 +51,11 @@ Tested in the desktop app's browser at phone and desktop sizes, with Chromium's 
 | 400 ms, jitter, 5% loss | 77% | 14% | 17 | 1 |
 
 Not covered: real phones and real mobile networks, iOS Safari, listening to the generated voice clips (only duration and loudness were measured), and a real two-person online match.
+
+## Rickshaw Pop UI and self-update (2026-11-01)
+
+Layout audit for off-screen and clipped controls, with no findings on the final build, at 320x568, 390x844, 844x390, 768x1024 and 1180x820 with touch forced on, and 1440x900 without touch. The audit covered the home screen, menus, play and results, though not every state at every size.
+
+Self-update, simulated by changing a game file and restarting the server: on the menu, the page reloaded itself into the new version. During a game, the page was not interrupted and updated on leaving to the menu.
+
+Not covered: a real installed app on a real phone, real tablets (touch was forced on in a desktop browser), and iOS Safari.

@@ -1,9 +1,9 @@
 {
-  "name": "snake-arena",
+  "name": "dhaka-in-3d",
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "A deterministic Snake game with fair simultaneous 1v1 and original Bangla audio",
+  "description": "Dhaka in 3D: a 3D Snake game in Bangla with fair 1 vs 1, daily challenges and offline play",
   "scripts": {
     "dev": "node scripts/server.mjs",
     "start": "node scripts/server.mjs",
