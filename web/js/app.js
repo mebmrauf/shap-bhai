@@ -95,7 +95,7 @@ function enterGame() {
 }
 function beginLocalRound() {
   playControls(true);
-  resultSaved = ''; recording = session.style === 'ghost' ? friendGhost?.record ?? loadGhost(session.speed) : null;
+  earlyTurns = {}; resultSaved = ''; recording = session.style === 'ghost' ? friendGhost?.record ?? loadGhost(session.speed) : null;
   const seed = recording?.seed ?? (session.style === 'daily' ? dailySeed(dhakaDay()) : randomSeed());
   game = createGame({ mode: session.mode === 'duel' ? 'duel' : ['arcade', 'chaos'].includes(session.style) ? session.style : 'classic', speed: session.speed, seed });
   previous = positions(game); accumulator = 0; ghostIndex = 0;
@@ -170,10 +170,12 @@ function onNetwork(state, force = false) {
   const oldScreen = screen, oldRound = series.round;
   ui.connectionStatus.textContent = '';
   series = { round: state.round, wins: state.wins };
+  // Every snapshot resets the clock: its timing fields are only true as of now, tick change or not.
+  networkAt = performance.now();
   if (state.game && (state.game.tick !== lastNetworkTick || oldRound !== state.round || force)) {
     const before = game;
     previous = positions(game ?? state.game); game = state.game;
-    networkAt = performance.now(); lastNetworkTick = game.tick;
+    lastNetworkTick = game.tick;
     // A slow link skips ticks, so reactions come from what changed rather than the last tick's events.
     const sameRound = before && oldRound === state.round;
     if (sameRound) handleEvents([
@@ -195,10 +197,10 @@ function onNetwork(state, force = false) {
     screen = 'countdown'; playControls(true); ui.overlay.hidden = true; ui.countdown.hidden = false;
     countdownEnd = performance.now() + state.countdown;
     ui.countdownText.textContent = t('You are Player {n} · {color} snake', { n: state.player + 1, color: t(state.player ? t('amber') : t('green')) });
-    if (oldScreen !== 'countdown') { lastCount = null; audio.setActive(false); }
+    if (oldScreen !== 'countdown') { earlyTurns = {}; lastCount = null; audio.setActive(false); }
   } else if (state.phase === 'playing') {
     screen = 'playing'; playControls(true); ui.overlay.hidden = true; ui.countdown.hidden = true;
-    if (oldScreen !== 'playing') { audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ duel: game.mode === 'duel', style: session.style, skin: prefs.skin }), true); }
+    if (oldScreen !== 'playing') { releaseEarlyTurns(); audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ duel: game.mode === 'duel', style: session.style, skin: prefs.skin }), true); }
   } else if (state.phase === 'finished') {
     screen = 'result'; audio.setActive(false);
     if (oldScreen !== 'result' || force) { updateHud(); showResults(); }
@@ -307,8 +309,16 @@ function requestLeave() {
   pause(); ui.leaveText.textContent = connection ? t('Leaving closes this room for both players.') : t('This run will end. Unfinished runs are not saved as ghosts.');
   ui.leaveDialog.showModal(); ui.stayButton.focus();
 }
+// A press during the countdown is kept for the start. The snake reaches a wall about 2 seconds in, so losing it can cost the round.
+let earlyTurns = {};
+function releaseEarlyTurns() {
+  for (const [id, dir] of Object.entries(earlyTurns)) { diagnostics?.note(`early turn ${dir}`); if (connection) connection.turn(dir); else queueTurn(game, Number(id), dir); }
+  earlyTurns = {};
+}
 function steer(id, dir) {
-  if (screen !== 'playing') return;
+  if (screen === 'countdown') { earlyTurns[id] = dir; diagnostics?.note(`held ${dir} for the start`); return; }
+  if (screen !== 'playing') { diagnostics?.note(`ignored ${dir}: screen is ${screen}`); return; }
+  diagnostics?.note(`turn ${dir}`);
   if (connection) { connection.turn(dir); return; }
   queueTurn(game, id, dir);
 }
@@ -320,11 +330,14 @@ function advanceGhost() {
   }
 }
 function frame(now) {
+  // Scheduled first, so one bad frame can never freeze the game.
+  requestAnimationFrame(frame);
+  diagnostics?.frame(now);
   const dt = Math.min(250, now - frameAt); frameAt = now;
   if (screen === 'countdown') {
     const count = Math.max(1, Math.ceil((countdownEnd - now) / 1000));
     if (count !== lastCount) { ui.countdownNumber.textContent = count; lastCount = count; audio.effect('count'); }
-    if (!connection && now >= countdownEnd) { screen = 'playing'; accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ duel: game.mode === 'duel', style: session.style, skin: prefs.skin }), true); }
+    if (!connection && now >= countdownEnd) { screen = 'playing'; releaseEarlyTurns(); accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ duel: game.mode === 'duel', style: session.style, skin: prefs.skin }), true); }
   } else if (screen === 'playing' && !connection) {
     accumulator += dt;
     while (game.status === 'playing' && accumulator >= stepDuration(game)) {
@@ -349,9 +362,14 @@ function frame(now) {
   const scene = view3d && !prefs.flat ? view3d : renderer;
   const free = freeSpace();
   document.documentElement.style.setProperty('--inset-b', `${free.bottom}px`);
-  scene.setFree(free);
-  scene.draw(shown, shownBefore, fraction, ghost, screen === 'menu');
-  requestAnimationFrame(frame);
+  try {
+    scene.setFree(free);
+    scene.draw(shown, shownBefore, fraction, ghost, screen === 'menu');
+  } catch (failure) {
+    diagnostics?.note(`render failed: ${failure.message}`);
+    // The 2D board can always take over from 3D.
+    if (scene === view3d) { view3d = null; syncView(); }
+  }
 }
 // The world fills the screen, so the camera needs to know which part the panels and HUD leave free.
 let lastFree = null;
@@ -532,9 +550,11 @@ window.addEventListener('keydown', event => {
     steer(session?.opponent === 'local' && key.startsWith('Arrow') ? 1 : 0, dir);
   }
 });
-for (const button of ui.touchControls.querySelectorAll('button')) button.addEventListener('pointerdown', event => { event.preventDefault(); steer(0, button.dataset.dir); });
+// Older phones have no pointer events, so they get touch events instead.
+const pressEvent = window.PointerEvent ? 'pointerdown' : 'touchstart';
+for (const button of ui.touchControls.querySelectorAll('button')) button.addEventListener(pressEvent, event => { event.preventDefault(); steer(0, button.dataset.dir); }, { passive: false });
 let swipe = null;
-ui.board.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; swipe = { x: event.clientX, y: event.clientY }; ui.board.setPointerCapture(event.pointerId); });
+ui.board.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; swipe = { x: event.clientX, y: event.clientY }; try { ui.board.setPointerCapture(event.pointerId); } catch { /* The swipe still works inside the board. */ } });
 ui.board.addEventListener('pointermove', event => {
   if (!swipe || session?.opponent === 'local') return;
   const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
@@ -553,6 +573,26 @@ if (initialGhost) fetchGhost(initialGhost).then(({ name, record }) => {
   replayRecording(record); // Never trust a stored replay: it must rebuild the same run here too.
   friendGhost = { name, record }; selectedMode = 'solo'; ui.style.value = 'ghost'; updateSetup();
 }).catch(e => { history.replaceState(null, '', location.pathname); ui.style.value = 'daily'; updateSetup(); error(e.status ? t(e.message) : t("That friend's ghost needs internet to download. Everything else works offline.")); });
+// Opened with ?debug: shows on the phone itself what the game receives, for problems no desktop can reproduce.
+const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
+  const box = document.createElement('pre'); box.className = 'diagnostics'; document.body.append(box);
+  const notes = []; let frames = 0, windowAt = performance.now(), fps = 0, worst = 0, lastFrame = 0;
+  const note = text => { notes.unshift(`${(performance.now() / 1000).toFixed(1)} ${text}`); notes.length = Math.min(notes.length, 8); };
+  for (const name of ['pointerdown', 'touchstart', 'keydown']) window.addEventListener(name, event => {
+    const hit = event.touches?.[0] ?? event, under = hit.clientX === undefined ? null : document.elementFromPoint(hit.clientX, hit.clientY);
+    note(`${name} ${event.pointerType ?? ''} ${event.key ?? ''} on ${event.target?.dataset?.dir ?? event.target?.id ?? event.target?.tagName} under ${under?.dataset?.dir ?? under?.id ?? under?.className ?? '-'}`);
+  }, { capture: true, passive: true });
+  for (const name of ['blur', 'focus', 'pagehide']) window.addEventListener(name, () => note(name));
+  document.addEventListener('visibilitychange', () => note(`hidden=${document.hidden}`));
+  addEventListener('error', event => note(`error: ${event.message}`));
+  return { note, frame(now) {
+    worst = Math.max(worst, now - lastFrame); lastFrame = now; frames++;
+    if (now - windowAt < 1000) return;
+    fps = Math.round(frames * 1000 / (now - windowAt)); frames = 0; windowAt = now;
+    const q = view3d?.quality?.() ?? '2D', net = connection ? `rtt ${Math.round(connection.latency)} sent ${connection.sequence} acked ${connection.state?.ack} waiting ${connection.pending.length}` : 'offline/local';
+    box.textContent = `${fps} fps, worst ${Math.round(worst)} ms\n${q}\nscreen ${screen}, ${net}\n${notes.join('\n')}`; worst = 0;
+  } };
+})() : null;
 const updater = keepUpdated({ isBusy: () => screen !== 'menu' || !!document.querySelector('dialog[open]') });
 window.addEventListener('load', () => updater.start());
 window.addEventListener('online', () => postDaily()); postDaily();

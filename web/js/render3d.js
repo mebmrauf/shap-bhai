@@ -77,15 +77,16 @@ export class Arena3D {
     this.canvas = canvas; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.high = isCapable();
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false, failIfMajorPerformanceCaveat: true, preserveDrawingBuffer: false });
-    this.pixelRatio = Math.min(devicePixelRatio || 1, this.high ? 2 : 1.5); this.renderer.setPixelRatio(this.pixelRatio);
+    const phone = matchMedia('(pointer: coarse)').matches;
+    this.pixelRatio = Math.min(devicePixelRatio || 1, this.high && !phone ? 2 : 1.5); this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.toneMapping = ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.3;
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.scene = new Scene(); this.scene.fog = new Fog('#ffffff', 60, 160); this.camera = new PerspectiveCamera(34, 1, .1, 700);
     this.hemi = new HemisphereLight(0xffffff, 0x665544, 1); this.sun = new DirectionalLight(0xffffff, 3);
-    this.sun.castShadow = this.high; const shadowEdge = SIZE / 2 + 8, sc = this.sun.shadow; sc.mapSize.set(2048, 2048); sc.bias = -.0004; sc.normalBias = .025;
+    this.sun.castShadow = this.high; const shadowEdge = SIZE / 2 + 8, sc = this.sun.shadow; sc.mapSize.set(phone ? 1024 : 2048, phone ? 1024 : 2048); sc.bias = -.0004; sc.normalBias = .025;
     Object.assign(sc.camera, { left: -shadowEdge, right: shadowEdge, top: shadowEdge, bottom: -shadowEdge, near: 1, far: 70 });
     this.headLight = new PointLight(0xffe7b0, 0, 12, 1.5); this.scene.add(this.hemi, this.sun, this.sun.target, this.headLight);
-    this.width = 0; this.height = 0; this.clock = performance.now(); this.time = 0; this.shakeAmount = 0; this.dark = 0; this.slowFrames = 0; this.frames = 0;
+    this.width = 0; this.height = 0; this.clock = performance.now(); this.time = 0; this.shakeAmount = 0; this.dark = 0; this.spent = 0; this.frames = 0;
     this.animated = []; this.foods = new Map(); this.foodModels = new Map(); this.bulges = []; this.particles = []; this.chaosKey = '';
     this.dummy = new Object3D(); this.tint = new Color();
     this.pmrem = this.high ? new PMREMGenerator(this.renderer) : null;
@@ -249,16 +250,17 @@ export class Arena3D {
   }
   draw(game, previous, fraction = 1, ghost = null, preview = false) {
     if (!game || !this.resize()) return;
-    const now = performance.now(), dt = Math.min(.1, (now - this.clock) / 1000); this.clock = now; this.time += dt;
+    const now = performance.now(), gap = now - this.clock, dt = Math.min(.1, gap / 1000); this.clock = now; this.time += dt;
     // Weak devices keep their frame rate: shadows go first, then scenery, then resolution.
-    if (dt > .04) this.slowFrames++;
-    if (++this.frames >= 90) {
-      if (this.slowFrames > 45) {
+    // Judged by the clock, not a frame count: at 5 fps a frame count takes far longer than a round lasts.
+    if (gap < 1000) { this.frames++; this.spent += gap; }
+    if (this.spent >= 800) {
+      if (this.spent / this.frames > 34) {
         if (this.sun.castShadow) { this.sun.castShadow = false; this.blobs.visible = true; }
         else if (this.high) { this.high = false; this.setTheme(this.themeName); }
         else if (this.pixelRatio > 1) { this.pixelRatio = Math.max(1, this.pixelRatio - .35); this.renderer.setPixelRatio(this.pixelRatio); }
       }
-      this.frames = 0; this.slowFrames = 0;
+      this.frames = 0; this.spent = 0;
     }
     this.bulges = this.bulges.filter(b => this.time - b.start < 2.2);
     const alpha = this.reduced ? 1 : Math.min(1, Math.max(0, fraction));
@@ -293,6 +295,7 @@ export class Arena3D {
     }
     this.renderer.render(this.scene, this.camera);
   }
+  quality() { return `3D shadows ${this.sun.castShadow ? 'on' : 'off'}, scenery ${this.high ? 'full' : 'light'}, sharpness ${this.pixelRatio.toFixed(2)}, ${this.renderer.info.render.calls} draws`; }
   // The drawing buffer clears after compositing, so render immediately before reading it.
   snapshot() { this.renderer.render(this.scene, this.camera); return this.canvas; }
 }

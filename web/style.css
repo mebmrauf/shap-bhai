@@ -1021,6 +1021,10 @@ dialog.study-dialog {
 #app.playing .overlay {
   pointer-events:auto;
 }
+/* The result card sits above the score bar and buttons, not under them. */
+body:has(#overlay:not([hidden])) #app.playing .arena {
+  z-index:5;
+}
 .arena-top {
   grid-area:top;
   display:flex;
@@ -1688,4 +1692,18 @@ html[data-touch] .controls-hint {
   #howButton {
     --c:#5b3fc4;
   }
+}
+.diagnostics {
+  position:fixed;
+  z-index:30;
+  top:60px;
+  left:4px;
+  max-width:calc(100vw - 8px);
+  margin:0;
+  padding:6px;
+  background:#000c;
+  color:#7dff8a;
+  font:10px/1.35 ui-monospace,monospace;
+  white-space:pre-wrap;
+  pointer-events:none;
 }
