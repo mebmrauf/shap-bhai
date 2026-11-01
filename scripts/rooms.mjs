@@ -37,8 +37,8 @@ export class Rooms {
   }
   start(room) {
     room.phase = 'countdown'; room.countdownEnd = this.now() + 3000;
-    room.nextStep = room.countdownEnd + 140; room.changed = this.now();
     room.game = createGame({ mode: 'duel', seed: this.seed() });
+    room.nextStep = room.countdownEnd + stepDuration(room.game); room.changed = this.now();
     for (const p of room.players) p.ready = false;
   }
   request(body) {

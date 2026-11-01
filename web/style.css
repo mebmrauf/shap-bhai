@@ -1233,6 +1233,14 @@ kbd {
   border-color:var(--dark);
   color:var(--dark);
 }
+.touch-controls button.refused {
+  animation:refused 280ms ease-out;
+}
+@keyframes refused {
+  0%,100% { translate:0; }
+  25% { translate:-5px; background:#e0245e; border-color:#fff; }
+  60% { translate:4px; background:#e0245e; border-color:#fff; }
+}
 .touch-controls .up {
   grid-column:2;
 }

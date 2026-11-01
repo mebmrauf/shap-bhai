@@ -32,20 +32,21 @@ export function dailySeed(day) {
 export function createGame({ mode = 'classic', speed = 'normal', seed = 1 } = {}) {
   if (!['classic', 'arcade', 'duel', 'chaos'].includes(mode) || !Object.hasOwn(SPEEDS, speed) || !Number.isInteger(seed)) throw new Error('Invalid game settings');
   const g = { version: 2, mode, speed, seed: seed >>> 0 || 1, randomState: seed >>> 0 || 1, tick: 0, elapsedMs: 0, status: 'playing', winner: null, reason: '', food: [], events: [], actions: [] };
-  g.snakes = mode === 'duel' ? [snake(0, 4, 6, 'right'), snake(1, 15, 13, 'left')] : [snake(0, 6, 10, 'right')];
-  g.food = mode === 'duel' ? [{ x: 10, y: 6 }, { x: 9, y: 13 }] : [{ x: 10, y: 10 }];
+  g.snakes = mode === 'duel' ? [snake(0, 4, 7, 'right'), snake(1, 15, 12, 'left')] : [snake(0, 6, 10, 'right')];
+  g.food = mode === 'duel' ? [{ x: 10, y: 7 }, { x: 9, y: 12 }] : [{ x: 10, y: 10 }];
   if (mode === 'chaos') g.chaos = { name: null, phase: 'idle', until: 40, last: null, warnings: [], obstacles: [], water: [], blackout: false };
   return g;
 }
 export function stepDuration(g) {
-  if (g.mode === 'duel') return 140;
+  if (g.mode === 'duel') return 180;
   return Math.max(85, SPEEDS[g.speed] - Math.floor(g.snakes[0].apples / 5) * 7);
 }
+export const canTurn = (heading, dir) => dir !== heading && !opposite(heading, dir);
 export function queueTurn(g, id, dir) {
   const s = g.snakes[id];
   if (g.status !== 'playing' || !s?.alive || !Object.hasOwn(DIRECTIONS, dir) || s.queue.length >= 2) return false;
   const previous = s.queue.at(-1) ?? s.dir;
-  if (dir === previous || opposite(previous, dir)) return false;
+  if (!canTurn(previous, dir)) return false;
   s.queue.push(dir);
   return true;
 }

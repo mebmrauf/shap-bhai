@@ -57,5 +57,5 @@ test('a wrong guess slides to the truth rather than teleporting',()=>{
 test('a long silence is flagged and prediction stops guessing',()=>{
   const g=createGame({mode:'duel',seed:3}),v=new SmoothView();
   const view=v.frame(roomState(g),0,0,[],5000);
-  assert.equal(view.stale,true);assert.deepEqual(view.shown.snakes[0].body[0],{x:10,y:6});
+  assert.equal(view.stale,true);assert.deepEqual(view.shown.snakes[0].body[0],{x:10,y:7});
 });

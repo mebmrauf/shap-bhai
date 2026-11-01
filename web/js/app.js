@@ -1,4 +1,4 @@
-import { createGame, queueTurn, clearTurns, step, stepDuration, chooseBotTurn, makeRecording, replayRecording, dailySeed, dhakaDay, swipeTurn, ROUND_MS } from './engine.js';
+import { createGame, queueTurn, clearTurns, step, stepDuration, chooseBotTurn, makeRecording, replayRecording, dailySeed, dhakaDay, swipeTurn, canTurn, ROUND_MS } from './engine.js';
 import { ArenaRenderer } from './render.js';
 import { RoomConnection, SmoothView } from './network.js';
 import { GameAudio, escapedDanger, roastBank, duelBank, biteBank, startBank, phrases } from './audio.js';
@@ -315,6 +315,10 @@ function releaseEarlyTurns() {
   for (const [id, dir] of Object.entries(earlyTurns)) { diagnostics?.note(`early turn ${dir}`); if (connection) connection.turn(dir); else queueTurn(game, Number(id), dir); }
   earlyTurns = {};
 }
+function plannedDirection() {
+  if (connection) return connection.pending.at(-1)?.dir ?? connection.state.queued?.at(-1) ?? connection.state.game.snakes[connection.state.player].dir;
+  return game.snakes[0].queue.at(-1) ?? game.snakes[0].dir;
+}
 function steer(id, dir) {
   if (screen === 'countdown') { earlyTurns[id] = dir; diagnostics?.note(`held ${dir} for the start`); return; }
   if (screen !== 'playing') return;
@@ -552,7 +556,12 @@ window.addEventListener('keydown', event => {
 });
 // Older phones have no pointer events, so they get touch events instead.
 const pressEvent = window.PointerEvent ? 'pointerdown' : 'touchstart';
-for (const button of ui.touchControls.querySelectorAll('button')) button.addEventListener(pressEvent, event => { event.preventDefault(); steer(0, button.dataset.dir); }, { passive: false });
+for (const button of ui.touchControls.querySelectorAll('button')) button.addEventListener(pressEvent, event => {
+  event.preventDefault();
+  // The same way or straight back cannot turn the snake, so the button says so instead of seeming dead.
+  if (screen === 'playing' && !canTurn(plannedDirection(), button.dataset.dir)) { button.classList.remove('refused'); void button.offsetWidth; button.classList.add('refused'); }
+  steer(0, button.dataset.dir);
+}, { passive: false });
 let swipe = null;
 ui.board.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; swipe = { x: event.clientX, y: event.clientY }; try { ui.board.setPointerCapture(event.pointerId); } catch { /* The swipe still works inside the board. */ } });
 ui.board.addEventListener('pointermove', event => {
@@ -590,6 +599,8 @@ const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
     if (now - windowAt < 1000) return;
     fps = Math.round(frames * 1000 / (now - windowAt)); frames = 0; windowAt = now;
     const q = view3d?.quality?.() ?? '2D', net = connection ? `rtt ${Math.round(connection.latency)} sent ${connection.sequence} acked ${connection.state?.ack} waiting ${connection.pending.length}` : 'offline/local';
+    // Out of the way while playing: it would cover the top of the board.
+    box.style.display = ['playing', 'countdown'].includes(screen) ? 'none' : '';
     box.textContent = `${fps} fps, worst ${Math.round(worst)} ms\n${q}\nscreen ${screen}, ${net}\n${notes.join('\n')}`; worst = 0;
   } };
 })() : null;

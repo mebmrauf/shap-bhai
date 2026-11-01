@@ -121,7 +121,7 @@ test('prediction matches the real game on a clear path, and leaves the snapshot 
 });
 test('prediction applies my queued turn straight away and never shows a death', () => {
   const snapshot = publicState(createGame({ mode: 'duel', seed: 3 }));
-  assert.deepEqual(predict(snapshot, 1, 0, ['up']).snakes[0].body[0], { x: 4, y: 5 });
+  assert.deepEqual(predict(snapshot, 1, 0, ['up']).snakes[0].body[0], { x: 4, y: 6 });
   const edge = structuredClone(snapshot); edge.snakes[0].body = [{ x: 19, y: 6 }, { x: 18, y: 6 }, { x: 17, y: 6 }, { x: 16, y: 6 }];
   const held = predict(edge, 5).snakes[0];
   assert.equal(held.alive, true); assert.deepEqual(held.body[0], { x: 19, y: 6 });

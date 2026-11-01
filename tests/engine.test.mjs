@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, step, queueTurn, stepDuration, chooseBotTurn, makeRecording, replayRecording, swipeTurn, COMBO_MS, MAX_TICKS, ROUND_MS, SIZE } from '../web/js/engine.js';
+import { createGame, step, queueTurn, stepDuration, chooseBotTurn, makeRecording, replayRecording, swipeTurn, canTurn, COMBO_MS, MAX_TICKS, ROUND_MS, SIZE } from '../web/js/engine.js';
+test('only a sideways press can turn a snake', () => {
+  assert.equal(canTurn('right','up'),true);assert.equal(canTurn('right','right'),false);assert.equal(canTurn('right','left'),false);
+});
 test('a curved swipe makes one turn, and a long sideways move makes a second', () => {
   const run = points => { const swipe = { x: 0, y: 0 }; return points.map(([x, y]) => swipeTurn(swipe, x, y)).filter(Boolean); };
   assert.deepEqual(run([[2, -10], [6, -20], [14, -34], [26, -46], [40, -54]]), ['up']);
@@ -62,7 +65,7 @@ test('starting food and snakes have rotational symmetry', () => {
   assert.equal(g.food[0].x+g.food[1].x,19); assert.equal(g.food[0].y+g.food[1].y,19);
 });
 test('duel speed stays equal regardless of apples', () => {
-  const g=duel(); g.snakes[0].apples=100; g.snakes[1].apples=1; assert.equal(stepDuration(g),140);
+  const g=duel(); g.snakes[0].apples=100; g.snakes[1].apples=1; assert.equal(stepDuration(g),180);
 });
 test('timed rounds compare apples and tied scores draw', () => {
   for(const score of [0,2]) {const g=duel(); g.elapsedMs=ROUND_MS-140;g.snakes[1].score=score;step(g);assert.equal(g.reason,'time');assert.equal(g.winner,score?1:null);}

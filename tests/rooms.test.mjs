@@ -7,7 +7,7 @@ test('room membership is limited and tokens are private per player',()=>{
   const {rooms,a,b}=fixture();assert.equal(a.player,0);assert.equal(b.player,1);assert.notEqual(a.token,b.token);assert.equal(b.phase,'countdown');assert.throws(()=>rooms.join(a.code),/two players/);assert.throws(()=>rooms.request({action:'sync',code:a.code,token:'a'.repeat(48)}),/Invalid room/);assert.equal(JSON.stringify(b.game).includes(a.token),false);
 });
 test('server advances without a client and start countdown is shared',()=>{
-  const {rooms,a,b,set,sync}=fixture();set(3999);rooms.advance();assert.equal(sync(a).game.tick,0);set(4140);rooms.advance();const s=sync(a);assert.equal(s.phase,'playing');assert.equal(s.game.tick,1);assert.deepEqual(sync(b).game,s.game);
+  const {rooms,a,b,set,sync}=fixture();set(3999);rooms.advance();assert.equal(sync(a).game.tick,0);set(4180);rooms.advance();const s=sync(a);assert.equal(s.phase,'playing');assert.equal(s.game.tick,1);assert.deepEqual(sync(b).game,s.game);
 });
 test('input packets are idempotent and stale-round inputs are acknowledged but ignored',()=>{
   const {rooms,a,set,sync}=fixture();set(4010);rooms.advance();sync(a,{inputs:[{seq:1,dir:'up'}]});sync(a,{inputs:[{seq:1,dir:'up'}]});assert.deepEqual(rooms.get(a.code).game.snakes[0].queue,['up']);sync(a,{round:0,inputs:[{seq:2,dir:'left'}]});assert.deepEqual(rooms.get(a.code).game.snakes[0].queue,['up']);assert.equal(sync(a).ack,2);
