@@ -1,5 +1,5 @@
 // The server stamps this with a hash of the game files, so any change is a whole new version.
-const CACHE_NAME = 'dhaka-in-3d-__BUILD__';
+const CACHE_NAME = 'shap-bhai-__BUILD__';
 // Everything needed to start and play. One failure here retries the whole install.
 const CORE = [
   '/',

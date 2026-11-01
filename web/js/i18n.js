@@ -65,6 +65,7 @@ const BANGLA = Object.freeze({
   'YOUR NEXT MOVE STARTS HERE': 'তোমার পরের চাল এখান থেকে',
   'Developed by': 'ডেভেলপার:', 'Your share card': 'তোমার শেয়ার কার্ড', 'Another design': 'আরেকটা ডিজাইন', 'Share it': 'শেয়ার করো', 'Preview of your share card': 'শেয়ার কার্ডের প্রিভিউ', 'Making your card…': 'কার্ড বানানো হচ্ছে…',
   'That name is not allowed. Please choose another.': 'এই নাম ব্যবহার করা যাবে না। অন্য একটা নাম দাও।', 'That crew code is not allowed. Please choose another.': 'এই কোড ব্যবহার করা যাবে না। অন্য একটা কোড দাও।', 'Invalid player token.': 'প্লেয়ার তথ্য ঠিক নেই। পেজটা আবার খুলে চেষ্টা করো।',
+  'SHAP': 'সাপ', 'BHAI': 'ভাই',
   'Back to main menu': 'মূল মেনুতে ফেরো', 'Close sound settings': 'সাউন্ড সেটিংস বন্ধ', 'Turn up': 'উপরে', 'Turn left': 'বামে', 'Turn down': 'নিচে', 'Turn right': 'ডানে', 'Game menus': 'গেম মেনু', 'Game arena': 'খেলার মাঠ'
 });
 const stored = () => { try { return localStorage.getItem('snake-arena.v2.lang'); } catch { return null; } };

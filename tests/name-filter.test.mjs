@@ -16,7 +16,7 @@ test('real Bangladeshi and other names are not caught by accident', () => allowe
   'রাফি', 'মিতু', 'Rafi', 'Mitu', 'Hassan', 'Hasan', 'Assad', 'Asad', 'Iqbal', 'Babul', 'Ashit', 'Shitol', 'Chowdhury', 'Chodhury', 'Sadia', 'Basit', 'Fakir', 'Fahim', 'Mahbub', 'Dickson', 'Essex', 'Sussex', 'Scunthorpe', 'Cassandra', 'Class Topper', 'Bass Player', 'Peacock', 'Hancock', 'Shalini', 'Salim', 'Salma', 'Sultana', 'Magistrate', 'Magic Snake', 'Randy', 'Modhu', 'Dev', 'Mod', 'Sali', 'Sala', 'Noti', 'Rand', 'Devjani', 'Devi', 'Noor', 'Golam', 'Gulshan', 'Shahin', 'Bala', 'Kuddus',
   'আকাশ', 'বালক', 'বালিকা', 'শালবন', 'চোদ্দ শিকল', 'চৌধুরী', 'হাসান', 'ইকবাল', 'রাজা', 'ধনু', 'নটরডেম'
 ]));
-test('nobody can pose as staff or the developer', () => blocked(['admin', 'ADMIN', 'Moderator', 'Developer', 'bmrauf', 'bm rauf', 'bmrauf.me', 'Dhaka in 3D', 'Official', 'এডমিন', 'ডেভেলপার']));
+test('nobody can pose as staff or the developer', () => blocked(['admin', 'ADMIN', 'Moderator', 'Developer', 'bmrauf', 'bm rauf', 'bmrauf.me', 'Dhaka in 3D', 'Shap Bhai', 'shapbhai', 'সাপ ভাই', 'Official', 'এডমিন', 'ডেভেলপার']));
 test('links and phone numbers stay off the board', () => blocked(['www.spam', 'buy.com', 'spam.net', 'visit.bd', '01712345678', '০১৭১২৩৪৫৬৭৮', '017 1234 5678']));
 test('short numbers in a name are fine', () => allowed(['Rafi 99', 'Player 7', 'Team 2024']));
 function fakePool(rows = []) { return { writes: 0, async query(text) { if (text.includes('INSERT')) this.writes++; return { rows: text.includes('SELECT') ? rows : [] }; } }; }

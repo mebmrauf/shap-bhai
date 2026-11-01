@@ -166,7 +166,7 @@ function floralBand(c, y, h, w = 1080, back = '#0b6e6e') {
 }
 function credit(c, host, color, y = 1880) {
   c.font = `600 30px ${FONT}`; c.fillStyle = color; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-  c.fillText(`${host}  ·  dev: bmrauf.me`, 540, y);
+  c.fillText(`Shap Bhai  ·  ${host}  ·  dev: bmrauf.me`, 540, y, 1000);
 }
 function drawNewspaper(c, t, shot, host) {
   c.fillStyle = '#efe6cf'; c.fillRect(0, 0, 1080, 1920); speckle(c, 1080, 1920, '#00000012', 1400);

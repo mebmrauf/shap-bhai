@@ -115,5 +115,5 @@ export function createServer({ leaderboard = null } = {}) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try { process.loadEnvFile(new URL('../.env', import.meta.url)); } catch { /* Hosted platforms set real environment variables. */ }
   const port = Number(process.env.PORT || 8124), host = process.env.HOST || '127.0.0.1';
-  createServer({ leaderboard: await connectLeaderboard() }).listen(port, host, () => console.log(`Dhaka in 3D: http://${host}:${port}`));
+  createServer({ leaderboard: await connectLeaderboard() }).listen(port, host, () => console.log(`Shap Bhai: http://${host}:${port}`));
 }

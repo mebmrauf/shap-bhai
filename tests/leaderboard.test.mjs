@@ -114,7 +114,7 @@ test('the offline cache is named after the current game files', async () => {
   const { server, base } = await serve(null);
   try {
     const worker = await (await fetch(`${base}/sw.js`)).text();
-    assert.match(worker, /dhaka-in-3d-[a-f0-9]{12}'/); assert.equal(worker.includes('__BUILD__'), false);
+    assert.match(worker, /shap-bhai-[a-f0-9]{12}'/); assert.equal(worker.includes('__BUILD__'), false);
   } finally { server.close(); server.closeAllConnections(); }
 });
 test('text assets are gzipped when asked and vendor files cache for good', async () => {

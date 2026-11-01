@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dhaka-in-3d",
+      "name": "shap-bhai",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 8124

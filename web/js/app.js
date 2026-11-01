@@ -459,7 +459,7 @@ ui.profileForm.addEventListener('submit', async event => {
   ui.profileSave.disabled = false;
 });
 ui.momButton.onclick = openStudy; ui.studyClose.onclick = () => { ui.studyDialog.close(); audio.unlock(); audio.voice('momGone', true); };
-ui.studyDialog.addEventListener('close', () => { document.title = 'Dhaka in 3D'; });
+ui.studyDialog.addEventListener('close', () => { document.title = 'Shap Bhai'; });
 // Starts on a design that suits the run, then flips through the rest.
 let cardIndex = 0, cardText = '';
 async function showCard() {

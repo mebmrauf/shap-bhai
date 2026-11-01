@@ -1,4 +1,4 @@
-# Dhaka in 3D
+# Shap Bhai (সাপ ভাই)
 
 3D Snake through the streets of Bangladesh, in Bangla by default with an English option. Solo, computer, local two-player and online rooms all share one deterministic simulation. The whole game works offline after the first visit.
 
@@ -93,7 +93,7 @@ Rooms are kept in memory in one Node process. Restarting the server ends those r
 
 Online clients send directions only. The server owns movement, collisions, apple placement, clocks, and results. Snapshots omit credentials, queued future turns, and random generator state. Disconnects close a room after 20 seconds. Temporary failures retry the same input sequence without applying it twice.
 
-Local scores and ghosts use a `snake-arena.v2` storage namespace, kept from the game's earlier name so nobody loses progress. The daily seed and the Render service name keep the old name for the same kind of reason. Old-game data is preserved but not imported because its rules differ. Recordings are versioned and fully replay-verified before use. A ghost shares the starting seed but runs its own simulation: different player routes can change later apple placement. Aborted runs do not replace recordings. No currencies, abilities or hazards are mixed into 1 vs 1, or into daily leaderboard runs.
+Local scores and ghosts use a `snake-arena.v2` storage namespace, kept from the game's first name so nobody loses progress. The daily seed and the Render service name keep the old name for the same kind of reason. Old-game data is preserved but not imported because its rules differ. Recordings are versioned and fully replay-verified before use. A ghost shares the starting seed but runs its own simulation: different player routes can change later apple placement. Aborted runs do not replace recordings. No currencies, abilities or hazards are mixed into 1 vs 1, or into daily leaderboard runs.
 
 ## Verification
 

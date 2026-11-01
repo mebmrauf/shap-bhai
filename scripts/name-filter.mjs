@@ -7,7 +7,7 @@ const ANYWHERE = [
   // Banglish and Hindi-Urdu, as people actually type them.
   'banchod', 'bainchod', 'banchot', 'bainchot', 'behenchod', 'madarchod', 'maderchod', 'motherchod', 'bokachoda', 'bokachod', 'chudi', 'chudir', 'chudbo', 'chudte', 'chudis', 'chodon', 'choda', 'chodna', 'chodmar', 'chutiya', 'chutia', 'chutmar', 'khanki', 'khankir', 'khanky', 'magir', 'magichele', 'gandu', 'gandfat', 'haramjada', 'haramzada', 'haramjadi', 'haramzadi', 'harami', 'kuttarbaccha', 'kuttarbacha', 'shuorerbaccha', 'shuorerbacha', 'suarerbaccha', 'shuorerbaca', 'tormar', 'tormayere', 'bhosdi', 'bhenchod', 'lawra', 'lewra', 'leora', 'malaun',
   // Impersonating the game or its developer.
-  'bmrauf', 'dhakained', 'snakearena'
+  'bmrauf', 'shapbhai', 'sapbhai', 'dhakained', 'snakearena'
 ];
 // Only when the word stands alone, because each one hides inside real names: Hassan, Iqbal, Ashit, Chowdhury and so on.
 const WHOLE_WORD = [
@@ -15,7 +15,7 @@ const WHOLE_WORD = [
   // Reserved, so nobody can pose as staff.
   'admin', 'administrator', 'moderator', 'developer', 'official', 'system', 'support', 'staff', 'owner'
 ];
-const BANGLA_ANYWHERE = ['চুদ', 'চোদ', 'চুত', 'মাগি', 'মাগী', 'খানকি', 'খানকী', 'খাঙ্কি', 'বাঞ্চোত', 'বানচোত', 'হারামি', 'হারামী', 'হারামজাদ', 'শুয়োরেরবাচ্চা', 'শুওরেরবাচ্চা', 'কুত্তারবাচ্চা', 'গান্ডু', 'ভোদা', 'ভুদা', 'ধর্ষণ', 'ধর্ষক', 'বেশ্যা', 'লেওড়া', 'লেউড়া', 'মালাউন', 'কাঠমোল্লা', 'রাজাকার', 'যৌন'];
+const BANGLA_ANYWHERE = ['চুদ', 'চোদ', 'চুত', 'মাগি', 'মাগী', 'খানকি', 'খানকী', 'খাঙ্কি', 'বাঞ্চোত', 'বানচোত', 'হারামি', 'হারামী', 'হারামজাদ', 'শুয়োরেরবাচ্চা', 'শুওরেরবাচ্চা', 'কুত্তারবাচ্চা', 'গান্ডু', 'ভোদা', 'ভুদা', 'ধর্ষণ', 'ধর্ষক', 'বেশ্যা', 'লেওড়া', 'লেউড়া', 'মালাউন', 'কাঠমোল্লা', 'রাজাকার', 'যৌন', 'সাপভাই'];
 const BANGLA_WHOLE_WORD = ['বাল', 'গুদ', 'ধোন', 'পোদ', 'পোঁদ', 'শালা', 'শালী', 'শালি', 'কুত্তা', 'কুত্তি', 'শুয়োর', 'শুওর', 'নটি', 'নটী', 'হিজড়া', 'কাফের', 'ডেভেলপার', 'এডমিন', 'অ্যাডমিন', 'মডারেটর'];
 // Ordinary words that contain a blocked piece. Removed before checking.
 const INNOCENT = [/scunthorpe/g, /চোদ্দ/g, /চৌদ্দ/g, /matchod/g];

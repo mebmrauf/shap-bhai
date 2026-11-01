@@ -53,7 +53,7 @@ test('nothing to apply means nothing reloads', () => {
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 test('the manifest installs correctly with the new name and real icons', async () => {
   const manifest = JSON.parse(await read('../web/manifest.json'));
-  assert.equal(manifest.name, 'Dhaka in 3D'); assert.equal(manifest.id, '/'); assert.equal(manifest.start_url, '/'); assert.equal(manifest.display, 'standalone');
+  assert.equal(manifest.name, 'Shap Bhai'); assert.equal(manifest.id, '/'); assert.equal(manifest.start_url, '/'); assert.equal(manifest.display, 'standalone');
   assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.sizes === '512x512'));
   assert.ok(manifest.icons.some(i => i.purpose === 'any' && i.sizes === '192x192'));
   const worker = await read('../web/sw.js');
@@ -64,5 +64,5 @@ test('the old name is gone from everything players can see', async () => {
     const text = (await read(file)).replace(/snake-arena[.\w-]*/g, '');
     assert.equal(/snake arena|snake\s*<span[^>]*>\s*arena|অ্যারেনা/i.test(text), false, file);
   }
-  assert.match(await read('../web/index.html'), /<title>Dhaka in 3D<\/title>/);
+  assert.match(await read('../web/index.html'), /<title>Shap Bhai<\/title>/);
 });
