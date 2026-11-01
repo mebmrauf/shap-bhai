@@ -4,7 +4,7 @@ import { DISTRICTS } from '../web/js/districts.js';
 import { RoomError } from './rooms.mjs';
 import { isBadName } from './name-filter.mjs';
 
-const TOKEN = /^[a-f0-9]{32}$/, CREW = /^[A-Z0-9-]{3,16}$/, GHOST_ID = /^[A-Za-z0-9_-]{8,16}$/;
+const TOKEN = /^[a-f0-9]{32}$/, CREW = /^[A-Z0-9-]{3,20}$/, GHOST_ID = /^[A-Za-z0-9_-]{8,16}$/;
 const NAME = /^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} ._-]{1,19}$/u;
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS snake_players (
@@ -33,7 +33,7 @@ function cleanProfile({ name, district = '', crew = '' }) {
   if (isBadName(cleanName)) throw new RoomError('That name is not allowed. Please choose another.');
   if (district !== '' && !DISTRICTS.includes(district)) throw new RoomError('Choose a district from the list.');
   const cleanCrew = typeof crew === 'string' ? crew.trim().toUpperCase() : '';
-  if (cleanCrew && !CREW.test(cleanCrew)) throw new RoomError('Crew codes use 3–16 letters, numbers or dashes.');
+  if (cleanCrew && !CREW.test(cleanCrew)) throw new RoomError('Crew codes use 3–20 letters, numbers or dashes.');
   if (cleanCrew && isBadName(cleanCrew)) throw new RoomError('That crew code is not allowed. Please choose another.');
   return { name: cleanName, district, crew: cleanCrew };
 }

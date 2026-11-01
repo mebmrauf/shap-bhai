@@ -38,3 +38,10 @@ test('a ghost link never spreads a bad name', async () => {
   const board = new Leaderboard(fakePool([{ name: 'bitch', record: {} }]));
   assert.equal((await board.ghost('AAAAAAAAAAA')).name, 'তোমার বন্ধু');
 });
+test('the crew code shown as the example is really accepted', async () => {
+  const html = await (await import('node:fs/promises')).readFile(new URL('../web/index.html', import.meta.url), 'utf8');
+  const example = html.match(/id="profileCrew"[^>]*placeholder="([^"]+)"/)[1], limit = Number(html.match(/id="profileCrew" maxlength="(\d+)"/)[1]);
+  assert.equal(example, 'BRACU-CSE-FALL-22'); assert.ok(example.length <= limit);
+  const saved = await new Leaderboard(fakePool()).saveProfile({ token: TOKEN, name: 'Rafi', crew: example.toLowerCase() });
+  assert.equal(saved.crew, example);
+});
