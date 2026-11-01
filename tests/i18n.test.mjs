@@ -40,7 +40,7 @@ test('every player-facing label on the page and in the menus has Bangla', async 
   const keys = new Set(translationKeys()), html = await read('../web/index.html'), themes = await read('../web/js/themes.js');
   const body = html.slice(html.indexOf('<body>')).replace(/<dialog id="studyDialog"[\s\S]*?<\/dialog>/, '').replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<noscript>[\s\S]*?<\/noscript>/, '');
   const texts = [...body.matchAll(/>([^<>]+)</g)].map(m => m[1].trim().replace(/&amp;/g, '&')).filter(text => /[A-Za-z]{3}/.test(text));
-  const ignored = new Set(['W A S D', 'Esc', 'DHAKA', 'IN 3D', 'Nagin Been music · Rajhans Raju', 'English', '· edited loop', 'Original Bangla reactions. A little rhythm. Your call.', 'CLASSIC']);
+  const ignored = new Set(['W A S D', 'Esc', 'DHAKA', 'IN 3D', 'bmrauf.me', 'Nagin Been music · Rajhans Raju', 'English', '· edited loop', 'Original Bangla reactions. A little rhythm. Your call.', 'CLASSIC']);
   assert.deepEqual(texts.filter(text => !keys.has(text) && !ignored.has(text) && !/[ঀ-৿]/.test(text)), []);
   for (const [, label] of themes.matchAll(/label: "?'?([^'",]+)['"],/g)) assert.ok(keys.has(label), label);
 });

@@ -67,7 +67,8 @@ The input buffer accepts two turns and applies one each movement step. Reverse t
 - `web/vendor/` — a Three.js bundle of only the classes the renderer uses. Rename its folder whenever the bundle changes, because that path is cached for good.
 - `web/js/render.js` — the 2D fallback and flat view, used when WebGL is unavailable.
 - `web/js/i18n.js` — Bangla and English text, keyed by the English.
-- `web/js/social.js` — leaderboard calls and the share card.
+- `web/js/social.js` — leaderboard and share-sheet calls.
+- `web/js/cards.js` — the four joke share cards, in Bangla and English.
 - `scripts/leaderboard.mjs` — player cards, daily scores and ghost links in Postgres.
 - `web/js/audio.js` — synthesized effects, the Nagin been loop, and scenario-based Bangla voice.
 - `web/js/network.js` — a single in-flight room connection, acknowledgements, retries, and ready/leave actions.
@@ -92,3 +93,7 @@ See `docs/VERIFICATION.md` for browser playtests, test results, and known covera
 ## Pungi recording credit
 
 The local prototype loop uses the user-supplied [“Nagin Been music | sapera” reference, uploaded by Rajhans Raju](https://www.youtube.com/shorts/Gs7qKgMGgT4). Pitch and tempo are preserved; the loop is crossfaded and normalized. The source does not specify a reuse licence, and redistribution rights are unverified. Obtain permission or use cleared audio before public distribution. This replacement is not covered by the previous recording’s CC BY-SA licence or the code’s MIT licence. Provenance is in `web/audio/credits.json` and `web/audio/PUNGI-LICENSE.md`.
+
+## Developer
+
+Developed by [bmrauf.me](https://bmrauf.me).

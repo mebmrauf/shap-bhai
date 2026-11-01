@@ -6,7 +6,8 @@ import { THEMES, SKINS, foodKind } from './themes.js';
 import { DISTRICTS } from './districts.js';
 import { t, num, lang, applyLanguage } from './i18n.js';
 import { keepUpdated } from './update.js';
-import { saveProfile, submitDaily, fetchBoard, createGhost, fetchGhost, sendLink, makeCard, shareCard, bnDigits } from './social.js';
+import { saveProfile, submitDaily, fetchBoard, createGhost, fetchGhost, sendLink, shareCard, bnDigits } from './social.js';
+import { paintCard, CARD_STYLES } from './cards.js';
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(el => [el.id, el]));
 applyLanguage();
@@ -29,7 +30,6 @@ let view3d = null, friendGhost = null, pendingDaily = get('pendingDaily', null),
 const smooth = new SmoothView();
 const OFFLINE_ROOM = 'Online rooms need internet. Solo, Chaos, the computer and same-keyboard games all work offline.';
 const CHAOS_STATUS = { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' };
-const DEATH_SENTENCE = { wall: 'দেয়ালে ধাক্কা খাইলো', self: 'নিজের লেজ কামড়াইলো', traffic: 'বাসের সাথে ধাক্কা খাইলো', 'board-full': 'পুরা মাঠ দখল করলো', limit: 'ম্যারাথন শেষ করলো' };
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
 function bestKey(style = ui.style.value, speed = ui.speed.value) { return style === 'daily' ? `best.daily.${dhakaDay()}` : `best.${style === 'ghost' ? 'classic' : style}.${speed}`; }
@@ -102,7 +102,7 @@ function beginLocalRound() {
   ghost = recording ? createGame({ seed: recording.seed, speed: recording.speed }) : null;
   screen = 'countdown'; countdownEnd = performance.now() + 3000; lastCount = null;
   ui.overlay.hidden = true; ui.countdown.hidden = false; ui.countdownText.textContent = session.opponent === 'local' ? t('Player 1: W A S D · Player 2: arrow keys') : t('Get ready');
-  ui.pauseButton.hidden = false; ui.pauseButton.textContent = t('Pause'); audio.setActive(false); updateHud();
+  ui.pauseButton.hidden = false; ui.pauseButton.textContent = t('Pause'); audio.stop(); updateHud();
 }
 function playLabel(text) {
   ui.startButton.replaceChildren(document.createTextNode(text)); const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true'); ui.startButton.append(arrow);
@@ -220,9 +220,10 @@ function updateHud() {
   ui.statusText.textContent = duel ? t('Last snake moving wins. First to 3 rounds.') : game.chaos ? t(CHAOS_STATUS[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'arcade' ? t('Keep eating. Combos last 8 seconds.') : session.style === 'ghost' ? recording ? ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.') : t('Finish this run to save your first ghost.') : t('Find your rhythm. Watch your tail.');
   ui.board.setAttribute('aria-label', duel ? `Board. Player 1: ${game.snakes[0].score} points. Player 2: ${game.snakes[1].score} points.` : `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
 }
+// Routine lines wait their turn, so they never cut off an event announcement.
 function handleEvents(events) {
   for (const e of events ?? []) {
-    if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); if (session?.opponent === 'local' ? false : e.id === (connection?.state?.player ?? 0)) { const apples = game.snakes[e.id].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell), arcade: game.mode === 'arcade' }); audio.voice(bank, e.feast || apples % 5 === 0); } }
+    if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); if (session?.opponent === 'local' ? false : e.id === (connection?.state?.player ?? 0)) { const apples = game.snakes[e.id].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell), arcade: game.mode === 'arcade' }); audio.voice(bank, e.feast || bank.startsWith('bite')); } }
     if (e.type === 'crash') { view3d?.effect('crash'); audio.effect('crash'); }
     // Traffic and floods speak on their warning, because that is when the player can still react.
     if (e.type === 'chaos') { if (e.phase === 'end') { slipSaid = false; audio.voice(`${e.name}End`); } else if (e.phase === 'warn' || !['traffic', 'flood'].includes(e.name)) audio.voice(e.name, true); }
@@ -270,7 +271,7 @@ function showResults() {
     overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
     ui.overlayTitle.lang = 'bn'; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
     ui.resultActions.hidden = false; ui.shareButton.hidden = false; ui.challengeButton.hidden = !lastRun.record; ui.joinButton.hidden = true;
-    ui.shareButton.textContent = t('Share card'); ui.challengeButton.textContent = t('Send my ghost');
+    ui.challengeButton.textContent = t('Send my ghost');
     lastRun.shot = copyBoard();
     if (session.style === 'daily' && lastRun.record) { if (!pendingDaily || lastRun.record.seed !== pendingDaily.seed || lastRun.record.score > pendingDaily.score) { pendingDaily = lastRun.record; put('pendingDaily', pendingDaily); } postDaily(true); }
   }
@@ -385,9 +386,10 @@ function fillLooks() {
 // Copied now because the WebGL buffer is gone by the time someone taps Share.
 function copyBoard() {
   try {
-    const source = view3d && !prefs.flat ? view3d.snapshot() : ui.board;
-    const shot = document.createElement('canvas'); shot.width = source.width; shot.height = source.height;
-    shot.getContext('2d').drawImage(source, 0, 0);
+    const source = view3d && !prefs.flat ? view3d.snapshot() : ui.board, scale = source.width / innerWidth, free = lastFree ?? { left: 0, right: 0, top: 0, bottom: 0 };
+    const x = free.left * scale, y = free.top * scale, width = source.width - x - free.right * scale, height = source.height - y - free.bottom * scale;
+    const shot = document.createElement('canvas'); shot.width = width; shot.height = height;
+    shot.getContext('2d').drawImage(source, x, y, width, height, 0, 0, width, height);
     return shot;
   } catch { return null; }
 }
@@ -453,15 +455,28 @@ ui.profileForm.addEventListener('submit', async event => {
 });
 ui.momButton.onclick = openStudy; ui.studyClose.onclick = () => { ui.studyDialog.close(); audio.unlock(); audio.voice('momGone', true); };
 ui.studyDialog.addEventListener('close', () => { document.title = 'Dhaka in 3D'; });
-ui.shareButton.onclick = async () => {
+// Starts on a design that suits the run, then flips through the rest.
+let cardIndex = 0, cardText = '';
+async function showCard() {
   const run = lastRun; if (!run) return;
-  ui.shareButton.disabled = true;
+  ui.cardStatus.textContent = t('Making your card…'); ui.cardNext.disabled = ui.cardSend.disabled = true;
   try {
-    const sentence = `আমার সাপ ${bnDigits(run.apples)}টা ${THEMES[prefs.theme].food} খেয়ে ${DEATH_SENTENCE[run.reason] ?? 'খেলা শেষ করলো'}।`;
-    const result = await shareCard(await makeCard({ line: run.line, sentence, score: run.score, shot: run.shot, host: location.host }), sentence, location.origin);
-    ui.shareButton.textContent = result === 'saved' ? t('Card saved') : result === 'shared' ? t('Shared') : t('Share card');
-  } catch { ui.shareButton.textContent = t('Could not make card'); }
-  ui.shareButton.disabled = false;
+    cardText = await paintCard(ui.cardCanvas, CARD_STYLES[cardIndex % CARD_STYLES.length], { ...run, theme: prefs.theme }, { lang: lang(), shot: run.shot, host: location.host });
+    ui.cardStatus.textContent = '';
+  } catch { ui.cardStatus.textContent = t('Could not make the card. Try again.'); }
+  ui.cardNext.disabled = ui.cardSend.disabled = false;
+}
+ui.shareButton.onclick = () => { ui.cardDialog.showModal(); showCard(); };
+ui.cardNext.onclick = () => { cardIndex++; showCard(); };
+ui.cardClose.onclick = () => ui.cardDialog.close();
+ui.cardSend.onclick = async () => {
+  ui.cardSend.disabled = true;
+  try {
+    const blob = await new Promise((resolve, reject) => ui.cardCanvas.toBlob(file => file ? resolve(file) : reject(new Error('No card')), 'image/png'));
+    const result = await shareCard(blob, cardText, location.origin);
+    ui.cardStatus.textContent = result === 'saved' ? t('Card saved to your device.') : result === 'shared' ? t('Shared!') : '';
+  } catch { ui.cardStatus.textContent = t('Could not make the card. Try again.'); }
+  ui.cardSend.disabled = false;
 };
 ui.challengeButton.onclick = async () => {
   const run = lastRun; if (!run?.record) return;

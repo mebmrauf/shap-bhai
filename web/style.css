@@ -577,6 +577,18 @@ body:has(#app.playing) .site-header {
   font-weight:650;
 }
 
+.credit {
+  display:block;
+  flex-shrink:0;
+  padding:3px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  text-decoration:none;
+}
+.credit b {
+  color:var(--accent);
+}
 /* Things that float on the world */
 .caption {
   position:absolute;
@@ -950,6 +962,42 @@ dialog.study-dialog {
   font-size:12px;
 }
 
+.card-dialog {
+  width:min(calc(100vw - 16px),460px);
+  padding:18px 14px 12px;
+  text-align:center;
+}
+.card-dialog .dialog-heading {
+  margin-bottom:8px;
+  text-align:left;
+}
+.card-preview {
+  display:block;
+  width:auto;
+  height:min(calc(100dvh - 190px),720px);
+  max-width:100%;
+  aspect-ratio:9/16;
+  margin:0 auto;
+  border-radius:10px;
+  background:var(--dark);
+  touch-action:auto;
+}
+.card-actions {
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.card-actions button {
+  flex:1;
+  min-height:50px;
+  margin-bottom:6px;
+  font-size:14px;
+}
+.card-status {
+  min-height:18px;
+  margin:2px 0 0;
+  font-size:12px;
+}
 /* Playing: a heads-up display over the world. Empty space lets swipes through to the board. */
 #app.playing .setup {
   display:none;
@@ -1421,6 +1469,35 @@ html[data-touch] .controls-hint {
   .swatch {
     height:18px;
     margin-bottom:3px;
+  }
+  .credit {
+    padding:0;
+    font-size:10px;
+  }
+  .card-dialog {
+    width:min(calc(100vw - 16px),560px);
+  }
+  .card-dialog[open] {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    column-gap:14px;
+    padding:10px;
+    align-items:start;
+  }
+  .card-dialog .dialog-heading {
+    grid-column:2;
+  }
+  .card-preview {
+    grid-column:1;
+    grid-row:1/span 3;
+    height:calc(100dvh - 44px);
+  }
+  .card-actions {
+    grid-column:2;
+    flex-direction:column;
+  }
+  .card-status {
+    grid-column:2;
   }
   /* The result card turns sideways: score and roast left, buttons right. */
   .overlay-panel {

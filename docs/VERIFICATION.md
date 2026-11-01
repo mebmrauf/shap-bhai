@@ -59,3 +59,9 @@ Layout audit for off-screen and clipped controls, with no findings on the final 
 Self-update, simulated by changing a game file and restarting the server: on the menu, the page reloaded itself into the new version. During a game, the page was not interrupted and updated on leaving to the menu.
 
 Not covered: a real installed app on a real phone, real tablets (touch was forced on in a desktop browser), and iOS Safari.
+
+## Chaos events in real play (2026-11-01)
+
+A temporary autopilot, since removed, played the real game in the browser: load shedding, traffic, floods and wedding biryani all fired. It ate biryani (+3 points plus extra growth), drove into floodwater (the "সাঁতার জানো তো?" line played), crashed into a bus (reason `traffic`, with the matching roast), and reached 78 segments with no page errors.
+
+Bugs this found and fixed: a routine speed line cut off the blackout announcement, and the last run's roast carried into the next countdown.

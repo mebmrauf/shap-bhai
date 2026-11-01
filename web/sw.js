@@ -22,6 +22,7 @@ const CORE = [
   '/js/themes.js',
   '/js/districts.js',
   '/js/social.js',
+  '/js/cards.js',
   '/js/i18n.js',
   '/js/update.js',
   '/vendor/three-0.187.0-r2/three.min.js',
