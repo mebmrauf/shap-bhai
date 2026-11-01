@@ -73,6 +73,60 @@ export function cardCopy(style, { score = 0, apples = 0, theme = 'dhaka', mood =
   return { title: bn ? 'ঢাকার রাস্তায় সাপ' : 'SNAKE ON DHAKA ROAD', story: sentence, score: n(score), scoreLabel: bn ? 'স্কোর' : 'SCORE', plate: bn ? 'ঢাকা মেট্রো-সাপ ১১-২২২২' : 'DHAKA METRO-SNAKE 11-2222' };
 }
 
+// 1 vs 1: the same designs, told from the sharer's side.
+const DUEL_HEADLINES = {
+  matchWon: ['ম্যাচ জিতে পাড়ায় মিষ্টি বিতরণ', 'Match won! Free sweets for the whole para'], matchLost: ['ম্যাচ হেরে সাপ বাড়ি ফিরলো, ভাত নাই', 'Match lost. Snake goes home, no dinner.'],
+  winWall: ['প্রতিপক্ষ দেয়ালে! রাউন্ড আমার', 'Rival hits wall. Round is mine.'], winSelf: ['প্রতিপক্ষ নিজের লেজ খেয়ে বিদায়', 'Rival eats own tail, leaves in shame'], winHit: ['আমার গায়ে ধাক্কা খেয়ে প্রতিপক্ষ শেষ', 'Rival crashes into me. Rival is done.'], winTime: ['সময় শেষ, বেশি খেয়ে জিতলাম', 'Time up. I simply ate more.'],
+  loseWall: ['দেয়ালে মেরে রাউন্ড দিয়ে আসলাম', 'I hit a wall and gifted the round'], loseSelf: ['নিজের লেজ খেয়ে রাউন্ড হারালাম', 'I ate my own tail and lost the round'], loseHit: ['ওর গায়ে ধাক্কা, আমার রাউন্ড শেষ', 'I crashed into my rival. Embarrassing.'], loseTime: ['সময় শেষ, ও আমার চেয়ে বেশি খাইছে', 'Time up. They simply ate more.'],
+  headOn: ['মুখোমুখি ধাক্কা! দুই সাপই হাসপাতালে', 'Head-on crash. Both snakes in hospital.'], tie: ['সমান সমান! কেউ কাউকে ছাড়েনি', 'Dead heat. Nobody gave an inch.'],
+  p0: ['এক নম্বর সাপ জিতলো, দুই নম্বর কান্নাকাটি', 'Player 1 wins. Player 2 demands a recount.'], p1: ['দুই নম্বর সাপ জিতলো, এক নম্বর কান্নাকাটি', 'Player 2 wins. Player 1 demands a recount.']
+};
+const DUEL_CRIMES = { won: ['প্রতিপক্ষকে প্রকাশ্যে অপমান', 'Publicly humiliating a rival'], lost: ['হেরে গিয়ে অজুহাত দেওয়া', 'Losing, then making excuses'], draw: ['একসাথে দুর্ঘটনা ঘটানো', 'Causing a joint accident'] };
+export function duelMood({ winner, me = 0, shared = false, reason, death = null, matchOver = false }) {
+  if (winner === null) return death === 'head-on' ? 'headOn' : 'tie';
+  if (shared) return winner === 0 ? 'p0' : 'p1';
+  const won = winner === me;
+  if (matchOver) return won ? 'matchWon' : 'matchLost';
+  const how = reason === 'time' || reason === 'board-full' ? 'Time' : death === 'wall' ? 'Wall' : death === 'self' ? 'Self' : 'Hit';
+  return `${won ? 'win' : 'lose'}${how}`;
+}
+const duelSide = run => run.winner === null ? 'draw' : run.shared ? 'won' : run.winner === run.me ? 'won' : 'lost';
+export function duelSentence(run, lang = 'bn') {
+  const bn = lang === 'bn', [mine, theirs] = run.wins, tally = `${digits(mine, lang)}–${digits(theirs, lang)}`, bot = run.opponent === 'bot';
+  if (run.shared && run.winner !== null) { const high = Math.max(mine, theirs), low = Math.min(mine, theirs), score = `${digits(high, lang)}–${digits(low, lang)}`; return bn ? `${run.winner === 0 ? 'এক' : 'দুই'} নম্বর খেলোয়াড় ${score} এ এগিয়ে। তোমরাও খেলো!` : `Player ${run.winner + 1} leads ${high}–${low}. Your turn next!`; }
+  if (run.winner === null) return bn ? `${bot ? 'কম্পিউটারের' : 'বন্ধুর'} সাথে ড্র, স্কোর ${tally}। কে আসবে?` : `A draw with ${bot ? 'the computer' : 'my friend'}, ${mine}–${theirs}. Who's next?`;
+  if (run.winner === run.me) return bn ? `${bot ? 'কম্পিউটারকে' : 'বন্ধুকে'} হারালাম, স্কোর ${tally}। তুমি পারবা?` : `I beat ${bot ? 'the computer' : 'my friend'}, ${mine}–${theirs}. Can you?`;
+  return bn ? `${bot ? 'কম্পিউটারের' : 'বন্ধুর'} কাছে হারলাম, স্কোর ${tally}। প্রতিশোধ নিবা?` : `${bot ? 'The computer' : 'My friend'} beat me, ${mine}–${theirs}. Avenge me?`;
+}
+export function duelCopy(style, run, lang = 'bn') {
+  const bn = lang === 'bn', n = value => digits(value, lang), mood = duelMood(run), side = duelSide(run), [mine, theirs] = run.wins, tally = `${n(mine)}–${n(theirs)}`;
+  const headline = pick(DUEL_HEADLINES[mood], lang), story = duelSentence(run, lang), scoreLabel = bn ? 'রাউন্ড' : 'ROUNDS';
+  if (style === 'newspaper') return {
+    masthead: bn ? 'দৈনিক সাপের খবর' : 'THE DAILY SNAKE', strap: bn ? 'বিশেষ সংস্করণ: মাঠের লড়াই' : 'Special edition: the duel', headline, reporter: bn ? 'ক্রীড়া প্রতিবেদক, ঢাকা' : 'Sports desk, Dhaka', story,
+    scoreLabel, score: tally, ticker: bn ? 'আম্পায়ার: কোনো পক্ষপাত নাই। পরাজিত পক্ষ: পক্ষপাত আছে।' : 'Referee: no bias. Losing side: plenty of bias.'
+  };
+  if (style === 'wanted') return {
+    title: bn ? 'ওয়ান্টেড!' : 'WANTED', crimeLabel: bn ? 'অপরাধ' : 'CRIME', crime: pick(DUEL_CRIMES[side], lang), evidence: bn ? `প্রমাণ: স্কোরবোর্ড ${tally}` : `Evidence: scoreboard ${tally}`,
+    warning: side === 'lost' ? (bn ? 'রিম্যাচ চাইলে পালাবেন না!' : 'Do not run from a rematch!') : (bn ? 'রিম্যাচের সাহস আছে?' : 'Brave enough for a rematch?'), reward: bn ? 'পুরস্কার: রিম্যাচ আর এক কাপ চা' : 'Reward: a rematch and a cup of tea', score: tally, scoreLabel
+  };
+  if (style === 'marksheet') {
+    const pass = side !== 'lost', mine2 = run.death;
+    return {
+      board: bn ? 'সাপ শিক্ষা বোর্ড, ঢাকা' : 'DHAKA BOARD OF SNAKE EDUCATION', title: bn ? 'দ্বৈত লড়াইয়ের রেজাল্ট' : 'DUEL RESULT',
+      rows: [
+        [bn ? 'প্রতিপক্ষকে হারানো' : 'Beating the rival', side === 'won' ? 'A+' : side === 'draw' ? 'C' : 'F'],
+        [bn ? 'দেয়াল চেনা' : 'Recognising walls', side === 'lost' && mine2 === 'wall' ? 'F' : 'A'],
+        [bn ? 'লেজ সামলানো' : 'Tail management', side === 'lost' && mine2 === 'self' ? 'F' : 'A'],
+        [bn ? 'হেরে গিয়ে অজুহাত' : 'Excuses after losing', side === 'lost' ? 'A+' : 'B'],
+        [bn ? 'আম্মুকে ফাঁকি দেওয়া' : 'Hiding from Mom', 'A+']
+      ],
+      gpaLabel: 'GPA', gpa: n(side === 'won' ? '5.00' : side === 'draw' ? '3.00' : '0.00'), scoreLabel, score: tally, stamp: side === 'won' ? (bn ? 'জয়!' : 'WINNER') : side === 'draw' ? (bn ? 'ড্র!' : 'DRAW') : (bn ? 'হার!' : 'LOSER'), pass,
+      note: side === 'lost' ? (bn ? 'মন্তব্য: রিম্যাচ জরুরি।' : 'Remark: a rematch is urgent.') : (bn ? 'মন্তব্য: মিষ্টি খাওয়াতে হবে।' : 'Remark: sweets are now owed.')
+    };
+  }
+  return { title: bn ? 'মাঠের ফয়সালা' : 'SETTLED ON THE BOARD', story, score: tally, scoreLabel, plate: bn ? 'ঢাকা মেট্রো-সাপ ১-ভি-১' : 'DHAKA METRO-SNAKE 1-V-1' };
+}
+
 const FONT = 'Bangla, "Segoe UI", system-ui, sans-serif';
 function wrap(c, text, maxWidth) {
   const lines = []; let line = '';
@@ -207,11 +261,11 @@ function drawRickshaw(c, t, line, shot, host) {
 export async function paintCard(canvas, style, run, { lang, shot, host }) {
   await Promise.all([document.fonts.load(`900 60px Bangla`, 'বাংলা'), document.fonts.load(`700 40px Bangla`, 'বাংলা')]).catch(() => {});
   canvas.width = 1080; canvas.height = 1920;
-  const c = canvas.getContext('2d'), mood = cardMood(run), copy = cardCopy(style, { ...run, mood, lang });
+  const c = canvas.getContext('2d'), mood = run.duel ? duelMood(run) : cardMood(run), copy = run.duel ? duelCopy(style, run, lang) : cardCopy(style, { ...run, mood, lang });
   c.clearRect(0, 0, 1080, 1920);
   if (style === 'newspaper') drawNewspaper(c, copy, shot, host);
   else if (style === 'wanted') drawWanted(c, copy, shot, host);
   else if (style === 'marksheet') drawMarksheet(c, copy, shot, host);
-  else drawRickshaw(c, copy, lang === 'bn' ? run.line : pick(HEADLINES[mood], lang), shot, host);
-  return shareSentence({ ...run, mood, lang });
+  else drawRickshaw(c, copy, run.duel ? pick(DUEL_HEADLINES[mood], lang) : lang === 'bn' ? run.line : pick(HEADLINES[mood], lang), shot, host);
+  return run.duel ? duelSentence(run, lang) : shareSentence({ ...run, mood, lang });
 }

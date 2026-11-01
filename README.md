@@ -68,7 +68,7 @@ The input buffer accepts two turns and applies one each movement step. Reverse t
 - `web/js/render.js` — the 2D fallback and flat view, used when WebGL is unavailable.
 - `web/js/i18n.js` — Bangla and English text, keyed by the English.
 - `web/js/social.js` — leaderboard and share-sheet calls.
-- `web/js/cards.js` — the four joke share cards, in Bangla and English.
+- `web/js/cards.js` — the four joke share cards for solo and 1 vs 1, in Bangla and English.
 - `scripts/leaderboard.mjs` — player cards, daily scores and ghost links in Postgres.
 - `web/js/audio.js` — synthesized effects, the Nagin been loop, and scenario-based Bangla voice.
 - `web/js/network.js` — a single in-flight room connection, acknowledgements, retries, and ready/leave actions.

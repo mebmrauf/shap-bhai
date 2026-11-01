@@ -190,6 +190,8 @@ function onNetwork(state, force = false) {
       history.replaceState(null, '', `?room=${state.code}`);
     }
   } else if (state.phase === 'countdown') {
+    // The next online round can start while a card is open; the board must not play on behind it.
+    if (ui.cardDialog.open) ui.cardDialog.close();
     screen = 'countdown'; playControls(true); ui.overlay.hidden = true; ui.countdown.hidden = false;
     countdownEnd = performance.now() + state.countdown;
     ui.countdownText.textContent = t('You are Player {n} · {color} snake', { n: state.player + 1, color: t(state.player ? t('amber') : t('green')) });
@@ -261,6 +263,9 @@ function showResults() {
       else { series = wonMatch ? { round: 1, wins: [0, 0] } : { round: series.round + 1, wins: [...series.wins] }; beginLocalRound(); }
     });
     const me = connection?.state?.player ?? 0;
+    const wins = series.wins, death = winner === null ? game.snakes[0].death : game.snakes[1 - winner].death;
+    lastRun = { duel: true, winner, me, shared: session.opponent === 'local', opponent: session.opponent, reason: game.reason, death, matchOver: wonMatch, wins: [wins[me], wins[1 - me]], shot: copyBoard() };
+    ui.resultActions.hidden = false; ui.shareButton.hidden = false; ui.challengeButton.hidden = true; ui.joinButton.hidden = true;
     audio.voice(duelBank({ winner, me, shared: session.opponent === 'local', reason: game.reason, death: winner === null ? game.snakes[0].death : game.snakes[1 - winner].death, matchOver: wonMatch }), true);
   } else {
     const score = game.snakes[0].score;

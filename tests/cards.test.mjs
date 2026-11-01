@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { cardMood, cardCopy, grade, shareSentence, digits, CARD_STYLES } from '../web/js/cards.js';
+import { cardMood, cardCopy, grade, shareSentence, digits, duelMood, duelCopy, duelSentence, CARD_STYLES } from '../web/js/cards.js';
 const MOODS = ['best', 'zero', 'wall', 'self', 'traffic', 'full'];
 const texts = value => typeof value === 'string' ? [value] : Array.isArray(value) ? value.flatMap(texts) : value && typeof value === 'object' ? Object.values(value).flatMap(texts) : [];
 test('a card matches how the run actually went', () => {
@@ -44,4 +44,37 @@ test('the developer is credited on the page and on every card', async () => {
   const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8'), cards = await readFile(new URL('../web/js/cards.js', import.meta.url), 'utf8');
   assert.match(html, /href="https:\/\/bmrauf\.me"/); assert.match(cards, /bmrauf\.me/);
   assert.equal((cards.match(/credit\(c, host, '/g) ?? []).length, 4);
+});
+const duel = extra => ({ duel: true, winner: 0, me: 0, shared: false, opponent: 'bot', reason: 'survivor', death: 'wall', matchOver: false, wins: [2, 1], ...extra });
+test('1 vs 1 cards follow who won and how', () => {
+  assert.equal(duelMood(duel({})), 'winWall');
+  assert.equal(duelMood(duel({ death: 'self' })), 'winSelf');
+  assert.equal(duelMood(duel({ death: 'opponent' })), 'winHit');
+  assert.equal(duelMood(duel({ winner: 1, death: 'wall' })), 'loseWall');
+  assert.equal(duelMood(duel({ winner: 0, me: 1, death: 'self' })), 'loseSelf');
+  assert.equal(duelMood(duel({ reason: 'time', death: null })), 'winTime');
+  assert.equal(duelMood(duel({ winner: 1, reason: 'time', death: null })), 'loseTime');
+  assert.equal(duelMood(duel({ matchOver: true })), 'matchWon');
+  assert.equal(duelMood(duel({ winner: 1, matchOver: true })), 'matchLost');
+  assert.equal(duelMood(duel({ winner: null, reason: 'double-crash', death: 'head-on' })), 'headOn');
+  assert.equal(duelMood(duel({ winner: null, reason: 'time', death: null })), 'tie');
+  assert.equal(duelMood(duel({ shared: true, winner: 1 })), 'p1');
+});
+test('every 1 vs 1 design has complete text for every outcome, in both languages', () => {
+  const runs = [duel({}), duel({ death: 'self' }), duel({ winner: 1 }), duel({ winner: 1, matchOver: true, wins: [1, 3] }), duel({ matchOver: true, wins: [3, 0] }), duel({ winner: null, death: 'head-on', wins: [0, 0] }), duel({ winner: null, reason: 'time', death: null }), duel({ shared: true, opponent: 'local' }), duel({ opponent: 'online', winner: 1 })];
+  for (const style of CARD_STYLES) for (const run of runs) for (const lang of ['bn', 'en']) {
+    for (const text of texts(duelCopy(style, run, lang))) { assert.ok(text.length > 0); assert.equal(/undefined|NaN|\[object/.test(text), false, text); }
+    assert.equal(/undefined|NaN/.test(duelSentence(run, lang)), false);
+  }
+});
+test('the score is told from the sharer\'s side, and the loser gets the joke', () => {
+  assert.equal(duelSentence(duel({}), 'en'), 'I beat the computer, 2–1. Can you?');
+  assert.equal(duelSentence(duel({ winner: 1, wins: [1, 2], opponent: 'online' }), 'en'), 'My friend beat me, 1–2. Avenge me?');
+  assert.match(duelSentence(duel({ winner: 1, wins: [1, 2] }), 'bn'), /কম্পিউটারের কাছে হারলাম.*১–২/);
+  const loser = duelCopy('marksheet', duel({ winner: 1, wins: [0, 1] }), 'en');
+  assert.equal(loser.stamp, 'LOSER'); assert.equal(Object.fromEntries(loser.rows)['Excuses after losing'], 'A+'); assert.equal(Object.fromEntries(loser.rows)['Recognising walls'], 'F');
+  assert.equal(duelCopy('wanted', duel({}), 'bn').score, '২–১');
+});
+test('on a shared keyboard the card names the player, not "you"', () => {
+  assert.equal(duelSentence(duel({ shared: true, opponent: 'local', winner: 1, wins: [1, 2] }), 'en'), 'Player 2 leads 2–1. Your turn next!');
 });
