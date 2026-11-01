@@ -185,6 +185,16 @@ export function publicState(g) {
   const { actions, events, randomState, seed, ...state } = g;
   return structuredClone({ ...state, snakes: state.snakes.map(({ queue, ...snake }) => snake), events });
 }
+// One finger stroke is one turn. A thumb moves in an arc, so a second turn needs a long, clearly sideways move.
+export function swipeTurn(swipe, x, y) {
+  const dx = x - swipe.x, dy = y - swipe.y, major = Math.max(Math.abs(dx), Math.abs(dy)), minor = Math.min(Math.abs(dx), Math.abs(dy));
+  if (major < 18) return null;
+  const dir = Math.abs(dx) > Math.abs(dy) ? dx > 0 ? 'right' : 'left' : dy > 0 ? 'down' : 'up';
+  if (dir === swipe.dir) { swipe.x = x; swipe.y = y; return null; }
+  if (swipe.dir && (major < 48 || minor * 2 > major)) return null;
+  swipe.x = x; swipe.y = y; swipe.dir = dir;
+  return dir;
+}
 // Display-only: carries a server snapshot forward so a slow link still moves smoothly.
 // It never decides food, scores or deaths. A snake that would crash holds still until the server rules.
 export function predict(state, ticks, me = 0, turns = []) {

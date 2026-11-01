@@ -1,4 +1,4 @@
-import { createGame, queueTurn, clearTurns, step, stepDuration, chooseBotTurn, makeRecording, replayRecording, dailySeed, dhakaDay, ROUND_MS } from './engine.js';
+import { createGame, queueTurn, clearTurns, step, stepDuration, chooseBotTurn, makeRecording, replayRecording, dailySeed, dhakaDay, swipeTurn, ROUND_MS } from './engine.js';
 import { ArenaRenderer } from './render.js';
 import { RoomConnection, SmoothView } from './network.js';
 import { GameAudio, escapedDanger, roastBank, duelBank, biteBank, startBank, phrases } from './audio.js';
@@ -203,7 +203,7 @@ function onNetwork(state, force = false) {
     if (oldScreen !== 'playing') { releaseEarlyTurns(); audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ duel: game.mode === 'duel', style: session.style, skin: prefs.skin }), true); }
   } else if (state.phase === 'finished') {
     screen = 'result'; audio.setActive(false);
-    if (oldScreen !== 'result' || force) { updateHud(); showResults(); }
+    if (oldScreen !== 'result' || force) { diagnostics?.note(`round over: ${game.snakes[state.player].death ?? 'alive'}, heading ${game.snakes[state.player].dir}, tick ${game.tick}`); updateHud(); showResults(); }
     if (state.ready[state.player]) { ui.continueButton.disabled = true; ui.continueButton.textContent = t('Waiting for opponent…'); }
     else { ui.continueButton.disabled = false; }
   }
@@ -317,8 +317,8 @@ function releaseEarlyTurns() {
 }
 function steer(id, dir) {
   if (screen === 'countdown') { earlyTurns[id] = dir; diagnostics?.note(`held ${dir} for the start`); return; }
-  if (screen !== 'playing') { diagnostics?.note(`ignored ${dir}: screen is ${screen}`); return; }
-  diagnostics?.note(`turn ${dir}`);
+  if (screen !== 'playing') return;
+  diagnostics?.note(`turn ${dir}, heading ${game.snakes[connection?.state?.player ?? id].dir}`);
   if (connection) { connection.turn(dir); return; }
   queueTurn(game, id, dir);
 }
@@ -557,10 +557,8 @@ let swipe = null;
 ui.board.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; swipe = { x: event.clientX, y: event.clientY }; try { ui.board.setPointerCapture(event.pointerId); } catch { /* The swipe still works inside the board. */ } });
 ui.board.addEventListener('pointermove', event => {
   if (!swipe || session?.opponent === 'local') return;
-  const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return;
-  steer(0, Math.abs(dx) > Math.abs(dy) ? dx > 0 ? 'right' : 'left' : dy > 0 ? 'down' : 'up');
-  swipe = { x: event.clientX, y: event.clientY };
+  const dir = swipeTurn(swipe, event.clientX, event.clientY);
+  if (dir) steer(0, dir);
 });
 for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) ui.board.addEventListener(name, () => swipe = null);
 window.addEventListener('blur', () => { pause(); if (connection) connection.pending = []; });
@@ -577,8 +575,10 @@ if (initialGhost) fetchGhost(initialGhost).then(({ name, record }) => {
 const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
   const box = document.createElement('pre'); box.className = 'diagnostics'; document.body.append(box);
   const notes = []; let frames = 0, windowAt = performance.now(), fps = 0, worst = 0, lastFrame = 0;
-  const note = text => { notes.unshift(`${(performance.now() / 1000).toFixed(1)} ${text}`); notes.length = Math.min(notes.length, 8); };
+  const note = text => { notes.unshift(`${(performance.now() / 1000).toFixed(1)} ${text}`); notes.length = Math.min(notes.length, 14); };
   for (const name of ['pointerdown', 'touchstart', 'keydown']) window.addEventListener(name, event => {
+    // Taps on the result card would push the round's own presses off the panel.
+    if (screen === 'result') return;
     const hit = event.touches?.[0] ?? event, under = hit.clientX === undefined ? null : document.elementFromPoint(hit.clientX, hit.clientY);
     note(`${name} ${event.pointerType ?? ''} ${event.key ?? ''} on ${event.target?.dataset?.dir ?? event.target?.id ?? event.target?.tagName} under ${under?.dataset?.dir ?? under?.id ?? under?.className ?? '-'}`);
   }, { capture: true, passive: true });

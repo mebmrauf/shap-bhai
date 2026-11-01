@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, step, queueTurn, stepDuration, chooseBotTurn, makeRecording, replayRecording, COMBO_MS, MAX_TICKS, ROUND_MS, SIZE } from '../web/js/engine.js';
+import { createGame, step, queueTurn, stepDuration, chooseBotTurn, makeRecording, replayRecording, swipeTurn, COMBO_MS, MAX_TICKS, ROUND_MS, SIZE } from '../web/js/engine.js';
+test('a curved swipe makes one turn, and a long sideways move makes a second', () => {
+  const run = points => { const swipe = { x: 0, y: 0 }; return points.map(([x, y]) => swipeTurn(swipe, x, y)).filter(Boolean); };
+  assert.deepEqual(run([[2, -10], [6, -20], [14, -34], [26, -46], [40, -54]]), ['up']);
+  assert.deepEqual(run([[0, -24], [20, -26], [40, -28], [60, -30]]), ['up', 'right']);
+  assert.deepEqual(run([[5, 5]]), []);
+});
 const body = (...points) => points.map(([x,y]) => ({ x,y }));
 function duel() { return createGame({ mode: 'duel', seed: 123 }); }
 function place(g, id, cells, dir) { g.snakes[id].body = body(...cells); g.snakes[id].dir = dir; g.snakes[id].queue = []; }
