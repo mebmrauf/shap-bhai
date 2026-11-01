@@ -90,6 +90,6 @@ export class Rooms {
     }
   }
   snapshot(room, id) {
-    return { code: room.code, player: id, phase: room.phase, round: room.round, wins: [...room.wins], ready: room.players.map(p => !!p?.ready), connected: room.players.map(Boolean), ack: room.players[id].seq, countdown: Math.max(0, room.countdownEnd - this.now()), game: room.game ? publicState(room.game) : null };
+    return { code: room.code, player: id, phase: room.phase, round: room.round, wins: [...room.wins], ready: room.players.map(p => !!p?.ready), connected: room.players.map(Boolean), ack: room.players[id].seq, countdown: Math.max(0, room.countdownEnd - this.now()), nextStepIn: Math.max(0, room.nextStep - this.now()), game: room.game ? publicState(room.game) : null };
   }
 }

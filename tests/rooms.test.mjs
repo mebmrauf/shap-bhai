@@ -41,7 +41,7 @@ test('HTTP boundary validates methods, JSON, origins and room requests',async t=
   assert.equal((await (await fetch(base+'/api/health')).json()).status,'ok');
   assert.equal((await fetch(base+'/manifest.json')).status,200);
   assert.equal((await fetch(base+'/sw.js')).status,200);
-  assert.equal((await fetch(base+'/.env')).status,404);assert.equal((await fetch(base+'/')).status,200);assert.match((await fetch(base+'/audio/win.wav')).headers.get('content-type'),/audio/);
+  assert.equal((await fetch(base+'/.env')).status,404);assert.equal((await fetch(base+'/')).status,200);assert.match((await fetch(base+'/audio/win.mp3')).headers.get('content-type'),/audio/);
 });
 test('snapshots reveal neither room credentials nor queued future turns',()=>{
   const {rooms,a,set,sync}=fixture();set(4010);rooms.advance();sync(a,{inputs:[{seq:1,dir:'up'}]});const s=sync(a);assert.equal('queue' in s.game.snakes[0],false);assert.equal('randomState' in s.game,false);assert.equal('token' in s,false);

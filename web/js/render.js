@@ -1,4 +1,6 @@
 import { SIZE, DIRECTIONS } from './engine.js';
+import { foodKind } from './themes.js';
+const FOOD_COLORS = [['#b9782f', '#e0a55c'], ['#d9cfa8', '#f6efd2'], ['#d8d4c2', '#fffdf2'], ['#8fa1aa', '#cfd8dc']];
 export class ArenaRenderer {
   constructor(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.flat = false; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; this.width = 0; this.height = 0; }
   resize() {
@@ -29,21 +31,27 @@ export class ArenaRenderer {
     }
     c.font = `${Math.max(7, u * .34)}px system-ui`; c.fillStyle = '#83977b'; c.textAlign = 'center';
     for (let i = 0; i < SIZE; i += 5) { const [x, y] = project(i + .5, 0); c.fillText(String(i + 1).padStart(2, '0'), x, y - 12); }
+    const chaos = game.chaos;
+    const tile = (p, color) => { const [px, py] = project(p.x, p.y); c.fillStyle = color; c.fillRect(px + .5, py + .5, u - 1, u * tilt - 1); };
+    for (const p of chaos?.water ?? []) tile(p, '#2f9fe0b0');
+    for (const p of chaos?.warnings ?? []) tile(p, '#ff2d2d88');
     if (preview) {
       const head = game.snakes[0].body[0], food = game.food[0];
       c.strokeStyle = '#b6d78860'; c.lineWidth = 1.5; c.setLineDash([3, 5]); c.beginPath();
       c.moveTo(...project(head.x + .5, head.y + .5)); c.lineTo(...project(food.x + .5, head.y + .5)); c.lineTo(...project(food.x + .5, food.y + .5)); c.stroke(); c.setLineDash([]);
     }
+    for (const p of chaos?.obstacles ?? []) { const [px, py] = project(p.x, p.y, this.flat ? 0 : .2); c.fillStyle = '#7a1420'; c.fillRect(px + 1, py + u * .2, u - 2, u * tilt); c.fillStyle = '#e63946'; c.fillRect(px + 1, py, u - 2, u * tilt * .8); c.fillStyle = '#dff6ff'; c.fillRect(px + u * .15, py + u * .12, u * .7, u * .22); }
     for (const f of game.food) {
       const [x, y] = project(f.x + .5, f.y + .58);
+      if (f.feast) { c.fillStyle = '#d9d9d9'; c.beginPath(); c.ellipse(x, y - u * .05, u * .36, u * .2, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#f2b632'; c.beginPath(); c.ellipse(x, y - u * .18, u * .28, u * .22, 0, 0, Math.PI * 2); c.fill(); continue; }
       c.fillStyle = '#0a221a88'; c.beginPath(); c.ellipse(x + 2, y + 3, u * .32, u * .16, 0, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#bc463a'; c.beginPath(); c.ellipse(x, y - u * .15, u * .29, u * .28, 0, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#ed7d59'; c.beginPath(); c.ellipse(x - u * .055, y - u * .25, u * .23, u * .2, 0, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = '#2c271b'; c.lineWidth = Math.max(1.5, u * .06); c.beginPath(); c.moveTo(x, y - u * .42); c.lineTo(x + u * .04, y - u * .57); c.stroke();
-      c.fillStyle = '#aac871'; c.beginPath(); c.ellipse(x + u * .13, y - u * .49, u * .13, u * .06, -.4, 0, Math.PI * 2); c.fill();
+      const [foodDark, foodLight] = FOOD_COLORS[foodKind(f)];
+      c.fillStyle = foodDark; c.beginPath(); c.ellipse(x, y - u * .15, u * .29, u * .28, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = foodLight; c.beginPath(); c.ellipse(x - u * .055, y - u * .25, u * .23, u * .2, 0, 0, Math.PI * 2); c.fill();
     }
     const drawSnake = (s, old, alpha, isGhost = false) => {
-      const colors = s.id === 0 ? ['#bde58b', '#9dc86c', '#698d45'] : ['#f5c776', '#e3aa4f', '#a67231'];
+      const skin = s.id === 0 && game.mode !== 'duel' ? this.skin : null;
+      const colors = skin ? [skin.head, skin.body[0], '#000000'] : s.id === 0 ? ['#bde58b', '#9dc86c', '#698d45'] : ['#f5c776', '#e3aa4f', '#a67231'];
       for (let i = s.body.length - 1; i >= 0; i--) {
         const p = s.body[i], q = old?.body[i] ?? old?.body.at(-1) ?? p;
         const x = q.x + (p.x - q.x) * alpha, y = q.y + (p.y - q.y) * alpha;
@@ -55,13 +63,13 @@ export class ArenaRenderer {
         }
         c.fillStyle = '#081c1a55'; c.beginPath(); c.roundRect(px + 2, py + cd + 3, cw, ch, u * .16); c.fill();
         c.fillStyle = colors[2]; c.beginPath(); c.roundRect(px, py + cd, cw, ch, u * .16); c.fill();
-        c.fillStyle = s.alive ? (i === 0 || i % 3 === 0 ? colors[0] : colors[1]) : '#849373';
+        c.fillStyle = !s.alive ? '#849373' : skin && i ? skin.body[i % skin.body.length] : i === 0 || i % 3 === 0 ? colors[0] : colors[1];
         c.beginPath(); c.roundRect(px, py, cw, ch, u * .16); c.fill();
         if (i === 0) {
           const [dx, dy] = DIRECTIONS[s.dir], cx = px + cw / 2, cy = py + ch / 2;
           for (const side of [-1, 1]) {
             const ex = cx + (dx * .2 - dy * side * .2) * u, ey = cy + (dy * .2 + dx * side * .2) * u * tilt;
-            c.fillStyle = '#fbf9d9'; c.beginPath(); c.arc(ex, ey, u * .115, 0, Math.PI * 2); c.fill();
+            c.fillStyle = skin?.eye ?? '#fbf9d9'; c.beginPath(); c.arc(ex, ey, u * .115, 0, Math.PI * 2); c.fill();
             c.fillStyle = '#213b25'; c.beginPath(); c.arc(ex + dx * u * .035, ey + dy * u * .035, u * .057, 0, Math.PI * 2); c.fill();
           }
         }
@@ -69,5 +77,11 @@ export class ArenaRenderer {
     };
     if (ghost) drawSnake(ghost.snakes[0], null, 1, true);
     for (const s of game.snakes) drawSnake(s, previous?.snakes[s.id], this.reduced ? 1 : Math.min(1, Math.max(0, fraction)));
+    if (chaos?.blackout) {
+      const [hx, hy] = project(game.snakes[0].body[0].x + .5, game.snakes[0].body[0].y + .5);
+      const dark = c.createRadialGradient(hx, hy, u, hx, hy, u * 4.5); dark.addColorStop(0, '#0000'); dark.addColorStop(1, '#000000f5');
+      c.fillStyle = dark; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#ffd23f'; for (const f of game.food) { const [x, y] = project(f.x + .5, f.y + .5); c.beginPath(); c.arc(x, y, u * .24, 0, Math.PI * 2); c.fill(); }
+    }
   }
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#173f32"><meta name="description" content="Snake, rebuilt for a fair fight. Play solo or face a friend, with original Bangla reactions.">
+  <meta name="theme-color" content="#173f32"><meta name="description" content="3D Snake through the streets of Dhaka. Eat fuchka, dodge buses, get roasted in Bangla, and beat your friends in today's challenge.">
   <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Snake Arena">
   <meta name="mobile-web-app-capable" content="yes"><meta name="application-name" content="Snake Arena">
   <title>Snake Arena</title>
@@ -14,38 +14,66 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/" aria-label="Snake Arena home"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 29h17a6 6 0 0 0 0-12H15a5 5 0 0 1 0-10h15"/><circle cx="29" cy="6" r="1.3"/><circle cx="29" cy="10" r="1.3"/></svg><span>SNAKE<span class="brand-light">ARENA</span></span></a>
-    <div class="header-actions"><span class="edition">A fresh take on a classic</span><button id="soundButton" class="quiet" type="button">Sound settings</button></div>
+    <div class="header-actions"><span class="edition" lang="bn">ঢাকার রাস্তায় সাপের দৌড়</span><button id="soundButton" class="quiet" type="button">Sound settings</button></div>
   </header>
   <main id="app">
     <section id="setup" class="setup" aria-labelledby="title">
-      <div class="eyebrow"><span class="live-dot"></span> SMALL GAME. BIG RIVALRY.</div>
-      <h1 id="title"><span>Eat.</span><span>Grow.</span><span class="accent">Outlast.</span></h1>
-      <p class="intro">One more apple. One smarter turn.</p>
-      <div class="mode-switch" role="group" aria-label="Game mode"><button type="button" id="soloMode" aria-pressed="true">Solo</button><button type="button" id="duelMode" aria-pressed="false">1 vs 1</button></div>
-      <div id="soloFields" class="fields">
-        <label for="style">Play style</label><select id="style"><option value="classic">Classic</option><option value="arcade">Arcade combos</option><option value="ghost">Race your ghost</option></select>
-        <label for="speed">Starting speed</label><select id="speed"><option value="relaxed">Relaxed</option><option value="normal" selected>Standard</option><option value="fast">Fast</option></select>
+      <div id="homeScreen" class="menu-screen">
+        <h1 id="title" lang="bn">খাও। বাড়ো। <span class="accent">টিকে থাকো।</span></h1>
+        <p class="intro" lang="bn">আরেকটা ফুচকা। আরেকটা মোড়। আর একবার!</p>
+        <button id="startButton" class="primary start" type="button">Play <span aria-hidden="true">↗</span></button>
+        <p class="best-line"><span id="bestLabel">Personal best <b id="bestValue">0</b></span></p>
+        <nav class="menu-tiles" aria-label="Game menus">
+          <button type="button" id="soloMode" class="tile" aria-pressed="true"><b>Solo modes</b><small>Daily, Classic, Chaos</small></button>
+          <button type="button" id="duelMode" class="tile" aria-pressed="false"><b>1 vs 1</b><small>Computer or a friend</small></button>
+          <button type="button" id="looksButton" class="tile"><b>Board &amp; snake</b><small id="looksSummary"></small></button>
+          <button type="button" id="boardButton" class="tile"><b>Leaderboard</b><small>Today's top players</small></button>
+          <button type="button" id="howButton" class="tile tile-wide"><b>How to play</b></button>
+        </nav>
       </div>
-      <div id="duelFields" class="fields" hidden>
-        <label for="opponent">Opponent</label><select id="opponent"><option value="bot">Computer</option><option value="local">Friend · same keyboard</option><option value="online">Friend · online room</option></select>
-        <div id="onlineFields" class="fields" hidden><label for="roomAction">Online play</label><select id="roomAction"><option value="create">Create a room</option><option value="join">Join a room</option></select><div id="codeField" class="fields" hidden><label for="roomCode">Room code</label><input id="roomCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="8-character code" aria-describedby="setupError"></div></div>
+      <div id="soloScreen" class="menu-screen" hidden>
+        <div class="menu-heading"><button type="button" class="back" data-back aria-label="Back to main menu">←</button><h2>Solo modes</h2></div>
+        <div class="menu-scroll">
+          <div id="soloFields"><select id="style" class="state-select" aria-hidden="true" tabindex="-1"><option value="daily">Today's challenge</option><option value="classic">Classic</option><option value="chaos">Chaos: Bangladesh edition</option><option value="arcade">Arcade combos</option><option value="ghost">Race your ghost</option></select><div id="styleCards" class="cards" role="group" aria-label="Play style"></div>
+          <h3>Starting speed</h3><select id="speed" class="state-select" aria-hidden="true" tabindex="-1"><option value="relaxed">Relaxed</option><option value="normal" selected>Standard</option><option value="fast">Fast</option></select><div id="speedCards" class="cards cards-row" role="group" aria-label="Starting speed"></div></div>
+          <p class="mode-description" data-description></p>
+        </div>
+        <button type="button" class="primary start" data-play>Play</button>
       </div>
-      <p id="modeDescription" class="mode-description"></p>
+      <div id="duelScreen" class="menu-screen" hidden>
+        <div class="menu-heading"><button type="button" class="back" data-back aria-label="Back to main menu">←</button><h2>1 vs 1</h2></div>
+        <div class="menu-scroll">
+          <div id="duelFields"><select id="opponent" class="state-select" aria-hidden="true" tabindex="-1"><option value="bot">Computer</option><option value="local">Friend · same keyboard</option><option value="online">Friend · online room</option></select><div id="opponentCards" class="cards" role="group" aria-label="Opponent"></div>
+          <div id="onlineFields" hidden><h3>Online room</h3><select id="roomAction" class="state-select" aria-hidden="true" tabindex="-1"><option value="create">Create a room</option><option value="join">Join a room</option></select><div id="roomCards" class="cards cards-row" role="group" aria-label="Online play"></div><div id="codeField" hidden><label for="roomCode">Room code</label><input id="roomCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="8-character code" aria-describedby="setupError"></div></div></div>
+          <p class="mode-description" data-description></p>
+        </div>
+        <button type="button" class="primary start" data-play>Play</button>
+      </div>
+      <div id="looksScreen" class="menu-screen" hidden>
+        <div class="menu-heading"><button type="button" class="back" data-back aria-label="Back to main menu">←</button><h2>Board &amp; snake</h2></div>
+        <div class="menu-scroll">
+          <h3>Board</h3><select id="theme" class="state-select" aria-hidden="true" tabindex="-1"></select><div id="themeCards" class="cards cards-grid" role="group" aria-label="Board"></div>
+          <h3>Snake</h3><select id="skin" class="state-select" aria-hidden="true" tabindex="-1"></select><div id="skinCards" class="cards cards-grid" role="group" aria-label="Snake"></div>
+        </div>
+      </div>
+      <div id="howScreen" class="menu-screen" hidden>
+        <div class="menu-heading"><button type="button" class="back" data-back aria-label="Back to main menu">←</button><h2>How to play</h2></div>
+        <div id="rulesText" class="menu-scroll rules-text"></div>
+      </div>
       <p id="setupError" class="error" role="alert" hidden></p>
-      <button id="startButton" class="primary start" type="button">Play Classic <span aria-hidden="true">↗</span></button>
-      <div class="setup-footer"><span id="bestLabel">Personal best <b id="bestValue">0</b></span><span>Saved on this device</span></div>
-      <details class="rules"><summary>How to play</summary><div id="rulesText"></div></details>
+      <p id="modeDescription" hidden></p>
     </section>
     <section class="game-area" aria-label="Game arena">
-      <div class="arena-top"><span id="arenaLabel" class="eyebrow">THE PRACTICE GREEN</span><div class="board-actions"><button id="viewButton" class="quiet" type="button" aria-pressed="false">Flat view</button><button id="pauseButton" class="quiet" type="button" hidden>Pause</button><button id="exitButton" class="quiet" type="button" hidden>Leave</button></div></div>
+      <div class="arena-top"><span id="arenaLabel" class="eyebrow">THE PRACTICE GREEN</span><div class="board-actions"><button id="viewButton" class="quiet" type="button" aria-pressed="false">Flat view</button><button id="momButton" class="quiet mom" type="button" lang="bn" hidden>আম্মু আসছে!</button><button id="pauseButton" class="quiet" type="button" hidden>Pause</button><button id="exitButton" class="quiet" type="button" hidden>Leave</button></div></div>
       <div id="scoreboard" class="scoreboard"><div class="score-player"><span class="player-mark p1">1</span><span id="p1Name">Your snake</span><strong id="p1Score">0</strong></div><div id="middleScore" class="round-label">CLASSIC</div><div class="score-player second"><span id="p2Name">Best</span><strong id="p2Score">0</strong><span id="p2Mark" class="player-mark p2" hidden>2</span></div></div>
       <div class="arena" id="arena">
-        <canvas id="board" role="img" aria-label="Snake game board. Your snake is green. Apples are red."></canvas>
+        <canvas id="board" role="img" aria-label="Snake game board. Your snake is green."></canvas>
+        <canvas id="board3d" aria-hidden="true" hidden></canvas>
         <div id="previewTag" class="preview-tag"><span class="live-dot"></span> YOUR NEXT MOVE STARTS HERE</div>
-        <div id="overlay" class="overlay" hidden><div class="overlay-panel"><span id="overlayEyebrow" class="eyebrow"></span><h2 id="overlayTitle" tabindex="-1"></h2><p id="overlayText"></p><div id="roomShare" hidden><label for="shareCode">ROOM CODE</label><input id="shareCode" readonly aria-label="Your room code"><button id="copyButton" class="secondary" type="button">Copy invite link</button></div><div class="overlay-actions"><button id="continueButton" class="primary" type="button"></button><button id="menuButton" class="text-button" type="button">Back to menu</button></div></div></div>
+        <div id="overlay" class="overlay" hidden><div class="overlay-panel"><span id="overlayEyebrow" class="eyebrow"></span><strong id="resultScore" class="result-score" hidden></strong><h2 id="overlayTitle" tabindex="-1"></h2><p id="overlayText"></p><p id="rankText" class="rank-text" role="status" hidden></p><div id="roomShare" hidden><label for="shareCode">ROOM CODE</label><input id="shareCode" readonly aria-label="Your room code"><button id="copyButton" class="secondary" type="button">Copy invite link</button></div><div class="overlay-actions"><button id="continueButton" class="primary" type="button"></button><div id="resultActions" class="result-actions" hidden><button id="shareButton" class="secondary" type="button">Share card</button><button id="challengeButton" class="secondary" type="button">Send my ghost</button><button id="joinButton" class="secondary" type="button">Join leaderboard</button></div><button id="menuButton" class="text-button" type="button">Back to menu</button></div></div></div>
         <div id="countdown" class="countdown" hidden role="status"><strong id="countdownNumber">3</strong><span id="countdownText">Get ready</span></div>
       </div>
-      <div class="arena-bottom"><div id="statusText">Eat the red apples. Keep your head clear.</div><div id="comboWrap" class="combo" hidden><span id="comboText">×1</span><progress id="comboMeter" value="0" max="8000" aria-label="Time left in combo"></progress></div><span id="timerText" class="timer"></span></div>
+      <div class="arena-bottom"><div id="statusText">Eat up. Keep your head clear.</div><div id="comboWrap" class="combo" hidden><span id="comboText">×1</span><progress id="comboMeter" value="0" max="8000" aria-label="Time left in combo"></progress></div><span id="timerText" class="timer"></span></div>
       <div id="controlsHint" class="controls-hint"><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>W A S D</kbd> to steer</span><span><kbd>Esc</kbd> pause</span></div>
       <div id="touchControls" class="touch-controls" hidden><button data-dir="up" class="up" aria-label="Turn up">↑</button><button data-dir="left" class="left" aria-label="Turn left">←</button><button data-dir="down" class="down" aria-label="Turn down">↓</button><button data-dir="right" class="right" aria-label="Turn right">→</button></div>
       <p id="caption" class="caption" lang="bn" role="status"></p>
@@ -55,6 +83,25 @@
   <footer class="site-footer"><span>Good turns. Friendly competition.</span><span lang="bn">আরেকবার হবে নাকি?</span></footer>
   <dialog id="soundDialog" aria-labelledby="soundTitle"><form method="dialog"><div class="dialog-heading"><h2 id="soundTitle">Make some noise.</h2><button class="quiet" aria-label="Close sound settings">Close</button></div><p>Original Bangla reactions. A little rhythm. Your call.</p><label class="toggle"><span>Game sounds<small>Apples, countdowns, and collisions</small></span><input id="effectsSetting" type="checkbox" checked></label><label class="toggle"><span>Bangla reactions<small lang="bn">চল ভাই, খেলা শুরু!</small></span><input id="voiceSetting" type="checkbox" checked></label><label class="toggle"><span>Background music<small>সাপের বীন · Nagin been loop</small></span><input id="musicSetting" type="checkbox" checked></label><button id="previewSound" class="secondary" type="button">Hear a Bangla reaction</button><p id="voicePreviewCaption" class="caption" lang="bn" role="status"></p><p class="audio-note">Bangladeshi Bangla neural voice · AI-generated reactions</p><p class="audio-note">Music reference: <a href="https://www.youtube.com/shorts/Gs7qKgMGgT4" target="_blank" rel="noopener noreferrer">Nagin Been music · Rajhans Raju</a> · edited loop</p></form></dialog>
   <dialog id="leaveDialog" aria-labelledby="leaveTitle"><h2 id="leaveTitle">Leave this game?</h2><p id="leaveText">This run will end without saving a ghost.</p><div class="dialog-buttons"><button id="stayButton" class="secondary">Keep playing</button><button id="confirmLeave" class="primary">Leave game</button></div></dialog>
+  <dialog id="boardDialog" class="board-dialog" aria-labelledby="boardTitle">
+    <div class="dialog-heading"><h2 id="boardTitle">Today's leaderboard</h2><button id="boardClose" class="quiet" type="button">Close</button></div>
+    <div class="board-tabs" role="group" aria-label="Leaderboard"><button type="button" data-scope="everyone" aria-pressed="true">Everyone</button><button type="button" data-scope="crew" aria-pressed="false">My crew</button><button type="button" data-scope="district" aria-pressed="false">Districts</button></div>
+    <p id="boardStatus" role="status"></p><ol id="boardList" class="board-list"></ol>
+    <form id="profileForm" class="profile-form"><h3>Your player card</h3>
+      <label for="profileName">Name on the board</label><input id="profileName" maxlength="20" autocomplete="nickname" required>
+      <label for="profileDistrict">District</label><select id="profileDistrict"><option value="">Not saying</option></select>
+      <label for="profileCrew">Crew or university code</label><input id="profileCrew" maxlength="16" autocapitalize="characters" spellcheck="false" placeholder="DU-CSE-24" aria-describedby="crewHint"><small id="crewHint">Share the same code with friends to get your own board.</small>
+      <p id="profileError" class="error" role="alert" hidden></p><button id="profileSave" class="primary" type="submit">Save player card</button>
+    </form>
+  </dialog>
+  <dialog id="studyDialog" class="study-dialog" aria-labelledby="studyTitle">
+    <article><p class="study-tag">HSC Physics · 1st Paper · Chapter 4</p><h2 id="studyTitle" lang="bn">নিউটনীয় বলবিদ্যা</h2>
+      <p lang="bn">বল হলো এমন একটি বাহ্যিক কারণ যা কোনো স্থির বস্তুকে গতিশীল করে অথবা গতিশীল বস্তুর গতির পরিবর্তন ঘটায়। নিউটনের দ্বিতীয় সূত্র অনুসারে, বস্তুর ভরবেগের পরিবর্তনের হার তার উপর প্রযুক্ত বলের সমানুপাতিক।</p>
+      <p class="study-formula">F = ma &nbsp;&nbsp; p = mv &nbsp;&nbsp; F = dp/dt</p>
+      <p lang="bn"><b>উদাহরণ ৪.১:</b> ২ kg ভরের একটি বস্তুর উপর ১০ N বল প্রয়োগ করলে তার ত্বরণ কত হবে? সমাধান: a = F/m = ১০/২ = ৫ m/s²।</p>
+      <p lang="bn"><b>মনে রাখবে:</b> বোর্ড পরীক্ষায় এই অধ্যায় থেকে প্রতি বছরই প্রশ্ন আসে। মনোযোগ দিয়ে পড়ো।</p>
+      <button id="studyClose" class="study-exit" type="button" lang="bn">আম্মু গেছে, খেলায় ফিরি</button></article>
+  </dialog>
   <noscript>This game needs JavaScript to run.</noscript>
 </body>
 </html>
