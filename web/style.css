@@ -1578,3 +1578,18 @@ dialog::backdrop {
     aspect-ratio:.98;
   }
 }
+
+.setup h1 span,.setup h1 .accent {
+  display:block;
+}
+html[lang=bn] * {
+  letter-spacing:0;
+}
+.header-actions {
+  gap:8px;
+}
+@media(max-width:430px) {
+  .brand-light {
+    display:none;
+  }
+}

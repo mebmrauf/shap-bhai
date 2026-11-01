@@ -1,4 +1,5 @@
-const CACHE_NAME = 'snake-arena-v3.4-dhaka-3d';
+// The server stamps this with a hash of the game files, so any change is a whole new version.
+const CACHE_NAME = 'snake-arena-__BUILD__';
 // Everything needed to start and play. One failure here retries the whole install.
 const CORE = [
   '/',
@@ -17,6 +18,7 @@ const CORE = [
   '/js/themes.js',
   '/js/districts.js',
   '/js/social.js',
+  '/js/i18n.js',
   '/vendor/three-0.187.0/three.min.js',
   '/fonts/NotoSansBengali-Regular.ttf'
 ];
@@ -25,9 +27,14 @@ const VOICES = ['start', 'eat', 'combo', 'wall', 'self', 'win', 'lose', 'draw', 
 // The app also requests these on Play, and anything missed is cached then.
 const EXTRAS = [...VOICES.map(name => `/audio/${name}.mp3?v=neural-bn-2`), '/audio/credits.json', '/audio/pungi-loop.wav?v=nagin-been-2'];
 
+// Each version's files go into their own cache and arrive together, so a player never runs a mix of old and new code.
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async cache => {
+      await cache.addAll(CORE);
+      // Voices rarely change, so an update on mobile data reuses what the phone already has.
+      for (const url of EXTRAS) { const kept = await caches.match(url); if (kept) await cache.put(url, kept); }
+    }).then(() => self.skipWaiting())
   );
 });
 
@@ -54,18 +61,14 @@ self.addEventListener('fetch', event => {
   const navigation = event.request.mode === 'navigate';
   const lookup = navigation ? caches.match('/index.html') : caches.match(event.request);
 
-  // Stale-while-revalidate: a weak connection never delays a file we already have.
+  // Anything already cached opens instantly, on any connection or none.
   event.respondWith(
-    lookup.then(cached => {
-      const networkFetch = fetch(event.request).then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(navigation ? '/index.html' : event.request, clone));
-        }
-        return response;
-      }).catch(() => cached ?? Response.error());
-
-      return cached || networkFetch;
-    })
+    lookup.then(cached => cached || fetch(event.request).then(response => {
+      if (response && response.status === 200 && response.type === 'basic') {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(navigation ? '/index.html' : event.request, clone));
+      }
+      return response;
+    }))
   );
 });

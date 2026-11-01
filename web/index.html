@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#173f32"><meta name="description" content="3D Snake through the streets of Dhaka. Eat fuchka, dodge buses, get roasted in Bangla, and beat your friends in today's challenge.">
@@ -14,13 +14,13 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/" aria-label="Snake Arena home"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 29h17a6 6 0 0 0 0-12H15a5 5 0 0 1 0-10h15"/><circle cx="29" cy="6" r="1.3"/><circle cx="29" cy="10" r="1.3"/></svg><span>SNAKE<span class="brand-light">ARENA</span></span></a>
-    <div class="header-actions"><span class="edition" lang="bn">ঢাকার রাস্তায় সাপের দৌড়</span><button id="soundButton" class="quiet" type="button">Sound settings</button></div>
+    <div class="header-actions"><button id="langButton" class="quiet" type="button">English</button><button id="soundButton" class="quiet" type="button">Sound settings</button></div>
   </header>
   <main id="app">
     <section id="setup" class="setup" aria-labelledby="title">
       <div id="homeScreen" class="menu-screen">
-        <h1 id="title" lang="bn">খাও। বাড়ো। <span class="accent">টিকে থাকো।</span></h1>
-        <p class="intro" lang="bn">আরেকটা ফুচকা। আরেকটা মোড়। আর একবার!</p>
+        <h1 id="title"><span>The snake grows.</span> <span class="accent">Your dignity shrinks.</span></h1>
+        <p class="intro">Homework can wait. There's a button for when Mom walks in.</p>
         <button id="startButton" class="primary start" type="button">Play <span aria-hidden="true">↗</span></button>
         <p class="best-line"><span id="bestLabel">Personal best <b id="bestValue">0</b></span></p>
         <nav class="menu-tiles" aria-label="Game menus">
@@ -64,7 +64,7 @@
       <p id="modeDescription" hidden></p>
     </section>
     <section class="game-area" aria-label="Game arena">
-      <div class="arena-top"><span id="arenaLabel" class="eyebrow">THE PRACTICE GREEN</span><div class="board-actions"><button id="viewButton" class="quiet" type="button" aria-pressed="false">Flat view</button><button id="momButton" class="quiet mom" type="button" lang="bn" hidden>আম্মু আসছে!</button><button id="pauseButton" class="quiet" type="button" hidden>Pause</button><button id="exitButton" class="quiet" type="button" hidden>Leave</button></div></div>
+      <div class="arena-top"><span id="arenaLabel" class="eyebrow">THE PRACTICE GREEN</span><div class="board-actions"><button id="viewButton" class="quiet" type="button" aria-pressed="false">Flat view</button><button id="momButton" class="quiet mom" type="button" hidden>Mom is coming!</button><button id="pauseButton" class="quiet" type="button" hidden>Pause</button><button id="exitButton" class="quiet" type="button" hidden>Leave</button></div></div>
       <div id="scoreboard" class="scoreboard"><div class="score-player"><span class="player-mark p1">1</span><span id="p1Name">Your snake</span><strong id="p1Score">0</strong></div><div id="middleScore" class="round-label">CLASSIC</div><div class="score-player second"><span id="p2Name">Best</span><strong id="p2Score">0</strong><span id="p2Mark" class="player-mark p2" hidden>2</span></div></div>
       <div class="arena" id="arena">
         <canvas id="board" role="img" aria-label="Snake game board. Your snake is green."></canvas>
@@ -94,7 +94,7 @@
       <p id="profileError" class="error" role="alert" hidden></p><button id="profileSave" class="primary" type="submit">Save player card</button>
     </form>
   </dialog>
-  <dialog id="studyDialog" class="study-dialog" aria-labelledby="studyTitle">
+  <dialog id="studyDialog" data-fixed-lang class="study-dialog" aria-labelledby="studyTitle">
     <article><p class="study-tag">HSC Physics · 1st Paper · Chapter 4</p><h2 id="studyTitle" lang="bn">নিউটনীয় বলবিদ্যা</h2>
       <p lang="bn">বল হলো এমন একটি বাহ্যিক কারণ যা কোনো স্থির বস্তুকে গতিশীল করে অথবা গতিশীল বস্তুর গতির পরিবর্তন ঘটায়। নিউটনের দ্বিতীয় সূত্র অনুসারে, বস্তুর ভরবেগের পরিবর্তনের হার তার উপর প্রযুক্ত বলের সমানুপাতিক।</p>
       <p class="study-formula">F = ma &nbsp;&nbsp; p = mv &nbsp;&nbsp; F = dp/dt</p>

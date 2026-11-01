@@ -1,3 +1,35 @@
+import { predict, stepDuration } from './engine.js';
+const MAX_AHEAD = 6, BLEND_MS_PER_CELL = 55;
+const lerpBody = (from, to, f) => to.map((p, i) => { const q = from[i] ?? from.at(-1) ?? p; return { x: q.x + (p.x - q.x) * f, y: q.y + (p.y - q.y) * f }; });
+// Turns snapshots from a slow link into steady motion. Display only: the server still decides everything.
+export class SmoothView {
+  constructor() { this.clock = null; this.round = 0; this.at = 0; this.drawn = null; this.truth = null; this.blendFrom = null; this.blendAt = 0; this.blendMs = 120; }
+  frame(state, arrivedAt, latency, pending, now) {
+    const game = state.game, duration = stepDuration(game);
+    // In ticks: where the server should be by now, plus one so motion never needs a past state we lack.
+    const target = game.tick + 1 + (now - arrivedAt + latency / 2 - (state.nextStepIn ?? 0)) / duration;
+    const elapsed = Math.max(0, now - this.at) / duration; this.at = now;
+    if (this.clock === null || this.round !== state.round || Math.abs(target - this.clock) > 4) this.clock = target;
+    // One steady clock, nudged gently: each snapshot's timing noise must not move the snake backwards.
+    else this.clock += Math.max(0, elapsed + (target - this.clock) * Math.min(1, elapsed * .35));
+    this.round = state.round;
+    const whole = Math.floor(this.clock), ahead = Math.max(0, Math.min(MAX_AHEAD, whole - game.tick + 1));
+    const held = whole - game.tick + 1 > MAX_AHEAD || whole - game.tick + 1 < 1;
+    const turns = [...(state.queued ?? []), ...pending], me = state.player;
+    const shown = predict(game, ahead, me, turns), previous = ahead > 0 ? predict(game, ahead - 1, me, turns) : game;
+    const fraction = held ? 1 : this.clock - whole;
+    const truth = shown.snakes.map((s, i) => lerpBody(previous.snakes[i].body, s.body, fraction));
+    // A wrong guess shows up as a sudden gap between frames. Slide across it instead of teleporting.
+    const gap = !this.truth ? 0 : Math.max(...truth.map((body, i) => { const a = body[0], b = this.truth[i]?.[0]; return b ? Math.abs(a.x - b.x) + Math.abs(a.y - b.y) : 0; }));
+    // Longer corrections take longer, so a big fix still reads as a slide.
+    if (gap > .45) { this.blendFrom = this.drawn; this.blendAt = now; this.blendMs = Math.max(120, gap * BLEND_MS_PER_CELL); }
+    let blend = 1;
+    if (this.blendFrom) { blend = Math.min(1, (now - this.blendAt) / this.blendMs); if (blend >= 1) this.blendFrom = null; }
+    const from = this.blendFrom ?? truth;
+    this.drawn = truth.map((body, i) => lerpBody(from[i] ?? body, body, blend)); this.truth = truth;
+    return { shown: { ...shown, snakes: shown.snakes.map((s, i) => ({ ...s, body: truth[i] })) }, before: { snakes: from.map(body => ({ body })) }, fraction: blend, stale: now - arrivedAt > 1500 };
+  }
+}
 export class RoomConnection {
   constructor(onState, onError) { this.onState = onState; this.onError = onError; this.sequence = 0; this.pending = []; this.stopped = false; this.timer = null; this.lastSuccess = 0; this.state = null; this.secret = null; this.inFlight = false; this.readyWanted = false; this.latency = 150; this.failures = 0; this.sendingInputs = false; }
   async request(body, timeout = 8000) {

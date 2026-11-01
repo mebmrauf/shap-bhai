@@ -2,16 +2,25 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Rooms, RoomError } from './rooms.mjs';
 import { connectLeaderboard } from './leaderboard.mjs';
 const ROOT = fileURLToPath(new URL('../web/', import.meta.url));
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ttf': 'font/ttf', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+// Changes whenever any game file changes, which is what makes browsers pick up a new version.
+function buildId() {
+  const hash = createHash('sha256');
+  for (const name of fs.readdirSync(ROOT, { recursive: true }).map(String).sort()) {
+    const file = path.join(ROOT, name);
+    if (fs.statSync(file).isFile() && name !== 'sw.js') hash.update(name).update(fs.readFileSync(file));
+  }
+  return hash.digest('hex').slice(0, 12);
+}
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.svg', '.json']);
 const REPLAY_BYTES = 300000;
 export function createServer({ leaderboard = null } = {}) {
-  const rooms = new Rooms(), rates = new Map();
+  const rooms = new Rooms(), rates = new Map(), build = buildId();
   const ipSecret = process.env.IP_HASH_SECRET || randomBytes(32).toString('hex');
   // Render's proxy is the socket peer, so the real client is the first forwarded address.
   // shortcut: a client can forge this header to dodge rate limits; use the platform's verified IP header if abuse appears.
@@ -81,6 +90,7 @@ export function createServer({ leaderboard = null } = {}) {
       const relative = decoded === '/' ? 'index.html' : decoded.slice(1);
       const filename = path.resolve(ROOT, relative);
       if (!filename.startsWith(ROOT) || relative.split('/').includes('..')) { res.writeHead(403); return res.end('Forbidden'); }
+      if (relative === 'sw.js') { res.writeHead(200, { 'Content-Type': TYPES['.js'] }); return res.end(req.method === 'HEAD' ? undefined : (await fs.promises.readFile(filename, 'utf8')).replace('__BUILD__', build)); }
       const stat = await fs.promises.stat(filename);
       if (!stat.isFile()) throw new Error('Not found');
       const extension = path.extname(filename), gzip = COMPRESSIBLE.has(extension) && /\bgzip\b/.test(req.headers['accept-encoding'] ?? '');

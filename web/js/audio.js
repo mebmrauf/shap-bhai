@@ -29,13 +29,13 @@ export const phrases = Object.freeze({
   chaosWeddingEnd: 'বিরিয়ানি শেষ! দাওয়াত খতম।', chaosSlip: 'সাঁতার জানো তো?',
   roastZero: 'একটাও খাইতে পারলা না?', roastGhostWon: 'ভূতরে হারাইলা! সাবাশ!',
   roastGhostTie: 'ভূতের সাথে ড্র! ভূতও অবাক।', roastFull: 'পুরা মাঠ তোমার! তুমিই ওস্তাদ!',
-  duelWinWall: 'ও দেয়ালে মারছে! তুমি জিতছো!', duelWinSelf: 'ও নিজের লেজ খাইছে! তুমি জিতছো!',
+  duelWinWall: 'ও দেয়ালে মারছে! তুমি জিতেছো!', duelWinSelf: 'ও নিজের লেজ খাইছে! তুমি জিতেছো!',
   duelWinHit: 'ও তোমার গায়ে ধাক্কা খাইছে! রাউন্ড তোমার!', duelLoseWall: 'দেয়ালে মেরে রাউন্ড দিয়া দিলা!',
   duelLoseSelf: 'নিজের লেজ খাইয়া হারলা!', duelLoseHit: 'ওর গায়ে ধাক্কা! রাউন্ড গেলো!',
   duelWinTime: 'সময় শেষ! বেশি খাইয়া জিতলা!', duelLoseTime: 'সময় শেষ! ও বেশি খাইছে!',
   duelMatchWin: 'ম্যাচ তোমার! মিষ্টি খাওয়াও!', duelMatchLose: 'ম্যাচ গেলো! আবার হবে নাকি?',
   duelHeadOn: 'মুখোমুখি ধাক্কা! দুইজনই শেষ!', duelTie: 'সমান সমান! কেউ কম না!',
-  playerOneWin: 'এক নম্বর খেলোয়াড় জিতছে!', playerTwoWin: 'দুই নম্বর খেলোয়াড় জিতছে!',
+  playerOneWin: 'এক নম্বর খেলোয়াড় জিতেছে!', playerTwoWin: 'দুই নম্বর খেলোয়াড় জিতেছে!',
   momGone: 'আম্মু গেছে! চলো আবার!', rankOne: 'আজকের এক নম্বর তুমি!', kalNagini: 'কালনাগিনী আসছে! সবাই সরে দাঁড়াও!'
 });
 export const reactions = Object.freeze({

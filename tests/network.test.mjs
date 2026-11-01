@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RoomConnection } from '../web/js/network.js';
+import { RoomConnection, SmoothView } from '../web/js/network.js';
+import { createGame, publicState, queueTurn, step } from '../web/js/engine.js';
 function connection(){const delivered=[],errors=[];const c=new RoomConnection(s=>delivered.push(s),(message,fatal)=>errors.push({message,fatal}));c.schedule=()=>{};c.accept({code:'12345678',phase:'playing',round:1,ack:0});return {c,delivered,errors};}
 test('acknowledgements retain inputs queued while a request was in flight',()=>{
   const {c}=connection();c.turn('up');c.turn('left');c.accept({code:'12345678',phase:'playing',round:1,ack:1});assert.deepEqual(c.pending,[{seq:2,dir:'left'}]);
@@ -32,4 +33,29 @@ test('poll cannot overlap another request',async()=>{
 });
 test('readiness race falls back to syncing rather than retrying ready forever',async()=>{
   const {c}=connection();c.state.phase='finished';c.ready();c.request=async()=>{const e=new Error('Round started');e.status=409;throw e;};await c.poll();assert.equal(c.readyWanted,false);assert.equal(c.stopped,false);
+});
+const roomState=(game,extra={})=>({player:0,round:1,nextStepIn:0,queued:[],game:publicState(game),...extra});
+const headAt=view=>{const a=view.before.snakes[0].body[0],b=view.shown.snakes[0].body[0];return {x:a.x+(b.x-a.x)*view.fraction,y:a.y+(b.y-a.y)*view.fraction};};
+test('the view moves along my turn, even once the server only has it queued',()=>{
+  const g=createGame({mode:'duel',seed:3}),v=new SmoothView();
+  const view=v.frame(roomState(g,{queued:['up']}),0,0,[],70);
+  assert.ok(headAt(view).y<6);assert.equal(view.shown.snakes[0].dir,'up');
+});
+test('motion stays continuous and forward while snapshot timing wobbles',()=>{
+  const g=createGame({mode:'duel',seed:3}),v=new SmoothView();let last=null,arrived=0;
+  for(let now=0;now<420;now+=16){if(now%160===0)arrived=now-(now%320?30:0);const state=roomState(g);state.nextStepIn=0;const x=headAt(v.frame(state,0,now%320?120:40,[],now)).x;if(last!==null){assert.ok(x>=last-1e-9);assert.ok(x-last<.45);}last=x;}
+});
+test('a wrong guess slides to the truth rather than teleporting',()=>{
+  const g=createGame({mode:'duel',seed:3}),v=new SmoothView();
+  const guess=headAt(v.frame(roomState(g),0,0,[],400));
+  queueTurn(g,0,'up');for(let i=0;i<3;i++)step(g);
+  const fixed=v.frame(roomState(g),416,0,[],416);
+  const moved=headAt(fixed);assert.ok(Math.abs(moved.x-guess.x)+Math.abs(moved.y-guess.y)<.45);
+  let settled;for(let now=432;now<1100;now+=16)settled=v.frame(roomState(g),416,0,[],now);
+  assert.equal(settled.fraction,1);assert.equal(settled.shown.snakes[0].dir,'up');
+});
+test('a long silence is flagged and prediction stops guessing',()=>{
+  const g=createGame({mode:'duel',seed:3}),v=new SmoothView();
+  const view=v.frame(roomState(g),0,0,[],5000);
+  assert.equal(view.stale,true);assert.deepEqual(view.shown.snakes[0].body[0],{x:10,y:6});
 });

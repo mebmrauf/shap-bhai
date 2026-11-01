@@ -33,3 +33,21 @@ Issues found during browser testing and corrected: stale online result tally, mi
 ## Limits
 
 No physical touch-device, real high-latency WAN, public hosting, multi-instance/load, or human evaluation of Bangla voice naturalness was performed. The Bangla voice is synthesized. The musical loop is original synthesized pluck/percussion, not a recording of a Bangla song. AI difficulty is fixed and visible rules do not adapt secretly. The presentation uses Canvas 2.5D, with a flat-view option.
+
+## Dhaka 3D build (2026-11-01)
+
+Tested in the desktop app's browser at phone and desktop sizes, with Chromium's WebGL.
+
+- Solo daily and Chaos runs, computer 1 vs 1, and an online room with about 350 ms of added delay and a scripted second player. Result screens and voice captions matched each outcome.
+- Offline: with the server stopped, the page reloaded, 3D and Bangla worked, a computer match ran, and sampled voice clips decoded from the cache.
+- Leaderboard rules ran against real Postgres in a throwaway schema, which was then dropped.
+- Simulated weak links, real client and room code, 12 seconds each, comparing frames where the head did not move and multi-cell jumps per frame:
+
+| Link | Frozen, before | Frozen, after | Jumps, before | Jumps, after |
+|---|---:|---:|---:|---:|
+| 60 ms | 16% | 7% | 0 | 0 |
+| 200 ms | 59% | 7% | 3 | 0 |
+| 500 ms with jitter | 79% | 22% | 19 | 6 |
+| 400 ms, jitter, 5% loss | 77% | 14% | 17 | 1 |
+
+Not covered: real phones and real mobile networks, iOS Safari, listening to the generated voice clips (only duration and loudness were measured), and a real two-person online match.
