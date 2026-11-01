@@ -28,7 +28,6 @@ const prefs = { theme: 'dhaka', skin: 'nagin', flat: false, ...get('prefs', {}) 
 let view3d = null, friendGhost = null, pendingDaily = get('pendingDaily', null), lastRun = null, boardScope = 'everyone';
 const smooth = new SmoothView();
 const OFFLINE_ROOM = 'Online rooms need internet. Solo, Chaos, the computer and same-keyboard games all work offline.';
-const lifetimeApples = () => { const n = get('apples', 0); return Number.isInteger(n) && n >= 0 ? n : 0; };
 const CHAOS_STATUS = { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' };
 const DEATH_SENTENCE = { wall: 'দেয়ালে ধাক্কা খাইলো', self: 'নিজের লেজ কামড়াইলো', traffic: 'বাসের সাথে ধাক্কা খাইলো', 'board-full': 'পুরা মাঠ দখল করলো', limit: 'ম্যারাথন শেষ করলো' };
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
@@ -113,7 +112,7 @@ const CARD_NOTES = { daily: 'Same board for everyone, new every day', classic: '
 // The selects stay as the single source of truth; each card just sets one.
 function cardsFor(select, container, decorate) {
   container.replaceChildren(...[...select.options].map(option => {
-    const card = document.createElement('button'); card.type = 'button'; card.className = 'card'; card.disabled = option.disabled;
+    const card = document.createElement('button'); card.type = 'button'; card.className = 'card'; 
     card.setAttribute('aria-pressed', String(option.value === select.value));
     const name = document.createElement('b'); name.textContent = option.textContent; card.append(name);
     if (CARD_NOTES[option.value]) { const note = document.createElement('small'); note.textContent = t(CARD_NOTES[option.value]); card.append(note); }
@@ -239,7 +238,6 @@ function saveRun() {
   if (newBest) ok = put(key, score);
   const record = makeRecording(game);
   lastRun = { newBest, record, reason: game.reason, score, apples: game.snakes[0].apples, line: null };
-  put('apples', lifetimeApples() + game.snakes[0].apples); fillLooks();
   if (record) {
     const old = loadGhost(session.speed);
     if (!old || record.score > old.score || (record.score === old.score && record.ticks > old.ticks)) {
@@ -380,12 +378,8 @@ function syncView() {
   ui.viewButton.textContent = t(prefs.flat ? view3d ? t('3D view') : t('Raised view') : t('Flat view'));
 }
 function fillLooks() {
-  const apples = lifetimeApples();
   ui.theme.replaceChildren(...Object.entries(THEMES).map(([value, theme]) => new Option(t(theme.label), value, false, value === prefs.theme)));
-  ui.skin.replaceChildren(...Object.entries(SKINS).map(([value, skin]) => {
-    const locked = apples < skin.unlock, option = new Option(locked ? t('{label} · {n} bites', { label: t(skin.label), n: skin.unlock }) : t(skin.label), value, false, value === prefs.skin);
-    option.disabled = locked; return option;
-  }));
+  ui.skin.replaceChildren(...Object.entries(SKINS).map(([value, skin]) => new Option(t(skin.label), value, false, value === prefs.skin)));
   renderCards();
 }
 // Copied now because the WebGL buffer is gone by the time someone taps Share.

@@ -7,13 +7,25 @@
 /* Rickshaw Pop: the 3D world fills the screen and everything floats on it as stickers and glass. */
 :root {
   --ink:#fff8e7;
+  --soft:#ded7ef;
+  --muted:#b9b0d3;
+  --accent:#ffd23f;
+  --accent-2:#17d3bb;
+  --error:#ffa0ac;
   --dark:#140f22;
+  --page:#140f22;
+  --field:#140f22;
   --glass:#171228e6;
   --card:#251d3d;
   --card-on:#34295a;
   --line:#463a6b;
-  --muted:#b9b0d3;
-  --pink:#ff2e63;
+  --lift:#140f22;
+  --fade-0:#140f2200;
+  --fade-1:#140f22d9;
+  --fade-2:#140f22f5;
+  --fade-side:#140f22d0;
+  --fade-solid:#140f22f7;
+  --pink:#d81b54;
   --yellow:#ffd23f;
   --teal:#17d3bb;
   --outline:2.5px solid var(--dark);
@@ -34,12 +46,35 @@
   --i-looks:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18c1.7 0 2.2-1.300 1.500-2.500-.8-1.400.2-3 1.800-3H18a3 3 0 0 0 3-3c0-5.200-4-9.500-9-9.500ZM7.500 13a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3Zm3-4.500a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3Zm5 0a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3Z'/%3E%3C/svg%3E");
   --i-trophy:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 3h10v2h4v3a4 4 0 0 1-4.300 4A5 5 0 0 1 13 14.900V18h3v3H8v-3h3v-3.100A5 5 0 0 1 7.300 12 4 4 0 0 1 3 8V5h4Zm0 4H5v1a2 2 0 0 0 2 2Zm10 0v3a2 2 0 0 0 2-2V7Z'/%3E%3C/svg%3E");
   --i-help:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9a4 4 0 1 1 6.500 3.100c-1.500 1.100-2.500 2-2.500 3.400'/%3E%3Ccircle cx='12' cy='20' r='.8'/%3E%3C/svg%3E");
-  color-scheme:dark;
+  color-scheme:light dark;
   font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Bangla,sans-serif;
   color:var(--ink);
-  background:var(--dark);
+  background:var(--page);
   -webkit-text-size-adjust:100%;
   text-size-adjust:100%;
+}
+/* Light mode: warm paper panels floating over the same world. */
+@media(prefers-color-scheme:light) {
+  :root {
+    --ink:#20163a;
+    --soft:#3f3556;
+    --muted:#5c5270;
+    --accent:#a30f3b;
+    --accent-2:#07695d;
+    --error:#a3122f;
+    --page:#fff6e3;
+    --field:#ffffff;
+    --glass:#fff9ecf2;
+    --card:#ffffff;
+    --card-on:#ffeeb8;
+    --line:#d8ccb0;
+    --lift:#fffdf6;
+    --fade-0:#fff6e300;
+    --fade-1:#fff6e3e0;
+    --fade-2:#fff6e3f8;
+    --fade-side:#fff6e3d8;
+    --fade-solid:#fff6e3fa;
+  }
 }
 * {
   box-sizing:border-box;
@@ -51,7 +86,7 @@ html,body {
   overscroll-behavior:none;
 }
 body {
-  background:var(--dark);
+  background:var(--page);
   -webkit-tap-highlight-color:transparent;
 }
 [hidden] {
@@ -92,7 +127,7 @@ input,select {
   width:100%;
   min-height:48px;
   padding:10px 12px;
-  background:var(--dark);
+  background:var(--field);
   border:2px solid var(--line);
   border-radius:12px;
   /* 16px stops iOS zooming the page when a field gets focus. */
@@ -156,7 +191,7 @@ input,select {
   line-height:1.4;
 }
 .error {
-  color:#ffa0ac;
+  color:var(--error);
   border-left:3px solid var(--pink);
   padding-left:10px;
   margin:8px 0 0;
@@ -239,7 +274,7 @@ body:has(#app.playing) .site-header {
 }
 .brand-light {
   margin-left:4px;
-  color:#c3103f;
+  color:#a30f3b;
 }
 .header-actions {
   display:flex;
@@ -270,7 +305,7 @@ body:has(#app.playing) .site-header {
 /* Home has no panel at all: just a fade so the text stays readable over the world. */
 #app:not(.playing) .setup:has(#homeScreen:not([hidden])) {
   padding-top:44px;
-  background:linear-gradient(#140f2200,#140f22d9 42px,#140f22f5);
+  background:linear-gradient(var(--fade-0),var(--fade-1) 42px,var(--fade-2));
   overflow:auto;
 }
 /* A menu slides up as a sheet of glass, with a rickshaw-art edge. */
@@ -301,17 +336,17 @@ body:has(#app.playing) .site-header {
   font-size:clamp(27px,8vw,44px);
   line-height:1.24;
   font-weight:900;
-  text-shadow:0 3px 0 var(--dark);
+  text-shadow:0 2px 0 var(--lift);
 }
 .setup h1 span {
   display:block;
 }
 .setup h1 .accent {
-  color:var(--yellow);
+  color:var(--accent);
 }
 .intro {
   margin:0;
-  color:#ded7ef;
+  color:var(--soft);
   font-size:clamp(13px,3.4vw,15px);
   line-height:1.45;
 }
@@ -347,7 +382,7 @@ body:has(#app.playing) .site-header {
 }
 .best-line b {
   margin-left:4px;
-  color:var(--yellow);
+  color:var(--accent);
   font-size:16px;
 }
 .chip {
@@ -531,7 +566,7 @@ body:has(#app.playing) .site-header {
 }
 .rules-text p {
   margin:0 0 12px;
-  color:#ded7ef;
+  color:var(--soft);
   font-size:14px;
   line-height:1.65;
 }
@@ -610,6 +645,7 @@ body:has(#app.playing) .site-header {
   padding:2px 14px;
   border-radius:999px;
   background:var(--glass);
+  color:var(--ink);
   font-size:14px;
 }
 
@@ -643,11 +679,11 @@ body:has(#app.playing) .site-header {
 .overlay-panel .eyebrow {
   justify-content:center;
   margin-bottom:6px;
-  color:var(--teal);
+  color:var(--accent-2);
 }
 .overlay-panel h2 {
   margin:0 0 10px;
-  color:#fff;
+  color:var(--ink);
   font-size:clamp(23px,6vw,29px);
   line-height:1.36;
   font-weight:900;
@@ -656,12 +692,12 @@ body:has(#app.playing) .site-header {
 .result-score {
   display:block;
   margin-bottom:4px;
-  color:var(--yellow);
+  color:var(--accent);
   font-size:clamp(60px,15vmin,88px);
   line-height:1.05;
   font-weight:900;
   font-variant-numeric:tabular-nums;
-  text-shadow:0 5px 0 var(--dark);
+  text-shadow:0 3px 0 var(--lift);
 }
 .overlay-panel p {
   margin:0 0 12px;
@@ -671,7 +707,7 @@ body:has(#app.playing) .site-header {
   white-space:pre-line;
 }
 .overlay-panel .rank-text {
-  color:var(--yellow);
+  color:var(--accent);
   font-weight:700;
 }
 .overlay-actions {
@@ -698,8 +734,8 @@ body:has(#app.playing) .site-header {
 #joinButton {
   flex-basis:100%;
   background:transparent;
-  border-color:var(--teal);
-  color:var(--teal);
+  border-color:var(--accent-2);
+  color:var(--accent-2);
 }
 #roomShare {
   margin-bottom:12px;
@@ -712,7 +748,7 @@ body:has(#app.playing) .site-header {
 #roomShare input {
   margin:6px 0 10px;
   text-align:center;
-  color:var(--yellow);
+  color:var(--accent);
   font-weight:800;
   font-size:24px;
   letter-spacing:4px!important;
@@ -796,7 +832,7 @@ dialog p {
   padding:0;
   border:0;
   background:none;
-  color:var(--yellow);
+  color:var(--accent);
   font-size:15px;
 }
 .dialog-buttons {
@@ -812,7 +848,8 @@ dialog p {
   display:flex;
   gap:4px;
   padding:4px;
-  background:var(--dark);
+  background:var(--field);
+  border:2px solid var(--line);
   border-radius:14px;
 }
 .board-tabs button {
@@ -844,7 +881,7 @@ dialog p {
 }
 .board-list b {
   float:right;
-  color:var(--yellow);
+  color:var(--accent);
   font-variant-numeric:tabular-nums;
 }
 .profile-form {
@@ -1017,7 +1054,7 @@ dialog.study-dialog {
   justify-content:flex-end;
 }
 .score-player strong {
-  color:var(--yellow);
+  color:var(--accent);
   font-size:clamp(21px,3.4vmin,30px);
   line-height:1;
   font-weight:900;
@@ -1063,7 +1100,7 @@ dialog.study-dialog {
   padding:3px 12px;
   background:var(--glass);
   border-radius:999px;
-  color:#ded7ef;
+  color:var(--soft);
   font-size:12px;
   line-height:1.35;
 }
@@ -1072,7 +1109,7 @@ dialog.study-dialog {
 }
 .timer {
   flex-shrink:0;
-  color:var(--yellow);
+  color:var(--accent);
   font-weight:700;
   font-variant-numeric:tabular-nums;
   white-space:nowrap;
@@ -1082,7 +1119,7 @@ dialog.study-dialog {
   flex-shrink:0;
   align-items:center;
   gap:8px;
-  color:var(--yellow);
+  color:var(--accent);
   font-weight:800;
 }
 progress {
@@ -1131,6 +1168,7 @@ kbd {
 }
 .touch-controls button {
   min-height:0;
+  color:#fff;
   background:#140f22b8;
   border:2.5px solid #ffffff55;
   border-radius:20px;
@@ -1170,6 +1208,18 @@ html[data-touch] .controls-hint {
   }
   .controls-hint {
     display:none;
+  }
+}
+@media(max-width:400px) {
+  #app.playing .scoreboard {
+    flex-wrap:wrap;
+    row-gap:1px;
+    border-radius:18px;
+  }
+  #app.playing .round-label {
+    order:3;
+    flex-basis:100%;
+    white-space:normal;
   }
 }
 @media(max-width:360px) {
@@ -1239,7 +1289,7 @@ html[data-touch] .controls-hint {
   }
   #app:not(.playing) .setup:has(#homeScreen:not([hidden])) {
     padding-top:calc(var(--safe-t) + 66px);
-    background:linear-gradient(90deg,#140f22f7 78%,#140f22d0);
+    background:linear-gradient(90deg,var(--fade-solid) 78%,var(--fade-side));
   }
   #app:not(.playing) .setup:has(#homeScreen[hidden]) {
     background:var(--glass);
@@ -1443,9 +1493,14 @@ html[data-touch] .controls-hint {
     min-height:36px;
   }
   #app.playing .quiet.mom {
+    flex:1 1 0;
+    min-width:0;
     min-height:36px;
-    padding:0 8px;
-    font-size:11px;
+    padding:0 6px;
+    font-size:10.5px;
+    line-height:1.05;
+    white-space:normal;
+    text-align:center;
   }
   #app.playing .scoreboard {
     padding:3px 8px 3px 4px;
@@ -1461,9 +1516,18 @@ html[data-touch] .controls-hint {
     width:21px;
     height:21px;
   }
+  /* The side panel is narrow, so the round count takes its own line instead of being cut off. */
+  #app.playing .scoreboard {
+    flex-wrap:wrap;
+    row-gap:1px;
+    border-radius:16px;
+  }
   #app.playing .round-label {
-    font-size:8.5px;
+    order:3;
+    flex-basis:100%;
+    font-size:10px;
     letter-spacing:0;
+    white-space:normal;
   }
   #app.playing .arena-bottom {
     padding:2px 8px;
@@ -1528,5 +1592,23 @@ html[data-touch] .controls-hint {
     animation:none!important;
     transition:none!important;
     scroll-behavior:auto!important;
+  }
+}
+/* After the base dock rules, so these colours win in light mode. */
+@media(prefers-color-scheme:light) {
+  #soloMode {
+    --c:#a97400;
+  }
+  #duelMode {
+    --c:#c9184a;
+  }
+  #looksButton {
+    --c:#07806f;
+  }
+  #boardButton {
+    --c:#b85c00;
+  }
+  #howButton {
+    --c:#5b3fc4;
   }
 }

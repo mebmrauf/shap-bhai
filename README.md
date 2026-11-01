@@ -24,7 +24,7 @@ Open http://localhost:8124. Run `npm test` for the rule, replay, room, leaderboa
 
 Arrow keys / WASD steer. Escape or P pauses local games. B, or the "আম্মু আসছে!" button, pauses and shows a fake study page. Touch buttons and board swipes are available.
 
-Boards (Dhaka street, Old Dhaka rooftop, Cox's Bazar, Sundarbans) and skins (Rickshaw Nagin, Kal Nagini, and three unlocked by total bites) are cosmetic and never touch the rules.
+Boards (Dhaka street, Old Dhaka rooftop, Cox's Bazar, Sundarbans) and five snakes, all free from the start, are cosmetic and never touch the rules. The interface follows the device's light or dark setting.
 
 ## Voice
 

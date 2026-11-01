@@ -24,6 +24,12 @@ test('no player-facing sentence reaches the screen untranslated', async () => {
   const bare = app.split('\n').filter(line => !/^const (CARD_NOTES|CHAOS_STATUS|OFFLINE_ROOM|DEATH_SENTENCE)|^import /.test(line)).flatMap(line => line.match(/(?:overlay|error|say|playLabel)\(['"][A-Z][^'"]+['"]/g) ?? []);
   assert.deepEqual(bare, []);
 });
+test('every snake is free from the start', async () => {
+  const { SKINS } = await import('../web/js/themes.js');
+  assert.equal(Object.keys(SKINS).length, 5);
+  for (const skin of Object.values(SKINS)) assert.equal(skin.unlock, undefined);
+  assert.equal((await read('../web/js/app.js')).includes('option.disabled'), false);
+});
 test('placeholders survive translation', async () => {
   const source = await read('../web/js/i18n.js');
   const names = text => (text.match(/\{\w+\}/g) ?? []).sort().join();
