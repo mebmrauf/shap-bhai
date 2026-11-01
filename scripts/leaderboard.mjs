@@ -2,9 +2,9 @@ import { createHash, randomBytes } from 'node:crypto';
 import { replayRecording, dailySeed, dhakaDay } from '../web/js/engine.js';
 import { DISTRICTS } from '../web/js/districts.js';
 import { RoomError } from './rooms.mjs';
+import { isBadName } from './name-filter.mjs';
 
 const TOKEN = /^[a-f0-9]{32}$/, CREW = /^[A-Z0-9-]{3,16}$/, GHOST_ID = /^[A-Za-z0-9_-]{8,16}$/;
-// shortcut: names are shape-checked only, with no profanity filter; add moderation before a wide public launch.
 const NAME = /^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} ._-]{1,19}$/u;
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS snake_players (
@@ -19,6 +19,9 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS snake_ghosts (
     id text PRIMARY KEY, name text NOT NULL, score integer NOT NULL, record jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
   CREATE INDEX IF NOT EXISTS snake_ghosts_age ON snake_ghosts (created_at);`;
+const FRIEND = 'তোমার বন্ধু';
+// Checked when shown as well as when saved, so adding a word to the list also cleans up older names.
+const safeRows = rows => rows.map(row => isBadName(row.name) ? { ...row, name: 'Player' } : row);
 const hashToken = token => createHash('sha256').update(token).digest('hex');
 function requireToken(token) {
   if (typeof token !== 'string' || !TOKEN.test(token)) throw new RoomError('Invalid player token.');
@@ -27,9 +30,11 @@ function requireToken(token) {
 function cleanProfile({ name, district = '', crew = '' }) {
   const cleanName = typeof name === 'string' ? name.normalize('NFC').trim() : '';
   if (!NAME.test(cleanName)) throw new RoomError('Use a 2–20 character name with letters or numbers.');
+  if (isBadName(cleanName)) throw new RoomError('That name is not allowed. Please choose another.');
   if (district !== '' && !DISTRICTS.includes(district)) throw new RoomError('Choose a district from the list.');
   const cleanCrew = typeof crew === 'string' ? crew.trim().toUpperCase() : '';
   if (cleanCrew && !CREW.test(cleanCrew)) throw new RoomError('Crew codes use 3–16 letters, numbers or dashes.');
+  if (cleanCrew && isBadName(cleanCrew)) throw new RoomError('That crew code is not allowed. Please choose another.');
   return { name: cleanName, district, crew: cleanCrew };
 }
 // Only the known replay fields are kept, so nothing extra is stored or served to other players.
@@ -88,16 +93,16 @@ export class Leaderboard {
       if (!CREW.test(code)) throw new RoomError('Enter a crew code.');
       const { rows } = await this.query(`SELECT p.name, p.district, s.score FROM snake_daily_scores s JOIN snake_players p USING (player)
         WHERE s.day = $1 AND p.crew = $2 ORDER BY s.score DESC, s.ticks ASC, s.updated_at ASC LIMIT 50`, [day, code]);
-      return { day, scope, crew: code, rows };
+      return { day, scope, crew: code, rows: safeRows(rows) };
     }
     if (scope !== 'everyone') throw new RoomError('Unknown leaderboard.');
     const { rows } = await this.query(`SELECT p.name, p.district, s.score FROM snake_daily_scores s JOIN snake_players p USING (player)
       WHERE s.day = $1 ORDER BY s.score DESC, s.ticks ASC, s.updated_at ASC LIMIT 50`, [day]);
-    return { day, scope, rows };
+    return { day, scope, rows: safeRows(rows) };
   }
   async saveGhost({ record, name }) {
     const replayed = verifiedRecord(record);
-    const label = typeof name === 'string' && NAME.test(name.normalize('NFC').trim()) ? name.normalize('NFC').trim() : 'তোমার বন্ধু';
+    const label = typeof name === 'string' && NAME.test(name.normalize('NFC').trim()) && !isBadName(name) ? name.normalize('NFC').trim() : FRIEND;
     const id = randomBytes(8).toString('base64url');
     await this.query('INSERT INTO snake_ghosts (id, name, score, record) VALUES ($1, $2, $3, $4)', [id, label, replayed.score, JSON.stringify(replayed)]);
     await this.query("DELETE FROM snake_ghosts WHERE created_at < now() - interval '30 days'");
@@ -107,7 +112,7 @@ export class Leaderboard {
     if (!GHOST_ID.test(id)) throw new RoomError('Invalid ghost link.');
     const { rows } = await this.query('SELECT name, record FROM snake_ghosts WHERE id = $1', [id]);
     if (!rows.length) throw new RoomError('That ghost has faded. Links last 30 days.', 404);
-    return { name: rows[0].name, record: rows[0].record };
+    return { name: isBadName(rows[0].name) ? FRIEND : rows[0].name, record: rows[0].record };
   }
 }
 export async function connectLeaderboard() {

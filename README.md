@@ -48,7 +48,16 @@ Clips use `bn-BD-PradeepNeural` and, for `roast*` and `chaos*` lines, `bn-BD-Nab
 
 ## Leaderboards
 
-Set `DATABASE_URL_POOLED` (or `DATABASE_URL`) and `IP_HASH_SECRET`. The server creates its `snake_*` tables on first use. No sign-in: a random device token, stored only as a hash, owns a player card. Every submitted run is replayed on the server, so a forged score is rejected, though a bot playing real moves would still count. Player names have a format check but no profanity filter yet.
+Set `DATABASE_URL_POOLED` (or `DATABASE_URL`) and `IP_HASH_SECRET`. The server creates its `snake_*` tables on first use. No sign-in: a random device token, stored only as a hash, owns a player card. Every submitted run is replayed on the server, so a forged score is rejected, though a bot playing real moves would still count.
+
+Public names and crew codes pass through `scripts/name-filter.mjs` in English, Banglish and Bangla. It sees through repeated letters, spacing, symbols and look-alike characters, and blocks website addresses, phone numbers and staff-sounding names. No word list catches everything, so to remove a player by hand:
+
+```sh
+node scripts/remove-player.mjs "Exact Name"
+node scripts/remove-player.mjs "Exact Name" --delete
+```
+
+The first command only shows who matches. To block a new word, add it to the filter. Older names are checked again whenever they are shown.
 
 ## Rules that matter
 
