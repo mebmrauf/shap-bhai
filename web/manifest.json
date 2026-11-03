@@ -53,9 +53,9 @@
   ],
   "shortcuts": [
     {
-      "name": "আজকের চ্যালেঞ্জ",
-      "short_name": "চ্যালেঞ্জ",
-      "url": "/?style=daily",
+      "name": "ক্লাসিক মোড",
+      "short_name": "ক্লাসিক",
+      "url": "/?style=classic",
       "icons": [
         {
           "src": "icon-192.png",

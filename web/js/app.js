@@ -27,7 +27,7 @@ let view3d = null, friendGhost = null, lastRun = null;
 const CHAOS_STATUS = { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' };
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
-function bestKey(style = ui.style.value, speed = ui.speed.value) { return style === 'daily' ? `best.daily.${dhakaDay()}` : `best.${style === 'ghost' ? 'classic' : style}.${speed}`; }
+function bestKey(style = ui.style.value, speed = ui.speed.value) { return `best.${style === 'ghost' ? 'classic' : style}.${speed}`; }
 function best(style, speed) { const n = get(bestKey(style, speed), 0); return Number.isInteger(n) && n >= 0 ? n : 0; }
 function loadGhost(speed) {
   const record = get(`ghost.${speed}`, null);
@@ -39,16 +39,14 @@ function updateSetup() {
   const style = ui.style.value;
   error();
   const record = style === 'ghost' ? friendGhost?.record ?? loadGhost(ui.speed.value) : null;
-  ui.speed.disabled = style === 'daily' || (style === 'ghost' && !!friendGhost);
+  ui.speed.disabled = style === 'ghost' && !!friendGhost;
   const descriptions = {
-    daily: t('Same board for all of Bangladesh today, at Standard speed. Your best run goes on the leaderboard.'),
     classic: t('The original rules. Eat, grow longer, and avoid walls and your tail.'),
     chaos: t('Load shedding, traffic jams, floods and wedding biryani, all on the way to your high score.'),
-    arcade: t('Eat again within 8 seconds to build a combo. Points climb to ×3; speed follows food eaten.'),
     ghost: friendGhost ? t("Race {name}'s {score}-point run on the same starting board. Their blue ghost cannot hit you.", { name: friendGhost.name, score: record.score }) : record ? t('Race your {score}-point best on the same starting board. The blue ghost cannot hit you.', { score: record.score }) : t('Finish a Classic run to set a ghost. Your first race records one automatically.')
   };
   ui.modeDescription.textContent = descriptions[style];
-  const label = style === 'ghost' ? friendGhost ? t('Race {name}', { name: friendGhost.name }) : record ? t('Race your ghost') : t('Record first ghost') : style === 'daily' ? t("Play today's challenge") : style === 'chaos' ? t('Start the chaos') : style === 'arcade' ? t('Play Arcade') : t('Play Classic');
+  const label = style === 'ghost' ? (friendGhost ? t('Race {name}', { name: friendGhost.name }) : record ? t('Race your ghost') : t('Record first ghost')) : style === 'chaos' ? t('Start the chaos') : t('Play Classic');
   playLabel(label);
   for (const el of document.querySelectorAll('[data-description]')) el.textContent = ui.modeDescription.textContent;
   renderCards();
@@ -58,7 +56,7 @@ function updateSetup() {
     t('Use arrow keys, W A S D, the direction buttons, or swipe on the board. You cannot reverse into your neck.'),
     t('One turn is applied per movement step. Two quick turns can be queued. Escape or P pauses; switching tabs also pauses.'),
     t('Each bite adds a body segment. Speed increases slightly every 5 bites. Fill the board to win.'),
-    ...(style === 'chaos' ? [t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')] : style === 'daily' ? [t('Everyone gets the same food order today, until the snake paths differ. You can retry as often as you like; only your best run counts. Bangladesh time decides the day.')] : style === 'arcade' ? [t('Combos reset after 8 seconds of active play. Pausing does not consume your combo. Arcade records are separate.')] : style === 'ghost' ? [t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')] : [])
+    ...(style === 'chaos' ? [t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')] : style === 'ghost' ? [t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')] : [])
   ];
   for (const text of paragraphs) { const p = document.createElement('p'); p.textContent = text; ui.rulesText.append(p); }
   ui.board.setAttribute('aria-label', t('Board preview. Your snake is ready.'));
@@ -95,8 +93,8 @@ function enterGame() {
 function beginLocalRound() {
   playControls(true);
   earlyTurns = {}; resultSaved = ''; recording = session.style === 'ghost' ? friendGhost?.record ?? loadGhost(session.speed) : null;
-  const seed = recording?.seed ?? (session.style === 'daily' ? dailySeed(dhakaDay()) : randomSeed());
-  game = createGame({ mode: ['arcade', 'chaos'].includes(session.style) ? session.style : 'classic', speed: session.speed, seed });
+  const seed = recording?.seed ?? randomSeed();
+  game = createGame({ mode: session.style === 'chaos' ? 'chaos' : 'classic', speed: session.speed, seed });
   previous = positions(game); accumulator = 0; ghostIndex = 0;
   ghost = recording ? createGame({ seed: recording.seed, speed: recording.speed }) : null;
   screen = 'countdown'; countdownEnd = performance.now() + 3000; lastCount = null;
@@ -107,7 +105,7 @@ function playLabel(text) {
   ui.startButton.replaceChildren(document.createTextNode(text)); const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true'); ui.startButton.append(arrow);
   for (const button of document.querySelectorAll('[data-play]')) button.textContent = text;
 }
-const CARD_NOTES = { daily: 'Same board for everyone, new every day', classic: 'Pure snake, no surprises', chaos: 'Load shedding, jams, floods, biryani', arcade: 'Chain bites for up to ×3 points', ghost: 'Beat a replay of your best run' };
+const CARD_NOTES = { classic: 'Pure snake, no surprises', chaos: 'Load shedding, jams, floods, biryani', ghost: 'Beat a replay of your best run' };
 // The selects stay as the single source of truth; each card just sets one.
 function cardsFor(select, container, decorate) {
   if (!select || !container) return;
@@ -138,27 +136,25 @@ function showScreen(name) {
 async function start() {
   if (ui.startButton.disabled || updater.applyPending(true)) return;
   error(); audio.unlock();
-  session = { mode: 'solo', style: ui.style.value, speed: ui.style.value === 'daily' ? 'normal' : ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value };
+  session = { mode: 'solo', style: ui.style.value, speed: ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value };
   enterGame(); beginLocalRound();
 }
 function updateHud() {
   if (!game || !session) return;
-  ui.arenaLabel.textContent = session.style === 'ghost' ? t('GHOST RACE') : session.style === 'daily' ? t('TODAY · {day}', { day: num(dhakaDay()) }) : t(session.style.toUpperCase());
+  ui.arenaLabel.textContent = session.style === 'ghost' ? t('GHOST RACE') : t(session.style.toUpperCase());
   ui.p1Name.textContent = t('Your snake');
   ui.p2Name.textContent = ghost ? t('Ghost') : t('Best');
   ui.p1Score.textContent = num(game.snakes[0].score); ui.p2Score.textContent = num(ghost ? ghost.snakes[0].score : best(session.style, session.speed));
   if (ui.p2Mark) ui.p2Mark.hidden = true;
-  ui.middleScore.textContent = session.style === 'ghost' ? recording ? t('TARGET {n}', { n: recording.score }) : t('RECORDING') : game.mode === 'classic' ? t('BITES') : t('POINTS');
-  ui.comboWrap.hidden = session.style !== 'arcade';
-  if (!ui.comboWrap.hidden) { ui.comboText.textContent = `×${Math.max(1, game.snakes[0].combo)}`; ui.comboMeter.value = Math.max(0, game.snakes[0].comboUntil - game.elapsedMs); }
+  ui.middleScore.textContent = session.style === 'ghost' ? (recording ? t('TARGET {n}', { n: recording.score }) : t('RECORDING')) : t('BITES');
   ui.timerText.textContent = t('{n} segments', { n: game.snakes[0].body.length });
-  ui.statusText.textContent = game.chaos ? t(CHAOS_STATUS[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'arcade' ? t('Keep eating. Combos last 8 seconds.') : session.style === 'ghost' ? recording ? ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.') : t('Finish this run to save your first ghost.') : t('Find your rhythm. Watch your tail.');
+  ui.statusText.textContent = game.chaos ? t(CHAOS_STATUS[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'ghost' ? (recording ? (ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.')) : t('Finish this run to save your first ghost.')) : t('Find your rhythm. Watch your tail.');
   ui.board.setAttribute('aria-label', `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
 }
 // Routine lines wait their turn, so they never cut off an event announcement.
 function handleEvents(events) {
   for (const e of events ?? []) {
-    if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); const apples = game.snakes[0].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell), arcade: game.mode === 'arcade' }); audio.voice(bank, e.feast || bank.startsWith('bite')); }
+    if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); const apples = game.snakes[0].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell) }); audio.voice(bank, e.feast || bank.startsWith('bite')); }
     if (e.type === 'crash') { view3d?.effect('crash'); audio.effect('crash'); }
     // Traffic and floods speak on their warning, because that is when the player can still react.
     if (e.type === 'chaos') { if (e.phase === 'end') { slipSaid = false; audio.voice(`${e.name}End`); } else if (e.phase === 'warn' || !['traffic', 'flood'].includes(e.name)) audio.voice(e.name, true); }
@@ -182,7 +178,7 @@ function saveRun() {
   } else resultSaved = ok ? t('Best saved on this device.') : t('Storage is unavailable; this score could not be saved.');
 }
 function showResults() {
-  ui.comboWrap.hidden = true; ui.statusText.textContent = t('Run complete.'); ui.timerText.textContent = '';
+  ui.statusText.textContent = t('Run complete.'); ui.timerText.textContent = '';
   ui.pauseButton.hidden = true; ui.countdown.hidden = true; ui.continueButton.disabled = false; ui.menuButton.textContent = t('Back to menu');
   const score = game.snakes[0].score;
   const rival = friendGhost ? t("{name}'s ghost", { name: friendGhost.name }) : t('your ghost');
@@ -210,7 +206,7 @@ function menu() {
   game = null; previous = null; session = null; ghost = null; recording = null;
   ui.momButton.hidden = true; ui.resultActions.hidden = true;
   screen = 'menu'; ui.controlsHint.hidden = false; audio.stop(); ui.app.classList.remove('playing'); ui.overlay.hidden = true; ui.countdown.hidden = true; ui.previewTag.hidden = false;
-  ui.pauseButton.hidden = true; ui.exitButton.hidden = true; ui.touchControls.hidden = true; ui.comboWrap.hidden = true; ui.timerText.textContent = '';
+  ui.pauseButton.hidden = true; ui.exitButton.hidden = true; ui.touchControls.hidden = true; ui.timerText.textContent = '';
   ui.startButton.disabled = false; ui.continueButton.disabled = false; ui.board.removeAttribute('tabindex'); ui.menuButton.textContent = t('Back to menu');
   if (!friendGhost) history.replaceState(null, '', location.pathname); updateSetup(); window.scrollTo({ top: 0, behavior: 'instant' }); showScreen('home'); updater.applyPending();
 }
@@ -428,7 +424,7 @@ const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
 })() : null;
 const updater = keepUpdated({ isBusy: () => screen !== 'menu' || !!document.querySelector('dialog[open]') });
 window.addEventListener('load', () => updater.start());
-renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = ['daily', 'chaos'].includes(initialStyle) ? initialStyle : 'daily';
+renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = initialStyle === 'chaos' ? 'chaos' : 'classic';
 updateSetup(); requestAnimationFrame(frame);
 // The 2D board stays the fallback, so 3D is only ever an upgrade.
 import('./render3d.js').then(({ Arena3D }) => {

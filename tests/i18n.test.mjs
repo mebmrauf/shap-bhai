@@ -12,7 +12,7 @@ test('an unknown string falls back to readable text instead of breaking', () => 
 test('every string the app asks to translate has Bangla', async () => {
   const keys = new Set(translationKeys()), app = await read('../web/js/app.js');
   const used = [...app.matchAll(/\bt\((?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g)].map(m => (m[1] ?? m[2]).replace(/\\n/g, '\n').replace(/\\'/g, "'"));
-  assert.ok(used.length > 80);
+  assert.ok(used.length > 70);
   assert.deepEqual([...new Set(used)].filter(key => !keys.has(key)), []);
 });
 test('templated text is always given its values', async () => {
