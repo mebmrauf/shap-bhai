@@ -1,4 +1,4 @@
-import { Scene, PerspectiveCamera, WebGLRenderer, Color, Fog, HemisphereLight, DirectionalLight, PointLight, Mesh, Group, InstancedMesh, Object3D, BoxGeometry, SphereGeometry, PlaneGeometry, CircleGeometry, BufferGeometry, BufferAttribute, MeshStandardMaterial, MeshBasicMaterial, RepeatWrapping, BackSide, Vector3, ACESFilmicToneMapping, PCFShadowMap, DynamicDrawUsage } from '../vendor/three-0.187.0-r2/three.min.js';
+import { Scene, PerspectiveCamera, WebGLRenderer, Color, Fog, HemisphereLight, DirectionalLight, PointLight, Mesh, Group, InstancedMesh, Object3D, BoxGeometry, SphereGeometry, PlaneGeometry, CircleGeometry, BufferGeometry, BufferAttribute, MeshStandardMaterial, MeshBasicMaterial, RepeatWrapping, BackSide, Vector3, ACESFilmicToneMapping, PCFSoftShadowMap, DynamicDrawUsage } from '../vendor/three-0.187.0-r2/three.min.js';
 import { SIZE, DIRECTIONS } from './engine.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
 import { LOOKS, boardTextures, groundTexture, floralBand, decorate, foodModel, snakeHead, trafficModel, texture, mat } from './world3d.js';
@@ -90,7 +90,7 @@ export class Arena3D {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.toneMapping = ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.3;
     this.renderer.shadowMap.enabled = this.high;
-    this.renderer.shadowMap.type = PCFShadowMap;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.scene = new Scene(); this.scene.fog = new Fog('#ffffff', 60, 160); this.camera = new PerspectiveCamera(34, 1, .1, 700);
     this.hemi = new HemisphereLight(0xffffff, 0x665544, 1.2); this.sun = new DirectionalLight(0xffffff, 3);
     this.sun.castShadow = this.high; const shadowEdge = SIZE / 2 + 8, sc = this.sun.shadow; sc.mapSize.set(1024, 1024); sc.bias = -.0004; sc.normalBias = .025;

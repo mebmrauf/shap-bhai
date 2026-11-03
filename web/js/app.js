@@ -457,11 +457,13 @@ import('./render3d.js').then(({ Arena3D }) => {
     view3d = new Arena3D(ui.board3d, { theme: prefs.theme, skin: prefs.skin });
     syncView();
     ui.board3d.addEventListener('webglcontextlost', () => { view3d = null; view3dFailed = true; syncView(); });
-  } catch {
+  } catch (err) {
+    console.warn('view3d init failed:', err);
     view3dFailed = true;
     syncView();
   }
-}).catch(() => {
+}).catch(err => {
+  console.warn('render3d load failed:', err);
   view3dFailed = true;
   syncView();
 });
