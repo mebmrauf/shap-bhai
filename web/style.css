@@ -173,7 +173,6 @@ input,select {
   font-size:13px;
   font-weight:700;
   white-space:nowrap;
-  backdrop-filter:blur(6px);
 }
 .text-button {
   background:none;
@@ -313,7 +312,6 @@ body:has(#app.playing) .site-header {
   height:min(76dvh,720px);
   padding-top:22px;
   background:var(--glass) var(--floral) top/40px 10px repeat-x;
-  backdrop-filter:blur(14px);
   border-radius:24px 24px 0 0;
   overflow:hidden;
   animation:rise .22s ease-out;
@@ -664,8 +662,7 @@ body:has(#app.playing) .site-header {
   display:grid;
   overflow:auto;
   padding:calc(var(--safe-t) + 12px) calc(var(--safe-r) + 12px) calc(var(--safe-b) + 12px) calc(var(--safe-l) + 12px);
-  background:#0a0714b8;
-  backdrop-filter:blur(2px);
+  background:#0a0714eb;
 }
 .overlay-panel {
   width:100%;
@@ -994,7 +991,6 @@ body:has(#overlay:not([hidden])) #app.playing .arena {
   background:var(--glass);
   border:2px solid var(--line);
   border-radius:999px;
-  backdrop-filter:blur(6px);
 }
 .score-player {
   display:flex;
@@ -1124,12 +1120,11 @@ kbd {
 .touch-controls button {
   min-height:0;
   color:#fff;
-  background:#140f22b8;
+  background:#140f22f0;
   border:2.5px solid #ffffff55;
   border-radius:20px;
   font-size:clamp(24px,6.6vmin,34px);
   font-weight:900;
-  backdrop-filter:blur(6px);
 }
 .touch-controls button:active {
   background:var(--yellow);

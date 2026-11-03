@@ -1,11 +1,11 @@
-import { Scene, PerspectiveCamera, WebGLRenderer, Color, Fog, HemisphereLight, DirectionalLight, PointLight, Mesh, Group, InstancedMesh, Object3D, BoxGeometry, SphereGeometry, PlaneGeometry, CircleGeometry, BufferGeometry, BufferAttribute, MeshStandardMaterial, MeshBasicMaterial, PMREMGenerator, RepeatWrapping, BackSide, Vector3, ACESFilmicToneMapping, PCFSoftShadowMap, DynamicDrawUsage } from '../vendor/three-0.187.0-r2/three.min.js';
+import { Scene, PerspectiveCamera, WebGLRenderer, Color, Fog, HemisphereLight, DirectionalLight, PointLight, Mesh, Group, InstancedMesh, Object3D, BoxGeometry, SphereGeometry, PlaneGeometry, CircleGeometry, BufferGeometry, BufferAttribute, MeshStandardMaterial, MeshBasicMaterial, RepeatWrapping, BackSide, Vector3, ACESFilmicToneMapping, PCFShadowMap, DynamicDrawUsage } from '../vendor/three-0.187.0-r2/three.min.js';
 import { SIZE, DIRECTIONS } from './engine.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
 import { LOOKS, boardTextures, groundTexture, floralBand, decorate, foodModel, snakeHead, trafficModel, texture, mat } from './world3d.js';
 
 const AMBER = { head: '#d96a0a', body: ['#ff9a2e', '#ffe3a6', '#ff9a2e'] };
 const cellX = x => x + .5 - SIZE / 2, cellZ = y => y + .5 - SIZE / 2;
-const RING = 12, STEPS = 4, CELL_REPEAT = 2.4;
+const RING = 8, STEPS = 2, CELL_REPEAT = 2.4;
 
 // Scales, a spine pattern and a pale belly, in the skin's colours.
 const skinTextures = new Map();
@@ -75,21 +75,30 @@ const isCapable = () => (navigator.deviceMemory ?? 8) >= 4 && (navigator.hardwar
 export class Arena3D {
   constructor(canvas, { theme = 'dhaka', skin = 'nagin' } = {}) {
     this.canvas = canvas; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.high = isCapable();
-    this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false, failIfMajorPerformanceCaveat: true, preserveDrawingBuffer: false });
     const phone = matchMedia('(pointer: coarse)').matches;
-    this.pixelRatio = Math.min(devicePixelRatio || 1, this.high && !phone ? 2 : 1.5); this.renderer.setPixelRatio(this.pixelRatio);
+    this.phone = phone;
+    this.high = isCapable() && !phone;
+    this.renderer = new WebGLRenderer({
+      canvas,
+      antialias: !phone,
+      alpha: false,
+      failIfMajorPerformanceCaveat: true,
+      powerPreference: 'high-performance',
+      preserveDrawingBuffer: false
+    });
+    this.pixelRatio = Math.min(devicePixelRatio || 1, phone ? 1.0 : Math.min(1.35, devicePixelRatio || 1));
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.toneMapping = ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.3;
-    this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = this.high;
+    this.renderer.shadowMap.type = PCFShadowMap;
     this.scene = new Scene(); this.scene.fog = new Fog('#ffffff', 60, 160); this.camera = new PerspectiveCamera(34, 1, .1, 700);
-    this.hemi = new HemisphereLight(0xffffff, 0x665544, 1); this.sun = new DirectionalLight(0xffffff, 3);
-    this.sun.castShadow = this.high; const shadowEdge = SIZE / 2 + 8, sc = this.sun.shadow; sc.mapSize.set(phone ? 1024 : 2048, phone ? 1024 : 2048); sc.bias = -.0004; sc.normalBias = .025;
+    this.hemi = new HemisphereLight(0xffffff, 0x665544, 1.2); this.sun = new DirectionalLight(0xffffff, 3);
+    this.sun.castShadow = this.high; const shadowEdge = SIZE / 2 + 8, sc = this.sun.shadow; sc.mapSize.set(1024, 1024); sc.bias = -.0004; sc.normalBias = .025;
     Object.assign(sc.camera, { left: -shadowEdge, right: shadowEdge, top: shadowEdge, bottom: -shadowEdge, near: 1, far: 70 });
     this.headLight = new PointLight(0xffe7b0, 0, 12, 1.5); this.scene.add(this.hemi, this.sun, this.sun.target, this.headLight);
     this.width = 0; this.height = 0; this.clock = performance.now(); this.time = 0; this.shakeAmount = 0; this.dark = 0; this.spent = 0; this.frames = 0;
     this.animated = []; this.foods = new Map(); this.foodModels = new Map(); this.bulges = []; this.particles = []; this.chaosKey = '';
     this.dummy = new Object3D(); this.tint = new Color();
-    this.pmrem = this.high ? new PMREMGenerator(this.renderer) : null;
     const bump = scaleBump();
     this.snakes = [0, 1].map(() => {
       const material = new MeshStandardMaterial({ color: 0xffffff, roughness: .36, metalness: .06, bumpMap: bump, bumpScale: 1.2 });
@@ -125,10 +134,6 @@ export class Arena3D {
     this.scene.fog.color.set(look.fog); this.fogColor = new Color(look.fog);
     this.hemi.color.set(look.mid); this.hemi.groundColor.set(look.ground[0]); this.baseHemi = this.high ? 1.15 : 2.1; this.sun.color.set(look.sun); this.baseSun = look.sunPower;
     this.sun.position.set(...look.sunDir).multiplyScalar(2.4);
-    if (this.pmrem) {
-      const studio = new Scene(); studio.add(this.buildSky(look));
-      this.scene.environment = this.pmrem.fromScene(studio, .03).texture; this.baseEnv = look.sky * .95; this.scene.environmentIntensity = this.baseEnv;
-    }
     const ground = new Mesh(new PlaneGeometry(700, 700), mat('#fff', .95, 0, { map: groundTexture(look) })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.03; ground.receiveShadow = true; this.world.add(ground);
     const surface = boardTextures(this.themeName), board = new Mesh(new PlaneGeometry(SIZE, SIZE), new MeshStandardMaterial({ map: surface.map, bumpMap: surface.bump, bumpScale: .6, roughness: this.themeName === 'coxs' ? .9 : .82 })); board.rotation.x = -Math.PI / 2; board.receiveShadow = true; this.world.add(board);
     // A painted kerb: the rickshaw-art band runs along the top, with plain concrete sides.
@@ -139,6 +144,12 @@ export class Arena3D {
       const wing = new Mesh(new BoxGeometry(.65, .3, SIZE), [curb, curb, paintedSide, curb, curb, curb]); wing.position.set(side * (SIZE / 2 + .33), .15, 0); wing.castShadow = wing.receiveShadow = true; this.world.add(wing);
     }
     decorate(this.themeName, this.world, this.animated, this.high ? 1 : 0);
+    this.world.traverse(o => {
+      if (o.isMesh && !o.userData.animated) {
+        o.matrixAutoUpdate = false;
+        o.updateMatrix();
+      }
+    });
     this.scene.add(this.world);
     if (this.width) this.fit();
   }
@@ -255,10 +266,19 @@ export class Arena3D {
     // Judged by the clock, not a frame count: at 5 fps a frame count takes far longer than a round lasts.
     if (gap < 1000) { this.frames++; this.spent += gap; }
     if (this.spent >= 800) {
-      if (this.spent / this.frames > 34) {
-        if (this.sun.castShadow) { this.sun.castShadow = false; this.blobs.visible = true; }
-        else if (this.high) { this.high = false; this.setTheme(this.themeName); }
-        else if (this.pixelRatio > 1) { this.pixelRatio = Math.max(1, this.pixelRatio - .35); this.renderer.setPixelRatio(this.pixelRatio); }
+      const avg = this.spent / this.frames;
+      if (avg > 25) {
+        if (this.renderer.shadowMap.enabled) {
+          this.renderer.shadowMap.enabled = false;
+          this.sun.castShadow = false;
+          this.blobs.visible = true;
+        } else if (this.pixelRatio > 1.0) {
+          this.pixelRatio = 1.0;
+          this.renderer.setPixelRatio(1.0);
+        } else if (this.high) {
+          this.high = false;
+          this.setTheme(this.themeName);
+        }
       }
       this.frames = 0; this.spent = 0;
     }
@@ -276,7 +296,6 @@ export class Arena3D {
     const wantDark = game.chaos?.blackout ? 1 : 0; this.dark += (wantDark - this.dark) * Math.min(1, dt * (this.reduced ? 30 : 7));
     this.syncFood(game.food, .03 + this.dark * .8); this.syncChaos(game.chaos);
     this.hemi.intensity = this.baseHemi * (1 - this.dark * .95); this.sun.intensity = this.baseSun * (1 - this.dark * .98);
-    if (this.pmrem) this.scene.environmentIntensity = this.baseEnv * (1 - this.dark * .95);
     const night = 1 - this.dark * .94; this.sky.material.color.setScalar(night); this.scene.fog.color.copy(this.fogColor).multiplyScalar(night);
     this.headLight.position.set(this.snakes[0].head.group.position.x, 1.5, this.snakes[0].head.group.position.z); this.headLight.intensity = this.dark * 34;
     if (!this.reduced) for (const fn of this.animated) fn(this.time);
@@ -295,7 +314,7 @@ export class Arena3D {
     }
     this.renderer.render(this.scene, this.camera);
   }
-  quality() { return `3D shadows ${this.sun.castShadow ? 'on' : 'off'}, scenery ${this.high ? 'full' : 'light'}, sharpness ${this.pixelRatio.toFixed(2)}, ${this.renderer.info.render.calls} draws`; }
+  quality() { return `3D shadows ${this.renderer.shadowMap.enabled && this.sun.castShadow ? 'on' : 'off'}, scenery ${this.high ? 'full' : 'light'}, sharpness ${this.pixelRatio.toFixed(2)}, ${this.renderer.info.render.calls} draws`; }
   // The drawing buffer clears after compositing, so render immediately before reading it.
   snapshot() { this.renderer.render(this.scene, this.camera); return this.canvas; }
 }

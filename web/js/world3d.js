@@ -302,9 +302,9 @@ export function decorate(theme, group, animated, detail) {
     for (const x of poles) { group.add(cyl(.07, .1, 7, mat('#6e6a64', .9), x, 3.5, -T - 4.4, 6), box(1.5, .07, .07, STEEL, x, 6.5, -T - 4.4)); }
     if (detail) for (let line = 0; line < 8; line++) { const y = 6.7 - line * .2, cable = box(2 * T + 7, .018, .018, wire, 0, y, -T - 4.4 + (line % 3) * .14); cable.rotation.z = (rnd() - .5) * .012; cable.castShadow = false; group.add(cable); }
     group.add(tree(-T - 7, -T - 6.4, 1.4, rnd), tree(T + 7, -T - 6.2, 1.3, rnd));
-    const moving = bus('#b5382a'); moving.scale.setScalar(2.4); moving.position.set(0, 0, -T - 2.4); group.add(moving);
+    const moving = bus('#b5382a'); moving.scale.setScalar(2.4); moving.position.set(0, 0, -T - 2.4); moving.userData.animated = true; group.add(moving);
     animated.push(t => { moving.position.x = ((t * 2.2) % 70) - 35; });
-    const auto = cng(); auto.scale.setScalar(2.2); auto.rotation.y = Math.PI; auto.position.set(0, 0, -T - 1.4); group.add(auto);
+    const auto = cng(); auto.scale.setScalar(2.2); auto.rotation.y = Math.PI; auto.position.set(0, 0, -T - 1.4); auto.userData.animated = true; group.add(auto);
     animated.push(t => { auto.position.x = 35 - ((t * 3 + 22) % 70); });
   } else if (theme === 'rooftop') {
     const brick = texture(128, 64, (c, w, h) => { c.fillStyle = '#6b3a2a'; c.fillRect(0, 0, w, h); for (let y = 0; y < 4; y++) for (let x = -1; x < 4; x++) { c.fillStyle = ['#a65a3f', '#b86a48', '#94513a'][(x * 3 + y) % 3 + (x < 0 ? 3 : 0)] ?? '#a65a3f'; c.fillRect(x * 34 + (y % 2) * 16 + 2, y * 16 + 2, 30, 12); } }, 16, 1);
@@ -316,7 +316,7 @@ export function decorate(theme, group, animated, detail) {
     for (let i = 0; i < (detail ? 8 : 4); i++) {
       const kite = new Group(), sail = new Mesh(new ConeGeometry(.75, 1.15, 4).rotateY(Math.PI / 4), mat(kiteColors[i % 6], .7, 0, { side: DoubleSide })); sail.scale.z = .05; kite.add(sail);
       const tailKite = box(.05, 1, .02, mat('#fff', .8), 0, -1, 0); tailKite.castShadow = false; kite.add(tailKite);
-      kite.position.set(-16 + i * 4.6, 10 + (i * 3) % 6, -T - 4 - (i % 3) * 2); group.add(kite);
+      kite.position.set(-16 + i * 4.6, 10 + (i * 3) % 6, -T - 4 - (i % 3) * 2); kite.traverse(c => { c.userData.animated = true; }); group.add(kite);
       animated.push(t => { kite.position.y = 10 + (i * 3) % 6 + Math.sin(t * .8 + i) * .9; kite.rotation.z = Math.sin(t * .6 + i * 2) * .35; });
     }
     const clothes = ['#ef476f', '#fefae0', '#118ab2', '#ffd166', '#06d6a0', '#ff9f1c'];
@@ -327,7 +327,7 @@ export function decorate(theme, group, animated, detail) {
     const sea = new Mesh(new PlaneGeometry(240, 90), mat('#fff', .16, .15, { map: waterTexture('#127ea3', '#7fd8e8') })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, .04, -T - 46); sea.receiveShadow = true; group.add(sea);
     animated.push(t => { sea.material.map.offset.set(t * .012, t * .02); });
     const foam = [];
-    for (let i = 0; i < 4; i++) { const f = new Mesh(new PlaneGeometry(240, 1 + i * .25), mat('#ffffff', .5, 0, { transparent: true, opacity: .8 - i * .15 })); f.rotation.x = -Math.PI / 2; f.position.y = .06; group.add(f); foam.push(f); }
+    for (let i = 0; i < 4; i++) { const f = new Mesh(new PlaneGeometry(240, 1 + i * .25), mat('#ffffff', .5, 0, { transparent: true, opacity: .8 - i * .15 })); f.rotation.x = -Math.PI / 2; f.position.y = .06; f.userData.animated = true; group.add(f); foam.push(f); }
     animated.push(t => foam.forEach((f, i) => { f.position.z = -T - 2.2 - i * 2.7 + Math.sin(t * .8 + i * 1.2) * .9; }));
     const wet = new Mesh(new PlaneGeometry(240, 5), mat('#a48a5a', .2, .1)); wet.rotation.x = -Math.PI / 2; wet.position.set(0, .03, -T - 2.5); group.add(wet);
     for (const [x, z, h] of [[-T - 3, -6, 4.6], [-T - 4.6, 2, 5.4], [T + 3, -8, 4.8], [T + 4.6, 0, 5.6], [T + 3, 7, 4.2], [-T - 3, 8, 4]]) group.add(palm(x, z, h, rnd));
@@ -337,7 +337,7 @@ export function decorate(theme, group, animated, detail) {
     });
     for (let i = 0; i < (detail ? 3 : 1); i++) {
       const boat = new Group(), hull = ball(1, mat(['#c1121f', '#1d6fa5', '#f4a261'][i], .55), 0, 0, 0, 14); hull.scale.set(2.8, .55, .7); boat.add(hull, box(1.5, .5, .8, mat('#6b4a2c', .85), 0, .6, 0), cyl(.03, .04, 3, mat('#3a2a1a', .9), .3, 1.6, 0, 5));
-      boat.position.set(-18 + i * 18, .25, -T - 18 - i * 6); group.add(boat);
+      boat.position.set(-18 + i * 18, .25, -T - 18 - i * 6); boat.traverse(c => { c.userData.animated = true; }); group.add(boat);
       animated.push(t => { boat.position.y = .25 + Math.sin(t * 1.1 + i) * .1; boat.rotation.z = Math.sin(t * .9 + i) * .05; });
     }
   } else {
@@ -356,6 +356,7 @@ export function decorate(theme, group, animated, detail) {
     for (const [x, z] of [[-1.15, .26], [-1.15, -.26], [-.2, .26], [-.2, -.26]]) tiger.add(cyl(.09, .1, .45, fur, x, .22, z, 7));
     const tigerTail = cyl(.04, .07, 1.1, fur, -1.68, .6, 0, 6); tigerTail.rotation.z = .9; tiger.add(tigerTail);
     tiger.rotation.y = -.75; tiger.position.set(-T - 2.1, 0, -T - .7); group.add(tiger);
+    head.userData.animated = true; tigerTail.userData.animated = true;
     animated.push(t => { head.rotation.y = Math.sin(t * .5) * .35; tigerTail.rotation.x = Math.sin(t * 1.4) * .4; });
   }
 }
