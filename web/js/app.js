@@ -1,7 +1,6 @@
-import { createGame, queueTurn, clearTurns, step, stepDuration, chooseBotTurn, makeRecording, replayRecording, dailySeed, dhakaDay, swipeTurn, canTurn, ROUND_MS } from './engine.js';
+import { createGame, queueTurn, clearTurns, step, stepDuration, makeRecording, replayRecording, dailySeed, dhakaDay, swipeTurn, canTurn } from './engine.js';
 import { ArenaRenderer } from './render.js';
-import { RoomConnection, SmoothView } from './network.js';
-import { GameAudio, escapedDanger, roastBank, duelBank, biteBank, startBank, phrases } from './audio.js';
+import { GameAudio, escapedDanger, roastBank, biteBank, startBank, phrases } from './audio.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
 import { DISTRICTS } from './districts.js';
 import { t, num, lang, applyLanguage } from './i18n.js';
@@ -20,15 +19,12 @@ const sound = { effects: saved?.effects !== false, voice: saved?.voice !== false
 let captionTimer;
 const audio = new GameAudio(sound, text => { clearTimeout(captionTimer); ui.caption.textContent = text; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = text; if (text) captionTimer = setTimeout(() => { ui.caption.textContent = ''; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = ''; }, 6500); });
 const renderer = new ArenaRenderer(ui.board);
-let selectedMode = 'solo', session = null, game = null, previous = null, screen = 'menu';
+let session = null, game = null, previous = null, screen = 'menu';
 let frameAt = performance.now(), accumulator = 0, countdownEnd = 0, lastCount = null;
-let series = { round: 1, wins: [0, 0] }, connection = null, networkAt = 0, lastNetworkTick = -1;
 let ghost = null, recording = null, ghostIndex = 0, preview = null, resultSaved = '';
 let resumeAfterLeave = false, slipSaid = false;
 const prefs = { theme: 'dhaka', skin: 'nagin', flat: false, ...get('prefs', {}) };
 let view3d = null, friendGhost = null, pendingDaily = get('pendingDaily', null), lastRun = null, boardScope = 'everyone';
-const smooth = new SmoothView();
-const OFFLINE_ROOM = 'Online rooms need internet. Solo, Chaos, the computer and same-keyboard games all work offline.';
 const CHAOS_STATUS = { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' };
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
@@ -41,55 +37,59 @@ function loadGhost(speed) {
 }
 function error(message = '') { ui.setupError.textContent = message; ui.setupError.hidden = !message; }
 function updateSetup() {
-  const duel = selectedMode === 'duel', opponent = ui.opponent.value, style = ui.style.value;
-  ui.soloMode.setAttribute('aria-pressed', String(!duel)); ui.duelMode.setAttribute('aria-pressed', String(duel));
-  ui.onlineFields.hidden = opponent !== 'online'; ui.codeField.hidden = ui.roomAction.value !== 'join';
+  const style = ui.style.value;
   error();
-  const record = !duel && style === 'ghost' ? friendGhost?.record ?? loadGhost(ui.speed.value) : null;
+  const record = style === 'ghost' ? friendGhost?.record ?? loadGhost(ui.speed.value) : null;
   ui.speed.disabled = style === 'daily' || (style === 'ghost' && !!friendGhost);
-  const descriptions = { daily: t('Same board for all of Bangladesh today, at Standard speed. Your best run goes on the leaderboard.'), classic: t('The original rules. Eat, grow longer, and avoid walls and your tail.'), chaos: t('Load shedding, traffic jams, floods and wedding biryani, all on the way to your high score.'), arcade: t('Eat again within 8 seconds to build a combo. Points climb to ×3; speed follows food eaten.'), ghost: friendGhost ? t("Race {name}'s {score}-point run on the same starting board. Their blue ghost cannot hit you.", { name: friendGhost.name, score: record.score }) : record ? t('Race your {score}-point best on the same starting board. The blue ghost cannot hit you.', { score: record.score }) : t('Finish a Classic run to set a ghost. Your first race records one automatically.') };
-  ui.modeDescription.textContent = duel ? opponent === 'local' ? t('Two players, one keyboard. Equal speed. First to win 3 rounds takes the match.') : opponent === 'online' ? t('Share a room with a friend. Same rules, one referee. First to 3 round wins.') : t('Outlast a space-aware computer opponent. First to 3 round wins.') : descriptions[style];
-  const label = duel ? opponent === 'online' ? ui.roomAction.value === 'create' ? t('Create room') : t('Join room') : opponent === 'local' ? t('Start local match') : t('Play the computer') : style === 'ghost' ? friendGhost ? t('Race {name}', { name: friendGhost.name }) : record ? t('Race your ghost') : t('Record first ghost') : style === 'daily' ? t("Play today's challenge") : style === 'chaos' ? t('Start the chaos') : style === 'arcade' ? t('Play Arcade') : t('Play Classic');
+  const descriptions = {
+    daily: t('Same board for all of Bangladesh today, at Standard speed. Your best run goes on the leaderboard.'),
+    classic: t('The original rules. Eat, grow longer, and avoid walls and your tail.'),
+    chaos: t('Load shedding, traffic jams, floods and wedding biryani, all on the way to your high score.'),
+    arcade: t('Eat again within 8 seconds to build a combo. Points climb to ×3; speed follows food eaten.'),
+    ghost: friendGhost ? t("Race {name}'s {score}-point run on the same starting board. Their blue ghost cannot hit you.", { name: friendGhost.name, score: record.score }) : record ? t('Race your {score}-point best on the same starting board. The blue ghost cannot hit you.', { score: record.score }) : t('Finish a Classic run to set a ghost. Your first race records one automatically.')
+  };
+  ui.modeDescription.textContent = descriptions[style];
+  const label = style === 'ghost' ? friendGhost ? t('Race {name}', { name: friendGhost.name }) : record ? t('Race your ghost') : t('Record first ghost') : style === 'daily' ? t("Play today's challenge") : style === 'chaos' ? t('Start the chaos') : style === 'arcade' ? t('Play Arcade') : t('Play Classic');
   playLabel(label);
   for (const el of document.querySelectorAll('[data-description]')) el.textContent = ui.modeDescription.textContent;
   renderCards();
-  ui.bestLabel.parentElement.hidden = duel; ui.bestLabel.hidden = duel; ui.bestValue.textContent = num(best());
+  ui.bestLabel.parentElement.hidden = false; ui.bestLabel.hidden = false; ui.bestValue.textContent = num(best());
   ui.rulesText.replaceChildren();
-  const paragraphs = duel ? [
-    t('Eat to grow. Hitting a wall or either snake knocks you out. The last snake moving wins the round.'),
-    t('Head-on collisions and swapped heads are draws. A tail cell is safe only when its owner moves away without growing.'),
-    t('Rounds last 90 seconds. If both survive, more food wins; equal scores draw. Both players keep the same speed.'),
-    opponent === 'local' ? t('Player 1: W A S D. Player 2: arrow keys. Escape pauses both players.') : opponent === 'online' ? t('Use arrow keys or W A S D. Online matches keep running if you change tabs. Both players must agree to the next round.') : t('Use arrow keys or W A S D. Escape pauses. The computer sees the board, not your next input.')
-  ] : [t('Use arrow keys, W A S D, the direction buttons, or swipe on the board. You cannot reverse into your neck.'), t('One turn is applied per movement step. Two quick turns can be queued. Escape or P pauses; switching tabs also pauses.'), t('Each bite adds a body segment. Speed increases slightly every 5 bites. Fill the board to win.'), ...(style === 'chaos' ? [t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')] : style === 'daily' ? [t('Everyone gets the same food order today, until the snake paths differ. You can retry as often as you like; only your best run counts. Bangladesh time decides the day.')] : style === 'arcade' ? [t('Combos reset after 8 seconds of active play. Pausing does not consume your combo. Arcade records are separate.')] : style === 'ghost' ? [t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')] : [])];
+  const paragraphs = [
+    t('Use arrow keys, W A S D, the direction buttons, or swipe on the board. You cannot reverse into your neck.'),
+    t('One turn is applied per movement step. Two quick turns can be queued. Escape or P pauses; switching tabs also pauses.'),
+    t('Each bite adds a body segment. Speed increases slightly every 5 bites. Fill the board to win.'),
+    ...(style === 'chaos' ? [t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')] : style === 'daily' ? [t('Everyone gets the same food order today, until the snake paths differ. You can retry as often as you like; only your best run counts. Bangladesh time decides the day.')] : style === 'arcade' ? [t('Combos reset after 8 seconds of active play. Pausing does not consume your combo. Arcade records are separate.')] : style === 'ghost' ? [t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')] : [])
+  ];
   for (const text of paragraphs) { const p = document.createElement('p'); p.textContent = text; ui.rulesText.append(p); }
-  ui.board.setAttribute('aria-label', duel ? t('Board preview. Player 1 is green; Player 2 is amber.') : t('Board preview. Your snake is ready.'));
-  preview = createGame({ mode: duel ? 'duel' : 'classic', seed: 1 });
-  if (!duel) { preview.snakes[0].body = [{x:8,y:8},{x:7,y:8},{x:6,y:8},{x:5,y:8},{x:4,y:8},{x:4,y:9},{x:4,y:10},{x:4,y:11},{x:5,y:11},{x:6,y:11},{x:7,y:11}]; preview.food = [{x:13,y:8}]; }
-  ui.p1Name.textContent = duel ? t('Player 1') : t('Your snake'); ui.p2Name.textContent = duel ? opponent === 'bot' ? t('Computer') : t('Player 2') : t('Best'); ui.p2Mark.hidden = !duel;
-  ui.p1Score.textContent = num(0); ui.p2Score.textContent = num(duel ? 0 : best());
-  ui.middleScore.textContent = duel ? t('FIRST TO 3') : style === 'ghost' ? t('GHOST RACE') : t(style.toUpperCase());
-  ui.arenaLabel.textContent = duel ? t('A LEVEL PLAYING FIELD') : t('THE PRACTICE GREEN');
-  ui.statusText.textContent = duel ? t('Same speed. Same rules. Settle it on the board.') : t('Eat up. Keep your head clear.');
-  ui.controlsHint.innerHTML = duel && opponent === 'local' ? `<span><kbd>W A S D</kbd> ${t('Player 1')}</span><span><kbd>↑ ← ↓ →</kbd> ${t('Player 2')}</span>` : `<span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> ${t('or')} <kbd>W A S D</kbd> ${t('to steer')}</span><span><kbd>Esc</kbd> ${t('pause')}</span>`;
-  if (duel && opponent === 'online') ui.controlsHint.lastElementChild.textContent = t('Online matches cannot be paused.');
+  ui.board.setAttribute('aria-label', t('Board preview. Your snake is ready.'));
+  preview = createGame({ mode: 'classic', seed: 1 });
+  preview.snakes[0].body = [{x:8,y:8},{x:7,y:8},{x:6,y:8},{x:5,y:8},{x:4,y:8},{x:4,y:9},{x:4,y:10},{x:4,y:11},{x:5,y:11},{x:6,y:11},{x:7,y:11}]; preview.food = [{x:13,y:8}];
+  ui.p1Name.textContent = t('Your snake'); ui.p2Name.textContent = t('Best');
+  if (ui.p2Mark) ui.p2Mark.hidden = true;
+  ui.p1Score.textContent = num(0); ui.p2Score.textContent = num(best());
+  ui.middleScore.textContent = style === 'ghost' ? t('GHOST RACE') : t(style.toUpperCase());
+  ui.arenaLabel.textContent = t('THE PRACTICE GREEN');
+  ui.statusText.textContent = t('Eat up. Keep your head clear.');
+  ui.controlsHint.innerHTML = `<span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> ${t('or')} <kbd>W A S D</kbd> ${t('to steer')}</span><span><kbd>Esc</kbd> ${t('pause')}</span>`;
 }
 function playControls(visible) {
-  ui.pauseButton.hidden = !visible || !!connection; ui.exitButton.hidden = !visible; ui.momButton.hidden = !visible || !!connection;
-  ui.touchControls.hidden = !visible || session?.opponent === 'local'; ui.controlsHint.hidden = !visible;
+  ui.pauseButton.hidden = !visible; ui.exitButton.hidden = !visible; ui.momButton.hidden = !visible;
+  ui.touchControls.hidden = !visible; ui.controlsHint.hidden = !visible;
 }
 function overlay(eyebrow, title, text, button = '', action = null, focus = true) {
   playControls(false);
   ui.overlay.hidden = false; ui.overlayEyebrow.textContent = eyebrow; ui.overlayTitle.textContent = title; ui.overlayText.textContent = text;
   ui.continueButton.hidden = !button; ui.continueButton.textContent = button; ui.continueButton.onclick = action;
-  ui.roomShare.hidden = true; ui.countdown.hidden = true; ui.resultActions.hidden = true; ui.rankText.hidden = true; ui.resultScore.hidden = true; ui.overlayTitle.removeAttribute('lang');
+  ui.countdown.hidden = true; ui.resultActions.hidden = true; ui.rankText.hidden = true; ui.resultScore.hidden = true; ui.overlayTitle.removeAttribute('lang');
   if (focus) ui.overlayTitle.focus({ preventScroll: true });
 }
 function enterGame() {
   document.querySelector('.board-actions').prepend(ui.soundButton); ui.soundButton.textContent = t('Sound');
   ui.app.classList.add('playing'); ui.previewTag.hidden = true; ui.overlay.hidden = true; ui.exitButton.hidden = false;
-  ui.pauseButton.hidden = session.opponent === 'online';
-  ui.touchControls.hidden = session.opponent === 'local';
-  ui.connectionStatus.textContent = ''; ui.startButton.disabled = false;
+  ui.pauseButton.hidden = false;
+  ui.touchControls.hidden = false;
+  ui.startButton.disabled = false;
   ui.board.setAttribute('tabindex', '0'); ui.board.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -97,20 +97,21 @@ function beginLocalRound() {
   playControls(true);
   earlyTurns = {}; resultSaved = ''; recording = session.style === 'ghost' ? friendGhost?.record ?? loadGhost(session.speed) : null;
   const seed = recording?.seed ?? (session.style === 'daily' ? dailySeed(dhakaDay()) : randomSeed());
-  game = createGame({ mode: session.mode === 'duel' ? 'duel' : ['arcade', 'chaos'].includes(session.style) ? session.style : 'classic', speed: session.speed, seed });
+  game = createGame({ mode: ['arcade', 'chaos'].includes(session.style) ? session.style : 'classic', speed: session.speed, seed });
   previous = positions(game); accumulator = 0; ghostIndex = 0;
   ghost = recording ? createGame({ seed: recording.seed, speed: recording.speed }) : null;
   screen = 'countdown'; countdownEnd = performance.now() + 3000; lastCount = null;
-  ui.overlay.hidden = true; ui.countdown.hidden = false; ui.countdownText.textContent = session.opponent === 'local' ? t('Player 1: W A S D · Player 2: arrow keys') : t('Get ready');
+  ui.overlay.hidden = true; ui.countdown.hidden = false; ui.countdownText.textContent = t('Get ready');
   ui.pauseButton.hidden = false; ui.pauseButton.textContent = t('Pause'); audio.stop(); updateHud();
 }
 function playLabel(text) {
   ui.startButton.replaceChildren(document.createTextNode(text)); const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true'); ui.startButton.append(arrow);
   for (const button of document.querySelectorAll('[data-play]')) button.textContent = text;
 }
-const CARD_NOTES = { daily: 'Same board for everyone, new every day', classic: 'Pure snake, no surprises', chaos: 'Load shedding, jams, floods, biryani', arcade: 'Chain bites for up to ×3 points', ghost: 'Beat a replay of your best run', bot: 'Practice against a clever snake', local: 'Two players, one keyboard', online: 'Send a friend a link' };
+const CARD_NOTES = { daily: 'Same board for everyone, new every day', classic: 'Pure snake, no surprises', chaos: 'Load shedding, jams, floods, biryani', arcade: 'Chain bites for up to ×3 points', ghost: 'Beat a replay of your best run' };
 // The selects stay as the single source of truth; each card just sets one.
 function cardsFor(select, container, decorate) {
+  if (!select || !container) return;
   container.replaceChildren(...[...select.options].map(option => {
     const card = document.createElement('button'); card.type = 'button'; card.className = 'card'; 
     card.setAttribute('aria-pressed', String(option.value === select.value));
@@ -122,7 +123,7 @@ function cardsFor(select, container, decorate) {
   }));
 }
 function renderCards() {
-  cardsFor(ui.style, ui.styleCards); cardsFor(ui.speed, ui.speedCards); cardsFor(ui.opponent, ui.opponentCards); cardsFor(ui.roomAction, ui.roomCards);
+  cardsFor(ui.style, ui.styleCards); cardsFor(ui.speed, ui.speedCards);
   ui.speedCards.classList.toggle('locked', ui.speed.disabled);
   for (const card of ui.speedCards.children) card.disabled = ui.speed.disabled;
   const swatch = colors => card => { const chip = document.createElement('i'); chip.className = 'swatch'; chip.style.background = `linear-gradient(135deg,${colors.join(',')})`; card.prepend(chip); };
@@ -131,110 +132,40 @@ function renderCards() {
   const chosen = SKINS[prefs.skin] ?? SKINS.nagin; ui.looksSummary.textContent = t(chosen.label); ui.snakeDot.style.background = `linear-gradient(135deg,${chosen.body.join(',')})`;
 }
 function showScreen(name) {
-  for (const id of ['home', 'solo', 'duel', 'looks', 'how']) ui[`${id}Screen`].hidden = id !== name;
+  for (const id of ['home', 'solo', 'looks', 'how']) if (ui[`${id}Screen`]) ui[`${id}Screen`].hidden = id !== name;
   error();
   (name === 'home' ? ui.startButton : ui[`${name}Screen`].querySelector('[data-back]')).focus({ preventScroll: true });
-}
-function setupBusy(busy) {
-  for (const el of ui.setup.querySelectorAll('button, select, input')) el.disabled = busy;
-  ui.setup.setAttribute('aria-busy', String(busy));
-  if (busy) playLabel(t('Connecting…'));
 }
 async function start() {
   if (ui.startButton.disabled || updater.applyPending(true)) return;
   error(); audio.unlock();
-  session = { mode: selectedMode, style: ui.style.value, speed: ui.style.value === 'daily' ? 'normal' : ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value, opponent: selectedMode === 'duel' ? ui.opponent.value : null };
-  if (session.opponent === 'online') {
-    if (navigator.onLine === false) { error(t(OFFLINE_ROOM)); session = null; return; }
-    const code = ui.roomCode.value.trim().toUpperCase();
-    if (ui.roomAction.value === 'join' && !/^[A-F0-9]{8}$/.test(code)) { error(t('Enter the 8-character room code your friend shared.')); ui.roomCode.focus(); return; }
-    setupBusy(true);
-    const activeConnection = new RoomConnection(state => onNetwork(state), (message, fatal) => {
-      ui.connectionStatus.textContent = t(message);
-      if (fatal) { ui.connectionStatus.textContent = ''; screen = 'result'; audio.stop(); ui.pauseButton.hidden = true; overlay(t('CONNECTION ENDED'), t('Room closed'), t(message)); }
-    });
-    connection = activeConnection; lastNetworkTick = -1; game = null; previous = null;
-    try {
-      await activeConnection.open(ui.roomAction.value, code);
-      if (connection !== activeConnection) return;
-      setupBusy(false); enterGame();
-      // open() has already delivered the first snapshot; restore its waiting panel.
-      onNetwork(activeConnection.state, true);
-    } catch (e) { activeConnection.close(); connection = null; session = null; setupBusy(false); updateSetup(); error(e.status ? t(e.message) : navigator.onLine === false ? t(OFFLINE_ROOM) : t('Could not reach the room server. Check your connection and try again.')); }
-    return;
-  }
-  series = { round: 1, wins: [0, 0] }; enterGame(); beginLocalRound();
-}
-function onNetwork(state, force = false) {
-  if (!state || !session) return;
-  const oldScreen = screen, oldRound = series.round;
-  ui.connectionStatus.textContent = '';
-  series = { round: state.round, wins: state.wins };
-  // Every snapshot resets the clock: its timing fields are only true as of now, tick change or not.
-  networkAt = performance.now();
-  if (state.game && (state.game.tick !== lastNetworkTick || oldRound !== state.round || force)) {
-    const before = game;
-    previous = positions(game ?? state.game); game = state.game;
-    lastNetworkTick = game.tick;
-    // A slow link skips ticks, so reactions come from what changed rather than the last tick's events.
-    const sameRound = before && oldRound === state.round;
-    if (sameRound) handleEvents([
-      ...game.snakes.flatMap(s => s.score > before.snakes[s.id].score ? [{ type: 'eat', id: s.id, points: s.score - before.snakes[s.id].score, cell: s.body[0] }] : []),
-      ...game.snakes.flatMap(s => before.snakes[s.id].alive && !s.alive ? [{ type: 'crash', id: s.id }] : [])
-    ]);
-  }
-  ui.pauseButton.hidden = true;
-  if (state.phase === 'waiting') {
-    screen = 'waiting';
-    if (oldScreen !== 'waiting' || force) {
-      overlay(t('YOUR TABLE IS READY'), t('Invite a friend'), t('Send the link or share this room code.\nThe countdown starts when they join.'));
-      ui.roomShare.hidden = false; ui.shareCode.value = state.code; ui.menuButton.textContent = t('Cancel room');
-      history.replaceState(null, '', `?room=${state.code}`);
-    }
-  } else if (state.phase === 'countdown') {
-    // The next online round can start while a card is open; the board must not play on behind it.
-    if (ui.cardDialog.open) ui.cardDialog.close();
-    screen = 'countdown'; playControls(true); ui.overlay.hidden = true; ui.countdown.hidden = false;
-    countdownEnd = performance.now() + state.countdown;
-    ui.countdownText.textContent = t('You are Player {n} · {color} snake', { n: state.player + 1, color: t(state.player ? t('amber') : t('green')) });
-    if (oldScreen !== 'countdown') { earlyTurns = {}; lastCount = null; audio.setActive(false); }
-  } else if (state.phase === 'playing') {
-    screen = 'playing'; playControls(true); ui.overlay.hidden = true; ui.countdown.hidden = true;
-    if (oldScreen !== 'playing') { releaseEarlyTurns(); audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ duel: game.mode === 'duel', style: session.style, skin: prefs.skin }), true); }
-  } else if (state.phase === 'finished') {
-    screen = 'result'; audio.setActive(false);
-    if (oldScreen !== 'result' || force) { diagnostics?.note(`round over: ${game.snakes[state.player].death ?? 'alive'}, heading ${game.snakes[state.player].dir}, tick ${game.tick}`); updateHud(); showResults(); }
-    if (state.ready[state.player]) { ui.continueButton.disabled = true; ui.continueButton.textContent = t('Waiting for opponent…'); }
-    else { ui.continueButton.disabled = false; }
-  }
-  if (game && state.phase !== 'finished') updateHud();
+  session = { mode: 'solo', style: ui.style.value, speed: ui.style.value === 'daily' ? 'normal' : ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value };
+  enterGame(); beginLocalRound();
 }
 function updateHud() {
   if (!game || !session) return;
-  const duel = game.mode === 'duel', me = connection?.state?.player ?? 0;
-  ui.arenaLabel.textContent = duel ? t('{mode} · ROUND {n}', { mode: t(session.opponent === 'online' ? t('ONLINE') : session.opponent === 'bot' ? t('VS COMPUTER') : t('SAME KEYBOARD')), n: series.round }) : session.style === 'ghost' ? t('GHOST RACE') : session.style === 'daily' ? t('TODAY · {day}', { day: num(dhakaDay()) }) : t(session.style.toUpperCase());
-  ui.p1Name.textContent = duel ? session.opponent === 'online' && me === 0 ? t('You · P1') : t('Player 1') : t('Your snake');
-  ui.p2Name.textContent = duel ? session.opponent === 'bot' ? t('Computer') : session.opponent === 'online' && me === 1 ? t('You · P2') : t('Player 2') : ghost ? t('Ghost') : t('Best');
-  ui.p1Score.textContent = num(game.snakes[0].score); ui.p2Score.textContent = num(duel ? game.snakes[1].score : ghost ? ghost.snakes[0].score : best(session.style, session.speed));
-  ui.p2Mark.hidden = !duel;
-  ui.middleScore.textContent = duel ? t('{wins0} — {wins1} ROUNDS', { wins0: series.wins[0], wins1: series.wins[1] }) : session.style === 'ghost' ? recording ? t('TARGET {n}', { n: recording.score }) : t('RECORDING') : game.mode === 'classic' ? t('BITES') : t('POINTS');
-  ui.comboWrap.hidden = session.style !== 'arcade' || duel;
+  ui.arenaLabel.textContent = session.style === 'ghost' ? t('GHOST RACE') : session.style === 'daily' ? t('TODAY · {day}', { day: num(dhakaDay()) }) : t(session.style.toUpperCase());
+  ui.p1Name.textContent = t('Your snake');
+  ui.p2Name.textContent = ghost ? t('Ghost') : t('Best');
+  ui.p1Score.textContent = num(game.snakes[0].score); ui.p2Score.textContent = num(ghost ? ghost.snakes[0].score : best(session.style, session.speed));
+  if (ui.p2Mark) ui.p2Mark.hidden = true;
+  ui.middleScore.textContent = session.style === 'ghost' ? recording ? t('TARGET {n}', { n: recording.score }) : t('RECORDING') : game.mode === 'classic' ? t('BITES') : t('POINTS');
+  ui.comboWrap.hidden = session.style !== 'arcade';
   if (!ui.comboWrap.hidden) { ui.comboText.textContent = `×${Math.max(1, game.snakes[0].combo)}`; ui.comboMeter.value = Math.max(0, game.snakes[0].comboUntil - game.elapsedMs); }
-  ui.timerText.textContent = duel ? t('{n}s left', { n: Math.ceil(Math.max(0, ROUND_MS - game.elapsedMs) / 1000) }) : t('{n} segments', { n: game.snakes[0].body.length });
-  ui.statusText.textContent = duel ? t('Last snake moving wins. First to 3 rounds.') : game.chaos ? t(CHAOS_STATUS[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'arcade' ? t('Keep eating. Combos last 8 seconds.') : session.style === 'ghost' ? recording ? ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.') : t('Finish this run to save your first ghost.') : t('Find your rhythm. Watch your tail.');
-  ui.board.setAttribute('aria-label', duel ? `Board. Player 1: ${game.snakes[0].score} points. Player 2: ${game.snakes[1].score} points.` : `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
+  ui.timerText.textContent = t('{n} segments', { n: game.snakes[0].body.length });
+  ui.statusText.textContent = game.chaos ? t(CHAOS_STATUS[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'arcade' ? t('Keep eating. Combos last 8 seconds.') : session.style === 'ghost' ? recording ? ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.') : t('Finish this run to save your first ghost.') : t('Find your rhythm. Watch your tail.');
+  ui.board.setAttribute('aria-label', `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
 }
 // Routine lines wait their turn, so they never cut off an event announcement.
 function handleEvents(events) {
   for (const e of events ?? []) {
-    if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); if (session?.opponent === 'local' ? false : e.id === (connection?.state?.player ?? 0)) { const apples = game.snakes[e.id].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell), arcade: game.mode === 'arcade' }); audio.voice(bank, e.feast || bank.startsWith('bite')); } }
+    if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); const apples = game.snakes[0].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell), arcade: game.mode === 'arcade' }); audio.voice(bank, e.feast || bank.startsWith('bite')); }
     if (e.type === 'crash') { view3d?.effect('crash'); audio.effect('crash'); }
     // Traffic and floods speak on their warning, because that is when the player can still react.
     if (e.type === 'chaos') { if (e.phase === 'end') { slipSaid = false; audio.voice(`${e.name}End`); } else if (e.phase === 'warn' || !['traffic', 'flood'].includes(e.name)) audio.voice(e.name, true); }
   }
   if (!slipSaid && game?.chaos?.water.some(p => p.x === game.snakes[0].body[0].x && p.y === game.snakes[0].body[0].y)) { slipSaid = true; audio.voice('slip', true); }
-  const players = session?.opponent === 'local' ? [0, 1] : [connection?.state?.player ?? 0];
-  if (players.some(id => escapedDanger(previous, game, id))) audio.voice('danger');
+  if (escapedDanger(previous, game, 0)) audio.voice('danger');
 }
 function saveRun() {
   const score = game.snakes[0].score, key = bestKey(session.style, session.speed);
@@ -252,39 +183,22 @@ function saveRun() {
   } else resultSaved = ok ? t('Best saved on this device.') : t('Storage is unavailable; this score could not be saved.');
 }
 function showResults() {
-  ui.comboWrap.hidden = true; ui.statusText.textContent = game.mode === 'duel' ? t('Round complete.') : t('Run complete.'); ui.timerText.textContent = '';
+  ui.comboWrap.hidden = true; ui.statusText.textContent = t('Run complete.'); ui.timerText.textContent = '';
   ui.pauseButton.hidden = true; ui.countdown.hidden = true; ui.continueButton.disabled = false; ui.menuButton.textContent = t('Back to menu');
-  if (game.mode === 'duel') {
-    const wonMatch = series.wins.some(n => n >= 3), winner = game.winner;
-    const label = winner === null ? t('A draw.') : session.opponent === 'bot' ? winner === 0 ? t('You take the round.') : t('Computer takes it.') : t('Player {n} takes it.', { n: winner + 1 });
-    const title = wonMatch ? session.opponent === 'bot' ? series.wins[0] >= 3 ? t('You win the match.') : t('Computer wins.') : t('Player {n} wins the match.', { n: series.wins[0] >= 3 ? 1 : 2 }) : label;
-    const why = game.reason === 'double-crash' ? t('Both snakes crashed on the same step. No round awarded.') : game.reason === 'time' ? winner === null ? t('Time is up. Equal food, equal honours.') : t('Time is up. More food wins this round.') : game.reason === 'board-full' ? t('The arena is full. More food wins.') : t(game.snakes[1 - winner].death === 'wall' ? 'Player {n} hit the wall.' : game.snakes[1 - winner].death === 'self' ? 'Player {n} hit their own body.' : 'Player {n} hit the other snake.', { n: 2 - winner });
-    overlay(wonMatch ? t('MATCH COMPLETE') : t('ROUND {n} COMPLETE', { n: series.round }), title, why, connection ? wonMatch ? t('Ready for rematch') : t('Ready for next round') : wonMatch ? t('Play another match') : t('Next round'), () => {
-      audio.unlock();
-      if (connection) { connection.ready(); ui.continueButton.disabled = true; ui.continueButton.textContent = t('Waiting for opponent…'); }
-      else { series = wonMatch ? { round: 1, wins: [0, 0] } : { round: series.round + 1, wins: [...series.wins] }; beginLocalRound(); }
-    });
-    const me = connection?.state?.player ?? 0;
-    const wins = series.wins, death = winner === null ? game.snakes[0].death : game.snakes[1 - winner].death;
-    lastRun = { duel: true, winner, me, shared: session.opponent === 'local', opponent: session.opponent, reason: game.reason, death, matchOver: wonMatch, wins: [wins[me], wins[1 - me]], shot: copyBoard() };
-    ui.resultActions.hidden = false; ui.shareButton.hidden = false; ui.challengeButton.hidden = true; ui.joinButton.hidden = true;
-    audio.voice(duelBank({ winner, me, shared: session.opponent === 'local', reason: game.reason, death: winner === null ? game.snakes[0].death : game.snakes[1 - winner].death, matchOver: wonMatch }), true);
-  } else {
-    const score = game.snakes[0].score;
-    const rival = friendGhost ? t("{name}'s ghost", { name: friendGhost.name }) : t('your ghost');
-    const ghostResult = recording ? score > recording.score ? t('You beat {rival}.', { rival }) : score === recording.score ? t('A tie with {rival}.', { rival }) : t('{rival} keeps the crown.', { rival }) : null;
-    const line = audio.pick(roastBank({ reason: game.reason, score, newBest: score > 0 && lastRun.newBest, ghost: !recording ? null : score > recording.score ? 'won' : score === recording.score ? 'tie' : 'lost' }));
-    lastRun.line = phrases[line];
-    overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
-    ui.overlayTitle.lang = 'bn'; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
-    ui.resultActions.hidden = false; ui.shareButton.hidden = false; ui.challengeButton.hidden = !lastRun.record; ui.joinButton.hidden = true;
-    ui.challengeButton.textContent = t('Send my ghost');
-    lastRun.shot = copyBoard();
-    if (session.style === 'daily' && lastRun.record) { if (!pendingDaily || lastRun.record.seed !== pendingDaily.seed || lastRun.record.score > pendingDaily.score) { pendingDaily = lastRun.record; put('pendingDaily', pendingDaily); } postDaily(true); }
-  }
+  const score = game.snakes[0].score;
+  const rival = friendGhost ? t("{name}'s ghost", { name: friendGhost.name }) : t('your ghost');
+  const ghostResult = recording ? score > recording.score ? t('You beat {rival}.', { rival }) : score === recording.score ? t('A tie with {rival}.', { rival }) : t('{rival} keeps the crown.', { rival }) : null;
+  const line = audio.pick(roastBank({ reason: game.reason, score, newBest: score > 0 && lastRun.newBest, ghost: !recording ? null : score > recording.score ? 'won' : score === recording.score ? 'tie' : 'lost' }));
+  lastRun.line = phrases[line];
+  overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
+  ui.overlayTitle.lang = 'bn'; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
+  ui.resultActions.hidden = false; ui.shareButton.hidden = false; ui.challengeButton.hidden = !lastRun.record; ui.joinButton.hidden = true;
+  ui.challengeButton.textContent = t('Send my ghost');
+  lastRun.shot = copyBoard();
+  if (session.style === 'daily' && lastRun.record) { if (!pendingDaily || lastRun.record.seed !== pendingDaily.seed || lastRun.record.score > pendingDaily.score) { pendingDaily = lastRun.record; put('pendingDaily', pendingDaily); } postDaily(true); }
 }
 function pause() {
-  if (connection || !['playing', 'countdown'].includes(screen)) return;
+  if (!['playing', 'countdown'].includes(screen)) return;
   screen = 'paused'; clearTurns(game); audio.stop(); ui.pauseButton.textContent = t('Resume');
   overlay(t('TAKE A BREATHER'), t('Paused.'), t('Your snake and timers are waiting for you.'), t('Resume game'), resume);
 }
@@ -296,35 +210,33 @@ function resume() {
 }
 function menu() {
   document.querySelector('.header-actions').append(ui.soundButton); ui.soundButton.textContent = t('Sound');
-  connection?.close(); connection = null; game = null; previous = null; session = null; ghost = null; recording = null;
+  game = null; previous = null; session = null; ghost = null; recording = null;
   ui.momButton.hidden = true; ui.resultActions.hidden = true;
   screen = 'menu'; ui.controlsHint.hidden = false; audio.stop(); ui.app.classList.remove('playing'); ui.overlay.hidden = true; ui.countdown.hidden = true; ui.previewTag.hidden = false;
-  ui.pauseButton.hidden = true; ui.exitButton.hidden = true; ui.touchControls.hidden = true; ui.comboWrap.hidden = true; ui.timerText.textContent = ''; ui.connectionStatus.textContent = '';
+  ui.pauseButton.hidden = true; ui.exitButton.hidden = true; ui.touchControls.hidden = true; ui.comboWrap.hidden = true; ui.timerText.textContent = '';
   ui.startButton.disabled = false; ui.continueButton.disabled = false; ui.board.removeAttribute('tabindex'); ui.menuButton.textContent = t('Back to menu');
-  if (!friendGhost) history.replaceState(null, '', location.pathname); updateSetup(); window.scrollTo({ top: 0, behavior: 'instant' }); showScreen('home'); updater.applyPending(); updater.applyPending();
+  if (!friendGhost) history.replaceState(null, '', location.pathname); updateSetup(); window.scrollTo({ top: 0, behavior: 'instant' }); showScreen('home'); updater.applyPending();
 }
 function requestLeave() {
   if (['result', 'waiting'].includes(screen)) { menu(); return; }
-  resumeAfterLeave = !connection && ['playing', 'countdown'].includes(screen);
-  pause(); ui.leaveText.textContent = connection ? t('Leaving closes this room for both players.') : t('This run will end. Unfinished runs are not saved as ghosts.');
+  resumeAfterLeave = ['playing', 'countdown'].includes(screen);
+  pause(); ui.leaveText.textContent = t('This run will end. Unfinished runs are not saved as ghosts.');
   ui.leaveDialog.showModal(); ui.stayButton.focus();
 }
 // A press during the countdown is kept for the start. The snake reaches a wall about 2 seconds in, so losing it can cost the round.
 let earlyTurns = {};
 function releaseEarlyTurns() {
-  for (const [id, dir] of Object.entries(earlyTurns)) { diagnostics?.note(`early turn ${dir}`); if (connection) connection.turn(dir); else queueTurn(game, Number(id), dir); }
+  for (const [id, dir] of Object.entries(earlyTurns)) { diagnostics?.note(`early turn ${dir}`); queueTurn(game, 0, dir); }
   earlyTurns = {};
 }
 function plannedDirection() {
-  if (connection) return connection.pending.at(-1)?.dir ?? connection.state.queued?.at(-1) ?? connection.state.game.snakes[connection.state.player].dir;
-  return game.snakes[0].queue.at(-1) ?? game.snakes[0].dir;
+  return game?.snakes[0].queue.at(-1) ?? game?.snakes[0].dir;
 }
 function steer(id, dir) {
-  if (screen === 'countdown') { earlyTurns[id] = dir; diagnostics?.note(`held ${dir} for the start`); return; }
+  if (screen === 'countdown') { earlyTurns[0] = dir; diagnostics?.note(`held ${dir} for the start`); return; }
   if (screen !== 'playing') return;
-  diagnostics?.note(`turn ${dir}, heading ${game.snakes[connection?.state?.player ?? id].dir}`);
-  if (connection) { connection.turn(dir); return; }
-  queueTurn(game, id, dir);
+  diagnostics?.note(`turn ${dir}, heading ${game.snakes[0].dir}`);
+  queueTurn(game, 0, dir);
 }
 function advanceGhost() {
   if (!ghost || ghost.status !== 'playing') return;
@@ -341,28 +253,21 @@ function frame(now) {
   if (screen === 'countdown') {
     const count = Math.max(1, Math.ceil((countdownEnd - now) / 1000));
     if (count !== lastCount) { ui.countdownNumber.textContent = count; lastCount = count; audio.effect('count'); }
-    if (!connection && now >= countdownEnd) { screen = 'playing'; releaseEarlyTurns(); accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ duel: game.mode === 'duel', style: session.style, skin: prefs.skin }), true); }
-  } else if (screen === 'playing' && !connection) {
+    if (now >= countdownEnd) { screen = 'playing'; releaseEarlyTurns(); accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ style: session.style, skin: prefs.skin }), true); }
+  } else if (screen === 'playing') {
     accumulator += dt;
     while (game.status === 'playing' && accumulator >= stepDuration(game)) {
       accumulator -= stepDuration(game); previous = positions(game);
-      if (session.opponent === 'bot') queueTurn(game, 1, chooseBotTurn(game));
       step(game); advanceGhost(); handleEvents(game.events); updateHud();
       if (game.status === 'finished') {
         screen = 'result'; audio.setActive(false);
-        if (game.mode === 'duel') { if (game.winner !== null) series.wins[game.winner]++; }
-        else saveRun();
+        saveRun();
         updateHud(); showResults();
       }
     }
   }
   let shown = screen === 'menu' || !game ? preview : game, shownBefore = screen === 'menu' ? null : previous;
-  let fraction = screen !== 'playing' ? 1 : connection ? 1 : accumulator / stepDuration(game);
-  if (connection && screen === 'playing' && game?.status === 'playing') {
-    const view = smooth.frame(connection.state, networkAt, connection.latency, connection.pending.map(p => p.dir), now);
-    shown = view.shown; shownBefore = view.before; fraction = view.fraction;
-    ui.connectionStatus.textContent = view.stale ? t('Weak connection. Reconnecting…') : '';
-  }
+  let fraction = screen !== 'playing' ? 1 : accumulator / stepDuration(game);
   const scene = view3d && !prefs.flat ? view3d : renderer;
   const free = freeSpace();
   document.documentElement.style.setProperty('--inset-b', `${free.bottom}px`);
@@ -515,12 +420,11 @@ ui.challengeButton.onclick = async () => {
   } catch (e) { ui.challengeButton.textContent = e.status && e.status !== 503 ? t('Try again') : t('Needs internet'); }
   ui.challengeButton.disabled = false;
 };
-ui.soloMode.onclick = () => { selectedMode = 'solo'; updateSetup(); showScreen('solo'); };
-ui.duelMode.onclick = () => { selectedMode = 'duel'; updateSetup(); showScreen('duel'); };
+ui.soloMode.onclick = () => { updateSetup(); showScreen('solo'); };
 ui.looksButton.onclick = () => showScreen('looks'); ui.snakeChip.onclick = () => showScreen('looks'); ui.howButton.onclick = () => showScreen('how');
 for (const button of document.querySelectorAll('[data-back]')) button.onclick = () => showScreen('home');
 for (const button of document.querySelectorAll('[data-play]')) button.onclick = start;
-for (const id of ['speed', 'opponent', 'roomAction']) ui[id].onchange = updateSetup;
+for (const id of ['speed']) if (ui[id]) ui[id].onchange = updateSetup;
 ui.style.onchange = () => { friendGhost = null; updateSetup(); };
 ui.theme.onchange = () => { prefs.theme = ui.theme.value; put('prefs', prefs); view3d?.setTheme(prefs.theme); renderCards(); };
 ui.skin.onchange = () => { prefs.skin = ui.skin.value; put('prefs', prefs); view3d?.setSkin(prefs.skin); renderer.skin = SKINS[prefs.skin]; renderCards(); if (prefs.skin === 'kalnagini') { audio.unlock(); audio.voice('kalNagini', true); } };
@@ -530,11 +434,6 @@ ui.viewButton.onclick = () => { prefs.flat = !prefs.flat; put('prefs', prefs); s
 ui.confirmLeave.onclick = () => { ui.leaveDialog.close(); menu(); };
 ui.stayButton.onclick = () => { ui.leaveDialog.close(); if (resumeAfterLeave) resume(); };
 ui.leaveDialog.addEventListener('cancel', () => { if (resumeAfterLeave) setTimeout(resume, 0); });
-ui.copyButton.onclick = async () => {
-  try { await navigator.clipboard.writeText(`${location.origin}/?room=${connection.state.code}`); ui.copyButton.textContent = t('Invite link copied'); }
-  catch { ui.shareCode.focus(); ui.shareCode.select(); ui.copyButton.textContent = t('Select and copy this code'); }
-  setTimeout(() => ui.copyButton.textContent = t('Copy invite link'), 2500);
-};
 ui.soundButton.onclick = () => { pause(); ui.soundDialog.showModal(); };
 for (const [name, id] of [['effects','effectsSetting'], ['voice','voiceSetting'], ['music','musicSetting']]) {
   ui[id].checked = sound[name];
@@ -546,12 +445,12 @@ window.addEventListener('keydown', event => {
   if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || document.querySelector('dialog[open]')) return;
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   if (key === 'Escape' && screen === 'menu' && ui.homeScreen.hidden) { showScreen('home'); return; }
-  if (key === 'b' && !connection && ['playing', 'countdown', 'paused'].includes(screen)) { event.preventDefault(); openStudy(); return; }
+  if (key === 'b' && ['playing', 'countdown', 'paused'].includes(screen)) { event.preventDefault(); openStudy(); return; }
   if ((key === 'Escape' || key === 'p') && screen !== 'menu') { event.preventDefault(); if (!event.repeat) screen === 'paused' ? resume() : pause(); return; }
   const dir = keyDirs[key];
   if (dir && ['playing', 'countdown', 'paused'].includes(screen)) {
     event.preventDefault(); if (event.repeat) return;
-    steer(session?.opponent === 'local' && key.startsWith('Arrow') ? 1 : 0, dir);
+    steer(0, dir);
   }
 });
 // Older phones have no pointer events, so they get touch events instead.
@@ -565,20 +464,17 @@ for (const button of ui.touchControls.querySelectorAll('button')) button.addEven
 let swipe = null;
 ui.board.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; swipe = { x: event.clientX, y: event.clientY }; try { ui.board.setPointerCapture(event.pointerId); } catch { /* The swipe still works inside the board. */ } });
 ui.board.addEventListener('pointermove', event => {
-  if (!swipe || session?.opponent === 'local') return;
+  if (!swipe) return;
   const dir = swipeTurn(swipe, event.clientX, event.clientY);
   if (dir) steer(0, dir);
 });
 for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) ui.board.addEventListener(name, () => swipe = null);
-window.addEventListener('blur', () => { pause(); if (connection) connection.pending = []; });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { pause(); audio.setActive(false); } else if (connection && screen === 'playing') audio.setActive(true); });
-window.addEventListener('pagehide', () => connection?.close());
-const initialCode = new URLSearchParams(location.search).get('room');
-if (initialCode) { selectedMode = 'duel'; ui.opponent.value = 'online'; ui.roomAction.value = 'join'; ui.roomCode.value = initialCode.toUpperCase().slice(0, 8); }
+window.addEventListener('blur', () => pause());
+document.addEventListener('visibilitychange', () => { if (document.hidden) { pause(); audio.setActive(false); } });
 const initialGhost = new URLSearchParams(location.search).get('ghost');
 if (initialGhost) fetchGhost(initialGhost).then(({ name, record }) => {
   replayRecording(record); // Never trust a stored replay: it must rebuild the same run here too.
-  friendGhost = { name, record }; selectedMode = 'solo'; ui.style.value = 'ghost'; updateSetup();
+  friendGhost = { name, record }; ui.style.value = 'ghost'; updateSetup();
 }).catch(e => { history.replaceState(null, '', location.pathname); ui.style.value = 'daily'; updateSetup(); error(e.status ? t(e.message) : t("That friend's ghost needs internet to download. Everything else works offline.")); });
 // Opened with ?debug: shows on the phone itself what the game receives, for problems no desktop can reproduce.
 const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
@@ -586,7 +482,6 @@ const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
   const notes = []; let frames = 0, windowAt = performance.now(), fps = 0, worst = 0, lastFrame = 0;
   const note = text => { notes.unshift(`${(performance.now() / 1000).toFixed(1)} ${text}`); notes.length = Math.min(notes.length, 14); };
   for (const name of ['pointerdown', 'touchstart', 'keydown']) window.addEventListener(name, event => {
-    // Taps on the result card would push the round's own presses off the panel.
     if (screen === 'result') return;
     const hit = event.touches?.[0] ?? event, under = hit.clientX === undefined ? null : document.elementFromPoint(hit.clientX, hit.clientY);
     note(`${name} ${event.pointerType ?? ''} ${event.key ?? ''} on ${event.target?.dataset?.dir ?? event.target?.id ?? event.target?.tagName} under ${under?.dataset?.dir ?? under?.id ?? under?.className ?? '-'}`);
@@ -598,8 +493,7 @@ const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
     worst = Math.max(worst, now - lastFrame); lastFrame = now; frames++;
     if (now - windowAt < 1000) return;
     fps = Math.round(frames * 1000 / (now - windowAt)); frames = 0; windowAt = now;
-    const q = view3d?.quality?.() ?? '2D', net = connection ? `rtt ${Math.round(connection.latency)} sent ${connection.sequence} acked ${connection.state?.ack} waiting ${connection.pending.length}` : 'offline/local';
-    // Out of the way while playing: it would cover the top of the board.
+    const q = view3d?.quality?.() ?? '2D', net = 'offline/local';
     box.style.display = ['playing', 'countdown'].includes(screen) ? 'none' : '';
     box.textContent = `${fps} fps, worst ${Math.round(worst)} ms\n${q}\nscreen ${screen}, ${net}\n${notes.join('\n')}`; worst = 0;
   } };
@@ -607,9 +501,8 @@ const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
 const updater = keepUpdated({ isBusy: () => screen !== 'menu' || !!document.querySelector('dialog[open]') });
 window.addEventListener('load', () => updater.start());
 window.addEventListener('online', () => postDaily()); postDaily();
-renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = selectedMode === 'solo' && !initialGhost ? ['daily', 'chaos'].includes(initialStyle) ? initialStyle : 'daily' : ui.style.value;
+renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = !initialGhost ? ['daily', 'chaos'].includes(initialStyle) ? initialStyle : 'daily' : ui.style.value;
 updateSetup(); requestAnimationFrame(frame);
-if (initialCode) showScreen('duel');
 // The 2D board stays the fallback, so 3D is only ever an upgrade.
 import('./render3d.js').then(({ Arena3D }) => {
   view3d = new Arena3D(ui.board3d, { theme: prefs.theme, skin: prefs.skin }); syncView();

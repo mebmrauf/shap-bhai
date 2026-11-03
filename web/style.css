@@ -413,7 +413,7 @@ body:has(#app.playing) .site-header {
 /* The dock */
 .menu-tiles {
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:6px;
 }
 .tile {
@@ -450,10 +450,6 @@ body:has(#app.playing) .site-header {
 #soloMode {
   --icon:var(--i-solo);
   --c:var(--yellow);
-}
-#duelMode {
-  --icon:var(--i-versus);
-  --c:#ff6b8f;
 }
 #looksButton {
   --icon:var(--i-looks);
@@ -749,26 +745,6 @@ body:has(#app.playing) .site-header {
   border-color:var(--accent-2);
   color:var(--accent-2);
 }
-#roomShare {
-  margin-bottom:12px;
-}
-#roomShare label {
-  font-size:11px;
-  letter-spacing:1.5px;
-  color:var(--muted);
-}
-#roomShare input {
-  margin:6px 0 10px;
-  text-align:center;
-  color:var(--accent);
-  font-weight:800;
-  font-size:24px;
-  letter-spacing:4px!important;
-}
-#roomShare .secondary {
-  width:100%;
-}
-
 /* Dialogs */
 dialog {
   width:min(calc(100vw - 24px),460px);
@@ -1687,9 +1663,6 @@ html[data-touch] .controls-hint {
 @media(prefers-color-scheme:light) {
   #soloMode {
     --c:#a97400;
-  }
-  #duelMode {
-    --c:#c9184a;
   }
   #looksButton {
     --c:#07806f;

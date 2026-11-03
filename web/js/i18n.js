@@ -2,7 +2,7 @@
 const BANGLA = Object.freeze({
   'The snake grows.': 'সাপ বড় হবে,', 'Your dignity shrinks.': 'ইজ্জত ছোট হবে।', "Homework can wait. There's a button for when Mom walks in.": 'পড়া পরে হবে। আম্মু আসলে বাটন আছে।',
   'Sound settings': 'সাউন্ড সেটিংস', 'Sound': 'সাউন্ড', 'Personal best': 'নিজের সেরা', 'Play': 'খেলো',
-  'Solo modes': 'একা খেলো', 'Daily, Classic, Chaos': 'আজকের চ্যালেঞ্জ, ক্লাসিক, ক্যাওস', '1 vs 1': '১ বনাম ১', 'Computer or a friend': 'কম্পিউটার বা বন্ধু',
+  'Solo modes': 'একা খেলো', 'Game modes': 'খেলার ধরন', 'Daily, Classic, Chaos': 'আজকের চ্যালেঞ্জ, ক্লাসিক, ক্যাওস', '1 vs 1': '১ বনাম ১', 'Computer or a friend': 'কম্পিউটার বা বন্ধু',
   'Board & snake': 'মাঠ ও সাপ', 'Leaderboard': 'লিডারবোর্ড', "Today's top players": 'আজকের সেরারা', 'How to play': 'কীভাবে খেলবে',
   "Today's challenge": 'আজকের চ্যালেঞ্জ', 'Classic': 'ক্লাসিক', 'Chaos: Bangladesh edition': 'ক্যাওস: বাংলাদেশ এডিশন', 'Arcade combos': 'আর্কেড কম্বো', 'Race your ghost': 'নিজের ভূতের সাথে রেস',
   'Starting speed': 'শুরুর গতি', 'Relaxed': 'ধীরে', 'Standard': 'মাঝারি', 'Fast': 'দ্রুত',

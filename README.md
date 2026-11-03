@@ -1,6 +1,6 @@
 # Shap Bhai (সাপ ভাই)
 
-3D Snake through the streets of Bangladesh, in Bangla by default with an English option. Solo, computer, local two-player and online rooms all share one deterministic simulation. The whole game works offline after the first visit.
+3D Snake through the streets of Bangladesh, in Bangla by default with an English option. Built on a deterministic simulation. The whole game works offline after the first visit.
 
 ## Run
 
@@ -20,7 +20,6 @@ Open http://localhost:8124. Run `npm test` for the rule, replay, room, leaderboa
 - **Chaos:** load shedding, traffic jams, floods and wedding biryani arrive in turns. Traffic and floods are warned before they land. Chaos scores stay on the device.
 - **Arcade:** eat again within 8 seconds to score 1, 2, then 3 points.
 - **Ghost:** race your saved best, or a friend's run from a ghost link.
-- **1 vs 1:** computer, shared keyboard, or an online room. First to 3 round wins.
 
 Arrow keys / WASD steer. Escape or P pauses local games. B, or the "আম্মু আসছে!" button, pauses and shows a fake study page. Touch buttons and board swipes are available.
 
