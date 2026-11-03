@@ -22,8 +22,8 @@ let session = null, game = null, previous = null, screen = 'menu';
 let frameAt = performance.now(), accumulator = 0, countdownEnd = 0, lastCount = null;
 let ghost = null, recording = null, ghostIndex = 0, preview = null, resultSaved = '';
 let resumeAfterLeave = false, slipSaid = false;
-const prefs = { theme: 'dhaka', skin: 'nagin', flat: false, ...get('prefs', {}) };
-let view3d = null, friendGhost = null, lastRun = null;
+const prefs = { theme: 'rooftop', skin: 'kalnagini', flat: false, ...get('prefs', {}) };
+let view3d = null, view3dFailed = false, friendGhost = null, lastRun = null;
 const CHAOS_STATUS = { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' };
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
@@ -127,7 +127,7 @@ function renderCards() {
   const swatch = colors => card => { const chip = document.createElement('i'); chip.className = 'swatch'; chip.style.background = `linear-gradient(135deg,${colors.join(',')})`; card.prepend(chip); };
   cardsFor(ui.theme, ui.themeCards, (card, value) => swatch([THEMES[value].sky, THEMES[value].tiles[0], THEMES[value].edge])(card));
   cardsFor(ui.skin, ui.skinCards, (card, value) => swatch(SKINS[value].body)(card));
-  const chosen = SKINS[prefs.skin] ?? SKINS.nagin; ui.looksSummary.textContent = t(chosen.label); ui.snakeDot.style.background = `linear-gradient(135deg,${chosen.body.join(',')})`;
+  const chosen = SKINS[prefs.skin] ?? SKINS.kalnagini; ui.looksSummary.textContent = t(chosen.label); ui.snakeDot.style.background = `linear-gradient(135deg,${chosen.body.join(',')})`;
 }
 function showScreen(name) {
   for (const id of ['home', 'solo', 'looks', 'how']) if (ui[`${id}Screen`]) ui[`${id}Screen`].hidden = id !== name;
@@ -184,7 +184,7 @@ function showResults() {
   const score = game.snakes[0].score;
   const rival = friendGhost ? t("{name}'s ghost", { name: friendGhost.name }) : t('your ghost');
   const ghostResult = recording ? score > recording.score ? t('You beat {rival}.', { rival }) : score === recording.score ? t('A tie with {rival}.', { rival }) : t('{rival} keeps the crown.', { rival }) : null;
-  const line = audio.pick(roastBank({ reason: game.reason, score, newBest: score > 0 && lastRun.newBest, ghost: !recording ? null : score > recording.score ? 'won' : score === recording.score ? 'tie' : 'lost' }));
+  const line = audio.pick(roastBank({ reason: game.reason, score, newBest: score > 0 && lastRun.newBest, ghost: !recording ? null : score > recording.score ? 'won' : score === recording.score ? 'tie' : 'lost', theme: prefs.theme }));
   lastRun.line = phrases[line];
   overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
   ui.overlayTitle.lang = 'bn'; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
@@ -247,7 +247,7 @@ function frame(now) {
   if (screen === 'countdown') {
     const count = Math.max(1, Math.ceil((countdownEnd - now) / 1000));
     if (count !== lastCount) { ui.countdownNumber.textContent = count; lastCount = count; audio.effect('count'); }
-    if (now >= countdownEnd) { screen = 'playing'; releaseEarlyTurns(); accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ style: session.style, skin: prefs.skin }), true); }
+    if (now >= countdownEnd) { screen = 'playing'; releaseEarlyTurns(); accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ style: session.style, skin: prefs.skin, theme: prefs.theme }), true); }
   } else if (screen === 'playing') {
     accumulator += dt;
     while (game.status === 'playing' && accumulator >= stepDuration(game)) {
@@ -262,16 +262,19 @@ function frame(now) {
   }
   let shown = screen === 'menu' || !game ? preview : game, shownBefore = screen === 'menu' ? null : previous;
   let fraction = screen !== 'playing' ? 1 : accumulator / stepDuration(game);
-  const scene = view3d && !prefs.flat ? view3d : renderer;
-  const free = freeSpace();
-  document.documentElement.style.setProperty('--inset-b', `${free.bottom}px`);
-  try {
-    scene.setFree(free);
-    scene.draw(shown, shownBefore, fraction, ghost, screen === 'menu');
-  } catch (failure) {
-    diagnostics?.note(`render failed: ${failure.message}`);
-    // The 2D board can always take over from 3D.
-    if (scene === view3d) { view3d = null; syncView(); }
+  const useFlat = prefs.flat || view3dFailed;
+  const scene = useFlat ? renderer : view3d;
+  if (scene) {
+    const free = freeSpace();
+    document.documentElement.style.setProperty('--inset-b', `${free.bottom}px`);
+    try {
+      scene.setFree(free);
+      scene.draw(shown, shownBefore, fraction, ghost, screen === 'menu');
+    } catch (failure) {
+      diagnostics?.note(`render failed: ${failure.message}`);
+      // The 2D board can always take over from 3D.
+      if (scene === view3d) { view3d = null; view3dFailed = true; syncView(); }
+    }
   }
 }
 // The world fills the screen, so the camera needs to know which part the panels and HUD leave free.
@@ -300,8 +303,12 @@ function measureFree() {
   return free;
 }
 function syncView() {
-  renderer.flat = prefs.flat; ui.board3d.hidden = !view3d || prefs.flat;
+  const useFlat = prefs.flat || view3dFailed;
+  renderer.flat = useFlat;
+  ui.board3d.hidden = useFlat;
+  ui.board.hidden = !useFlat;
   if (ui.viewStyle) ui.viewStyle.value = prefs.flat ? 'flat' : '3d';
+  if (ui.boardSection) ui.boardSection.hidden = prefs.flat;
 }
 function fillLooks() {
   ui.viewStyle.replaceChildren(
@@ -353,6 +360,8 @@ ui.cardSend.onclick = async () => {
   } catch { ui.cardStatus.textContent = t('Could not make the card. Try again.'); }
   ui.cardSend.disabled = false;
 };
+const brand = document.querySelector('.brand');
+if (brand) brand.onclick = event => { event.preventDefault(); if (screen !== 'menu') requestLeave(); else showScreen('home'); };
 ui.soloMode.onclick = () => { updateSetup(); showScreen('solo'); };
 ui.looksButton.onclick = () => showScreen('looks'); ui.snakeChip.onclick = () => showScreen('looks'); ui.howButton.onclick = () => showScreen('how');
 for (const button of document.querySelectorAll('[data-back]')) button.onclick = () => showScreen('home');
@@ -432,6 +441,15 @@ renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle =
 updateSetup(); requestAnimationFrame(frame);
 // The 2D board stays the fallback, so 3D is only ever an upgrade.
 import('./render3d.js').then(({ Arena3D }) => {
-  view3d = new Arena3D(ui.board3d, { theme: prefs.theme, skin: prefs.skin }); syncView();
-  ui.board3d.addEventListener('webglcontextlost', () => { view3d = null; syncView(); });
-}).catch(() => syncView());
+  try {
+    view3d = new Arena3D(ui.board3d, { theme: prefs.theme, skin: prefs.skin });
+    syncView();
+    ui.board3d.addEventListener('webglcontextlost', () => { view3d = null; view3dFailed = true; syncView(); });
+  } catch {
+    view3dFailed = true;
+    syncView();
+  }
+}).catch(() => {
+  view3dFailed = true;
+  syncView();
+});

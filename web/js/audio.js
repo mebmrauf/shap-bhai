@@ -44,7 +44,7 @@ export const reactions = Object.freeze({
   lose: ['lose', 'wall', 'help', 'scream', 'ah'], danger: ['closeCall1', 'run', 'closeCall2', 'help'],
   preview: ['wall', 'help', 'run', 'lose', 'scream', 'ah', 'eat', 'self', 'win', 'start', 'combo', 'draw', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'duelStart', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'duelWinWall', 'duelWinSelf', 'duelWinHit', 'duelLoseWall', 'duelLoseSelf', 'duelLoseHit', 'duelWinTime', 'duelLoseTime', 'duelMatchWin', 'duelMatchLose', 'duelHeadOn', 'duelTie', 'playerOneWin', 'playerTwoWin', 'momGone', 'rankOne', 'kalNagini'],
   roastWallLow: ['roastWall1', 'roastWall2', 'roastWall3'], roastWallMid: ['roastWall4', 'roastWall5', 'roastWall1'], roastWallHigh: ['roastWall6', 'roastWall7'],
-  roastSelfLow: ['roastSelf1', 'roastSelf2', 'roastSelf3'], roastSelfHigh: ['roastSelf4', 'roastSelf5', 'roastSelf2'], roastTraffic: ['roastTraffic1', 'roastTraffic2'],
+  roastSelfLow: ['roastSelf1', 'roastSelf2', 'roastSelf3'], roastSelfHigh: ['roastSelf4', 'roastSelf5', 'roastSelf2'], roastTraffic: ['roastTraffic1', 'roastTraffic2'], roastTrafficOther: ['roastTraffic2'],
   roastBest: ['roastBest1', 'roastBest2'], roastGhost: ['roastGhost1', 'roastGhost2'],
   loadshedding: ['chaosPower'], traffic: ['chaosTraffic'], flood: ['chaosFlood'], wedding: ['chaosWedding'],
   loadsheddingEnd: ['chaosPowerBack'], trafficEnd: ['chaosTrafficEnd'], floodEnd: ['chaosFloodEnd'], weddingEnd: ['chaosWeddingEnd'], slip: ['chaosSlip'],
@@ -57,14 +57,14 @@ export const reactions = Object.freeze({
   playerOneWin: ['playerOneWin'], playerTwoWin: ['playerTwoWin'], momGone: ['momGone'], rankOne: ['rankOne'], kalNagini: ['kalNagini']
 });
 // Every spoken line answers something that just happened. These are pure so each scenario can be tested.
-export function roastBank({ reason, score = 0, newBest = false, ghost = null }) {
+export function roastBank({ reason, score = 0, newBest = false, ghost = null, theme = 'dhaka' } = {}) {
   if (reason === 'board-full' || reason === 'limit') return 'roastFull';
   if (ghost === 'won') return 'roastGhostWon';
   if (ghost === 'tie') return 'roastGhostTie';
   if (ghost === 'lost') return 'roastGhost';
   if (newBest) return 'roastBest';
   if (score === 0) return 'roastZero';
-  if (reason === 'traffic') return 'roastTraffic';
+  if (reason === 'traffic') return ['coxs', 'sundarbans'].includes(theme) ? 'roastTrafficOther' : 'roastTraffic';
   if (reason === 'self') return score >= 10 ? 'roastSelfHigh' : 'roastSelfLow';
   return score >= 20 ? 'roastWallHigh' : score >= 5 ? 'roastWallMid' : 'roastWallLow';
 }
@@ -85,9 +85,13 @@ export function biteBank({ apples, points = 1, feast = false, kind = 0, arcade =
   if (arcade && points >= 3) return 'combo';
   return ['foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish'][kind];
 }
-export function startBank({ duel = false, style = 'classic', skin = 'nagin' }) {
+export function startBank({ duel = false, style = 'classic', skin = 'nagin', theme = 'dhaka' } = {}) {
   if (duel) return 'duelStart';
-  return { daily: 'startDaily', chaos: 'startChaos', ghost: 'startGhost' }[style] ?? (skin === 'kalnagini' ? 'kalNagini' : 'start');
+  if (skin === 'kalnagini') return 'kalNagini';
+  if (style === 'chaos') return ['coxs', 'sundarbans'].includes(theme) ? 'start' : 'startChaos';
+  if (style === 'ghost') return 'startGhost';
+  if (style === 'daily') return 'startDaily';
+  return 'start';
 }
 // A reaction to an actual escape, not a prediction that changes the game rules.
 export function escapedDanger(previous, game, id = 0) {
