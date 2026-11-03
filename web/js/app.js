@@ -2,10 +2,9 @@ import { createGame, queueTurn, clearTurns, step, stepDuration, makeRecording, r
 import { ArenaRenderer } from './render.js';
 import { GameAudio, escapedDanger, roastBank, biteBank, startBank, phrases } from './audio.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
-import { DISTRICTS } from './districts.js';
 import { t, num, lang, applyLanguage } from './i18n.js';
 import { keepUpdated } from './update.js';
-import { saveProfile, submitDaily, fetchBoard, createGhost, fetchGhost, sendLink, shareCard, bnDigits } from './social.js';
+import { sendLink, shareCard, bnDigits } from './social.js';
 import { paintCard, CARD_STYLES } from './cards.js';
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(el => [el.id, el]));
@@ -24,7 +23,7 @@ let frameAt = performance.now(), accumulator = 0, countdownEnd = 0, lastCount = 
 let ghost = null, recording = null, ghostIndex = 0, preview = null, resultSaved = '';
 let resumeAfterLeave = false, slipSaid = false;
 const prefs = { theme: 'dhaka', skin: 'nagin', flat: false, ...get('prefs', {}) };
-let view3d = null, friendGhost = null, pendingDaily = get('pendingDaily', null), lastRun = null, boardScope = 'everyone';
+let view3d = null, friendGhost = null, lastRun = null;
 const CHAOS_STATUS = { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' };
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
@@ -192,10 +191,8 @@ function showResults() {
   lastRun.line = phrases[line];
   overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
   ui.overlayTitle.lang = 'bn'; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
-  ui.resultActions.hidden = false; ui.shareButton.hidden = false; ui.challengeButton.hidden = !lastRun.record; ui.joinButton.hidden = true;
-  ui.challengeButton.textContent = t('Send my ghost');
+  ui.resultActions.hidden = false; ui.shareButton.hidden = false;
   lastRun.shot = copyBoard();
-  if (session.style === 'daily' && lastRun.record) { if (!pendingDaily || lastRun.record.seed !== pendingDaily.seed || lastRun.record.score > pendingDaily.score) { pendingDaily = lastRun.record; put('pendingDaily', pendingDaily); } postDaily(true); }
 }
 function pause() {
   if (!['playing', 'countdown'].includes(screen)) return;
@@ -325,66 +322,12 @@ function copyBoard() {
     return shot;
   } catch { return null; }
 }
-function savedProfile() { const p = get('profile', null); return typeof p?.name === 'string' ? p : null; }
-// The run is stored first, so a dead connection only delays it. Replays are verified by the server whenever they arrive.
-async function postDaily(visible = false) {
-  if (!pendingDaily) return;
-  const say = text => { if (visible) { ui.rankText.hidden = false; ui.rankText.textContent = text; } };
-  if (!savedProfile()) { say(t('Add your name to put this run on the board.')); if (visible) ui.joinButton.hidden = false; return; }
-  const record = pendingDaily;
-  say(navigator.onLine === false ? t("You're offline. This run posts when you reconnect.") : t('Checking your run with the referee…'));
-  if (navigator.onLine === false) return;
-  try {
-    const result = await submitDaily(record);
-    if (pendingDaily === record) { pendingDaily = null; put('pendingDaily', null); }
-    if (visible && result.improved && result.rank === 1) audio.voice('rankOne', true);
-    say(result.improved ? t("You are #{rank} in today's challenge.", { rank: result.rank }) : t('Your best today is {best}, ranked #{rank}.', { best: result.best, rank: result.rank }));
-  } catch (e) {
-    if (e.status === 409) { say(t('Add your name to put this run on the board.')); if (visible) ui.joinButton.hidden = false; }
-    else if (e.status === 400) { if (pendingDaily === record) { pendingDaily = null; put('pendingDaily', null); } say(t(e.message)); }
-    else say(t('Your run is saved. It posts when the connection is back.'));
-  }
-}
-async function loadBoard() {
-  for (const tab of ui.boardDialog.querySelectorAll('[data-scope]')) tab.setAttribute('aria-pressed', String(tab.dataset.scope === boardScope));
-  const crew = savedProfile()?.crew ?? '';
-  ui.boardList.replaceChildren();
-  if (boardScope === 'crew' && !crew) { ui.boardStatus.textContent = t('Add a crew code to your player card, then share it with friends.'); return; }
-  ui.boardStatus.textContent = t('Loading…');
-  try {
-    const { rows, day } = await fetchBoard(boardScope, crew);
-    ui.boardStatus.textContent = rows.length ? boardScope === 'district' ? t("{day} · average of each district's top 5", { day: num(day) }) : boardScope === 'crew' ? t('{day} · crew {crew}', { day: num(day), crew }) : num(day) : t('Nobody has played today. Take first place.');
-    ui.boardList.replaceChildren(...rows.map(row => {
-      const item = document.createElement('li'), name = document.createElement('span'), score = document.createElement('b');
-      name.textContent = row.name ? `${row.name}${row.district ? ` · ${row.district}` : ''}` : t(row.players === 1 ? '{district} · {n} player' : '{district} · {n} players', { district: row.district, n: row.players });
-      score.textContent = num(row.score); item.append(name, score); return item;
-    }));
-  } catch (e) { ui.boardStatus.textContent = e.status ? t(e.message) : t("The leaderboard needs internet. Your best run posts when you're back online."); }
-}
-function openBoard() {
-  const profile = savedProfile();
-  ui.profileName.value = profile?.name ?? ''; ui.profileDistrict.value = profile?.district ?? ''; ui.profileCrew.value = profile?.crew ?? '';
-  ui.profileError.hidden = true; ui.boardDialog.showModal(); loadBoard();
-}
 function openStudy() {
   pause(); ui.studyDialog.showModal(); document.title = 'Physics Notes · Chapter 4';
 }
-ui.profileDistrict.append(...DISTRICTS.map(name => new Option(name, name)));
 function syncLanguage() { ui.langButton.textContent = lang() === 'bn' ? 'English' : 'বাংলা'; ui.soundButton.textContent = t('Sound'); }
 ui.langButton.onclick = () => { applyLanguage(lang() === 'bn' ? 'en' : 'bn'); syncLanguage(); fillLooks(); syncView(); updateSetup(); };
 syncLanguage();
-ui.boardButton.onclick = openBoard; ui.joinButton.onclick = openBoard; ui.boardClose.onclick = () => ui.boardDialog.close();
-for (const tab of ui.boardDialog.querySelectorAll('[data-scope]')) tab.onclick = () => { boardScope = tab.dataset.scope; loadBoard(); };
-ui.profileForm.addEventListener('submit', async event => {
-  event.preventDefault(); ui.profileError.hidden = true; ui.profileSave.disabled = true;
-  try {
-    put('profile', await saveProfile({ name: ui.profileName.value, district: ui.profileDistrict.value, crew: ui.profileCrew.value }));
-    ui.profileSave.textContent = t('Saved'); setTimeout(() => ui.profileSave.textContent = t('Save player card'), 2000);
-    if (pendingDaily) { ui.joinButton.hidden = true; await postDaily(); }
-    await loadBoard();
-  } catch (e) { ui.profileError.textContent = e.status ? t(e.message) : t('Saving your player card needs internet.'); ui.profileError.hidden = false; }
-  ui.profileSave.disabled = false;
-});
 ui.momButton.onclick = openStudy; ui.studyClose.onclick = () => { ui.studyDialog.close(); audio.unlock(); audio.voice('momGone', true); };
 ui.studyDialog.addEventListener('close', () => { document.title = 'Shap Bhai'; });
 // Starts on a design that suits the run, then flips through the rest.
@@ -409,16 +352,6 @@ ui.cardSend.onclick = async () => {
     ui.cardStatus.textContent = result === 'saved' ? t('Card saved to your device.') : result === 'shared' ? t('Shared!') : '';
   } catch { ui.cardStatus.textContent = t('Could not make the card. Try again.'); }
   ui.cardSend.disabled = false;
-};
-ui.challengeButton.onclick = async () => {
-  const run = lastRun; if (!run?.record) return;
-  ui.challengeButton.disabled = true;
-  try {
-    run.ghostId ??= (await createGhost(run.record, savedProfile()?.name)).id;
-    const result = await sendLink(`${location.origin}/?ghost=${run.ghostId}`, `আমার ${bnDigits(run.score)} পয়েন্টের ভূতকে হারাইতে পারবা?`);
-    ui.challengeButton.textContent = result === 'copied' ? t('Link copied') : result === 'shared' ? t('Sent') : t('Send my ghost');
-  } catch (e) { ui.challengeButton.textContent = e.status && e.status !== 503 ? t('Try again') : t('Needs internet'); }
-  ui.challengeButton.disabled = false;
 };
 ui.soloMode.onclick = () => { updateSetup(); showScreen('solo'); };
 ui.looksButton.onclick = () => showScreen('looks'); ui.snakeChip.onclick = () => showScreen('looks'); ui.howButton.onclick = () => showScreen('how');
@@ -471,11 +404,6 @@ ui.board.addEventListener('pointermove', event => {
 for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) ui.board.addEventListener(name, () => swipe = null);
 window.addEventListener('blur', () => pause());
 document.addEventListener('visibilitychange', () => { if (document.hidden) { pause(); audio.setActive(false); } });
-const initialGhost = new URLSearchParams(location.search).get('ghost');
-if (initialGhost) fetchGhost(initialGhost).then(({ name, record }) => {
-  replayRecording(record); // Never trust a stored replay: it must rebuild the same run here too.
-  friendGhost = { name, record }; ui.style.value = 'ghost'; updateSetup();
-}).catch(e => { history.replaceState(null, '', location.pathname); ui.style.value = 'daily'; updateSetup(); error(e.status ? t(e.message) : t("That friend's ghost needs internet to download. Everything else works offline.")); });
 // Opened with ?debug: shows on the phone itself what the game receives, for problems no desktop can reproduce.
 const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
   const box = document.createElement('pre'); box.className = 'diagnostics'; document.body.append(box);
@@ -500,8 +428,7 @@ const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
 })() : null;
 const updater = keepUpdated({ isBusy: () => screen !== 'menu' || !!document.querySelector('dialog[open]') });
 window.addEventListener('load', () => updater.start());
-window.addEventListener('online', () => postDaily()); postDaily();
-renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = !initialGhost ? ['daily', 'chaos'].includes(initialStyle) ? initialStyle : 'daily' : ui.style.value;
+renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = ['daily', 'chaos'].includes(initialStyle) ? initialStyle : 'daily';
 updateSetup(); requestAnimationFrame(frame);
 // The 2D board stays the fallback, so 3D is only ever an upgrade.
 import('./render3d.js').then(({ Arena3D }) => {

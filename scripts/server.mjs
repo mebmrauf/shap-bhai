@@ -5,7 +5,6 @@ import zlib from 'node:zlib';
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Rooms, RoomError } from './rooms.mjs';
-import { connectLeaderboard } from './leaderboard.mjs';
 const ROOT = fileURLToPath(new URL('../web/', import.meta.url));
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ttf': 'font/ttf', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 // Changes whenever any game file changes, which is what makes browsers pick up a new version.
@@ -115,5 +114,5 @@ export function createServer({ leaderboard = null } = {}) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try { process.loadEnvFile(new URL('../.env', import.meta.url)); } catch { /* Hosted platforms set real environment variables. */ }
   const port = Number(process.env.PORT || 8124), host = process.env.HOST || '127.0.0.1';
-  createServer({ leaderboard: await connectLeaderboard() }).listen(port, host, () => console.log(`Shap Bhai: http://${host}:${port}`));
+  createServer().listen(port, host, () => console.log(`Shap Bhai: http://${host}:${port}`));
 }

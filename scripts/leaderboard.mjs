@@ -115,13 +115,3 @@ export class Leaderboard {
     return { name: isBadName(rows[0].name) ? FRIEND : rows[0].name, record: rows[0].record };
   }
 }
-export async function connectLeaderboard() {
-  const connectionString = process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL;
-  if (!connectionString) return null;
-  let pg;
-  try { ({ default: pg } = await import('pg')); } catch { console.error('Leaderboards are off: run npm install to add the database driver.'); return null; }
-  // pg already treats require as verify-full; naming it keeps that behaviour when pg 9 changes the alias.
-  const pool = new pg.Pool({ connectionString: connectionString.replace('sslmode=require', 'sslmode=verify-full'), max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 8000 });
-  pool.on('error', error => console.error('Database connection error:', error.code ?? 'unknown'));
-  return new Leaderboard(pool);
-}

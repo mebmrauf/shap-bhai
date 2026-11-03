@@ -413,7 +413,7 @@ body:has(#app.playing) .site-header {
 /* The dock */
 .menu-tiles {
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:6px;
 }
 .tile {
@@ -454,10 +454,6 @@ body:has(#app.playing) .site-header {
 #looksButton {
   --icon:var(--i-looks);
   --c:var(--teal);
-}
-#boardButton {
-  --icon:var(--i-trophy);
-  --c:#ffb14a;
 }
 #howButton {
   --icon:var(--i-help);
@@ -739,12 +735,6 @@ body:has(#app.playing) .site-header {
 .result-actions button {
   flex:1 1 40%;
 }
-#joinButton {
-  flex-basis:100%;
-  background:transparent;
-  border-color:var(--accent-2);
-  color:var(--accent-2);
-}
 /* Dialogs */
 dialog {
   width:min(calc(100vw - 24px),460px);
@@ -831,69 +821,6 @@ dialog p {
 .dialog-buttons button {
   flex:1;
   margin-bottom:6px;
-}
-.board-tabs {
-  display:flex;
-  gap:4px;
-  padding:4px;
-  background:var(--field);
-  border:2px solid var(--line);
-  border-radius:14px;
-}
-.board-tabs button {
-  flex:1;
-  min-width:0;
-  background:transparent;
-  color:var(--muted);
-  border-radius:10px;
-  font-weight:800;
-  font-size:13px;
-}
-.board-tabs button[aria-pressed=true] {
-  background:var(--yellow);
-  color:var(--dark);
-}
-.board-list {
-  margin:0;
-  padding:0 0 0 28px;
-  font-size:14px;
-}
-.board-list li {
-  padding:9px 4px;
-  border-bottom:1px solid var(--line);
-}
-.board-list li span {
-  display:inline-block;
-  max-width:76%;
-  overflow-wrap:anywhere;
-}
-.board-list b {
-  float:right;
-  color:var(--accent);
-  font-variant-numeric:tabular-nums;
-}
-.profile-form {
-  display:grid;
-  gap:6px;
-  margin-top:16px;
-  padding-top:4px;
-  border-top:1px solid var(--line);
-}
-.profile-form h3 {
-  margin:12px 0 4px;
-  font-size:15px;
-}
-.profile-form label {
-  margin-top:6px;
-  font-size:12px;
-  font-weight:650;
-}
-.profile-form small {
-  color:var(--muted);
-  font-size:11.5px;
-}
-.profile-form .primary {
-  margin-top:10px;
 }
 dialog.study-dialog {
   width:100vw;
@@ -1622,36 +1549,6 @@ html[data-touch] .controls-hint {
   }
 }
 
-/* Dialogs with room spread out instead of scrolling. */
-@media(min-width:760px) and (min-height:480px) {
-  .board-dialog[open] {
-    display:grid;
-    width:min(calc(100vw - 48px),820px);
-    grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
-    grid-template-rows:auto auto auto minmax(0,1fr);
-    column-gap:26px;
-  }
-  .board-dialog>.dialog-heading {
-    grid-column:1/-1;
-  }
-  .board-dialog>:not(.dialog-heading,.profile-form) {
-    grid-column:1;
-  }
-  .board-list {
-    min-height:0;
-    overflow:auto;
-  }
-  .profile-form {
-    grid-column:2;
-    grid-row:2/span 3;
-    align-self:start;
-    margin-top:0;
-    padding-top:0;
-    padding-left:24px;
-    border-top:0;
-    border-left:1px solid var(--line);
-  }
-}
 @media(prefers-reduced-motion:reduce) {
   *,*::before {
     animation:none!important;
@@ -1666,9 +1563,6 @@ html[data-touch] .controls-hint {
   }
   #looksButton {
     --c:#07806f;
-  }
-  #boardButton {
-    --c:#b85c00;
   }
   #howButton {
     --c:#5b3fc4;
