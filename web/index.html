@@ -43,6 +43,7 @@
       <div id="looksScreen" class="menu-screen" hidden>
         <div class="menu-heading"><button type="button" class="back" data-back aria-label="Back to main menu">←</button><h2>Board &amp; snake</h2></div>
         <div class="menu-scroll">
+          <h3>View</h3><select id="viewStyle" class="state-select" aria-hidden="true" tabindex="-1"><option value="3d">3D view</option><option value="flat">Flat view</option></select><div id="viewCards" class="cards cards-row cards-two" role="group" aria-label="View"></div>
           <h3>Board</h3><select id="theme" class="state-select" aria-hidden="true" tabindex="-1"></select><div id="themeCards" class="cards cards-grid" role="group" aria-label="Board"></div>
           <h3>Snake</h3><select id="skin" class="state-select" aria-hidden="true" tabindex="-1"></select><div id="skinCards" class="cards cards-grid" role="group" aria-label="Snake"></div>
         </div>
@@ -56,7 +57,7 @@
       <p id="modeDescription" hidden></p>
     </section>
     <section class="game-area" aria-label="Game arena">
-      <div class="arena-top"><span id="arenaLabel" class="eyebrow">THE PRACTICE GREEN</span><div class="board-actions"><button id="viewButton" class="quiet" type="button" aria-pressed="false">Flat view</button><button id="momButton" class="quiet mom" type="button" hidden>Mom is coming!</button><button id="pauseButton" class="quiet" type="button" hidden>Pause</button><button id="exitButton" class="quiet" type="button" hidden>Leave</button></div></div>
+      <div class="arena-top"><span id="arenaLabel" class="eyebrow">THE PRACTICE GREEN</span><div class="board-actions"><button id="momButton" class="quiet mom" type="button" hidden>Mom is coming!</button><button id="pauseButton" class="quiet" type="button" hidden>Pause</button><button id="exitButton" class="quiet" type="button" hidden>Leave</button></div></div>
       <div id="scoreboard" class="scoreboard"><div class="score-player"><span id="p1Name">Your snake</span><strong id="p1Score">0</strong></div><div id="middleScore" class="round-label">CLASSIC</div><div class="score-player second"><span id="p2Name">Best</span><strong id="p2Score">0</strong></div></div>
       <div class="arena" id="arena">
         <canvas id="board" role="img" aria-label="Game board."></canvas>

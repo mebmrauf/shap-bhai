@@ -531,6 +531,9 @@ body:has(#app.playing) .site-header {
 .cards.cards-row {
   grid-template-columns:repeat(3,minmax(0,1fr));
 }
+.cards.cards-row.cards-two {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
 .cards-row .card {
   min-height:48px;
   padding:6px;
@@ -962,9 +965,6 @@ body:has(#overlay:not([hidden])) #app.playing .arena {
 }
 #soundButton {
   --icon:var(--i-sound);
-}
-#viewButton {
-  --icon:var(--i-view);
 }
 #pauseButton {
   --icon:var(--i-pause);

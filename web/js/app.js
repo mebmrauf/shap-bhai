@@ -121,6 +121,7 @@ function cardsFor(select, container, decorate) {
 }
 function renderCards() {
   cardsFor(ui.style, ui.styleCards); cardsFor(ui.speed, ui.speedCards);
+  cardsFor(ui.viewStyle, ui.viewCards);
   ui.speedCards.classList.toggle('locked', ui.speed.disabled);
   for (const card of ui.speedCards.children) card.disabled = ui.speed.disabled;
   const swatch = colors => card => { const chip = document.createElement('i'); chip.className = 'swatch'; chip.style.background = `linear-gradient(135deg,${colors.join(',')})`; card.prepend(chip); };
@@ -300,10 +301,13 @@ function measureFree() {
 }
 function syncView() {
   renderer.flat = prefs.flat; ui.board3d.hidden = !view3d || prefs.flat;
-  ui.viewButton.setAttribute('aria-pressed', String(prefs.flat));
-  ui.viewButton.textContent = t(prefs.flat ? view3d ? t('3D view') : t('Raised view') : t('Flat view'));
+  if (ui.viewStyle) ui.viewStyle.value = prefs.flat ? 'flat' : '3d';
 }
 function fillLooks() {
+  ui.viewStyle.replaceChildren(
+    new Option(t('3D view'), '3d', false, !prefs.flat),
+    new Option(t('Flat view'), 'flat', false, prefs.flat)
+  );
   ui.theme.replaceChildren(...Object.entries(THEMES).map(([value, theme]) => new Option(t(theme.label), value, false, value === prefs.theme)));
   ui.skin.replaceChildren(...Object.entries(SKINS).map(([value, skin]) => new Option(t(skin.label), value, false, value === prefs.skin)));
   renderCards();
@@ -355,11 +359,11 @@ for (const button of document.querySelectorAll('[data-back]')) button.onclick = 
 for (const button of document.querySelectorAll('[data-play]')) button.onclick = start;
 for (const id of ['speed']) if (ui[id]) ui[id].onchange = updateSetup;
 ui.style.onchange = () => { friendGhost = null; updateSetup(); };
+ui.viewStyle.onchange = () => { prefs.flat = ui.viewStyle.value === 'flat'; put('prefs', prefs); syncView(); renderCards(); };
 ui.theme.onchange = () => { prefs.theme = ui.theme.value; put('prefs', prefs); view3d?.setTheme(prefs.theme); renderCards(); };
 ui.skin.onchange = () => { prefs.skin = ui.skin.value; put('prefs', prefs); view3d?.setSkin(prefs.skin); renderer.skin = SKINS[prefs.skin]; renderCards(); if (prefs.skin === 'kalnagini') { audio.unlock(); audio.voice('kalNagini', true); } };
 ui.startButton.onclick = start; ui.menuButton.onclick = requestLeave; ui.exitButton.onclick = requestLeave;
 ui.pauseButton.onclick = () => screen === 'paused' ? resume() : pause();
-ui.viewButton.onclick = () => { prefs.flat = !prefs.flat; put('prefs', prefs); syncView(); };
 ui.confirmLeave.onclick = () => { ui.leaveDialog.close(); menu(); };
 ui.stayButton.onclick = () => { ui.leaveDialog.close(); if (resumeAfterLeave) resume(); };
 ui.leaveDialog.addEventListener('cancel', () => { if (resumeAfterLeave) setTimeout(resume, 0); });
