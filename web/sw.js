@@ -31,7 +31,13 @@ const CORE = [
 const VOICES = ['start', 'eat', 'combo', 'wall', 'self', 'win', 'lose', 'draw', 'scream', 'ah', 'help', 'run', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'duelStart', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'duelWinWall', 'duelWinSelf', 'duelWinHit', 'duelLoseWall', 'duelLoseSelf', 'duelLoseHit', 'duelWinTime', 'duelLoseTime', 'duelMatchWin', 'duelMatchLose', 'duelHeadOn', 'duelTie', 'playerOneWin', 'playerTwoWin', 'momGone', 'rankOne', 'kalNagini'];
 // Fetched one by one after install, so a dropped connection cannot cost the whole offline cache.
 // The app also requests these on Play, and anything missed is cached then.
-const EXTRAS = [...VOICES.map(name => `/audio/${name}.mp3?v=neural-bn-2`), '/audio/credits.json', '/audio/pungi-loop.wav?v=nagin-been-2'];
+const EXTRAS = [
+  ...VOICES.map(name => `/audio/${name}.mp3?v=neural-bn-2`),
+  ...VOICES.map(name => `/audio/en/${name}.mp3?v=neural-en-1`),
+  '/audio/credits.json',
+  '/audio/credits-en.json',
+  '/audio/pungi-loop.wav?v=nagin-been-2'
+];
 
 // Each version's files go into their own cache and arrive together, so a player never runs a mix of old and new code.
 self.addEventListener('install', event => {

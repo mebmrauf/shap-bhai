@@ -38,6 +38,44 @@ export const phrases = Object.freeze({
   playerOneWin: 'এক নম্বর খেলোয়াড় জিতেছে!', playerTwoWin: 'দুই নম্বর খেলোয়াড় জিতেছে!',
   momGone: 'আম্মু গেছে! চলো আবার!', rankOne: 'আজকের এক নম্বর তুমি!', kalNagini: 'কালনাগিনী আসছে! সবাই সরে দাঁড়াও!'
 });
+export const phrasesEn = Object.freeze({
+  start: "Let's go, game on!", eat: 'Ooh yeah!', combo: 'Masterclass! Great play!',
+  wall: 'Oh no! Hit the wall!', self: 'Ouch! Bit my own tail!',
+  win: 'Victory! Sweet victory!', lose: 'Oh man! What a crash!',
+  draw: 'Both down! Rematch?', scream: 'Aaahhhh!', ah: 'Aahh!',
+  help: 'Help! Somebody save me!', run: 'Run for it!',
+  roastWall1: "The wall didn't move, bro.", roastWall2: 'Done already? Was that a trailer?',
+  roastWall3: 'Where are you looking? At your phone?', roastWall4: 'Going so well, did you fall in love with the wall?',
+  roastWall5: 'Where are the brakes? A bus drives better than this.', roastWall6: 'All that hard work, ruined in one crash!',
+  roastWall7: 'Everyone saw that. Straight into the wall.', roastSelf1: 'Ate your own tail? That hungry?',
+  roastSelf2: 'Who needs enemies when you play like that?', roastSelf3: 'Fighting yourself? Take a break, bro.',
+  roastSelf4: 'You got so long, you forgot your own tail?', roastSelf5: "Tied in a knot! Who's untangling that?",
+  roastTraffic1: 'Stuck in traffic! Welcome to Dhaka.', roastTraffic2: 'Did you think the bus would give way?',
+  roastBest1: 'New record! Feeling unstoppable today?', roastBest2: "That's it! Now go flex that screenshot.",
+  roastGhost1: 'Lost to a ghost? Seriously?', roastGhost2: 'The ghost completely schooled you.',
+  chaosPower: 'Power cut! Again?', chaosTraffic: 'Traffic jam ahead! Watch for buses!',
+  chaosFlood: 'Flash flood! Water on the road!', chaosWedding: 'Wedding feast! Eat the biryani!',
+  foodFuchka: 'Fuchka! Needs more spice!', foodJhal: 'Jhalmuri! Make it extra spicy!',
+  foodRosho: 'Rosogolla! Diet starts tomorrow.', foodIlish: 'Ilish fish! Today is your lucky day.',
+  foodBiryani: 'Biryani! Another plate, please!', speedUp: 'Speeding up, careful!',
+  bite10: 'Ten down! Still hungry?', bite20: 'Twenty! Snake turned into an elephant!',
+  bite30: 'Thirty! Are you even human?', startDaily: "Today's challenge! The whole country is watching.",
+  startChaos: 'Welcome to Dhaka! Drive carefully.', startGhost: 'Ghost is ready! Run!',
+  duelStart: 'Two snakes, one arena. Go!', closeCall1: 'Close call!',
+  closeCall2: 'That was inches from disaster!', chaosPowerBack: 'Power is back! We survived!',
+  chaosTrafficEnd: 'Traffic cleared, floor it!', chaosFloodEnd: 'Water is draining!',
+  chaosWeddingEnd: "Biryani is gone! Party's over.", chaosSlip: 'Hope you know how to swim!',
+  roastZero: 'Not even a single bite?', roastGhostWon: 'You beat the ghost! Well done!',
+  roastGhostTie: "Tied with a ghost! Even it's shocked.", roastFull: 'Whole board is yours! You are the master!',
+  duelWinWall: 'They crashed into the wall! You win!', duelWinSelf: 'They bit their own tail! You win!',
+  duelWinHit: 'They crashed into you! Round is yours!', duelLoseWall: 'Crashed into the wall and gave away the round!',
+  duelLoseSelf: 'Bit your own tail and lost!', duelLoseHit: 'Ran right into them! Round lost!',
+  duelWinTime: "Time is up! More food, you win!", duelLoseTime: 'Time is up! They ate more!',
+  duelMatchWin: 'Match point! Sweet victory!', duelMatchLose: 'Match lost! Rematch?',
+  duelHeadOn: 'Head-on collision! Both down!', duelTie: 'Dead tie! Neither backed down!',
+  playerOneWin: 'Player One wins!', playerTwoWin: 'Player Two wins!',
+  momGone: 'Mom left! Back to the game!', rankOne: 'Number one on the board today!', kalNagini: 'Kal Nagini has arrived! Clear the way!'
+});
 export const reactions = Object.freeze({
   start: ['start'], eat: ['eat'], combo: ['combo', 'eat'], win: ['win'], draw: ['draw'],
   wall: ['wall', 'scream', 'ah'], self: ['self', 'ah', 'scream'],
@@ -141,9 +179,28 @@ class DecodedClip {
   }
 }
 export class GameAudio {
-  constructor(settings, caption) {
-    this.settings = settings; this.caption = caption; this.context = null; this.active = false;
-    this.clips = new Map(); this.rotation = new Map(); this.lastLine = null; this.playbackId = 0; this.current = null; this.lastVoice = -Infinity; this.musicBuffer = null; this.musicSource = null; this.musicGain = null; this.musicLoading = null; this.musicFailed = false;
+  constructor(settings, caption, lang = 'bn') {
+    this.settings = settings; this.caption = caption; this.lang = lang; this.context = null; this.active = false;
+    this.clipsBn = new Map(); this.clipsEn = new Map(); this.clips = this.clipsBn;
+    this.rotation = new Map(); this.lastLine = null; this.playbackId = 0; this.current = null; this.lastVoice = -Infinity; this.musicBuffer = null; this.musicSource = null; this.musicGain = null; this.musicLoading = null; this.musicFailed = false;
+  }
+  setLanguage(lang = 'bn') {
+    this.lang = lang === 'en' ? 'en' : 'bn';
+    this.clips = this.lang === 'en' ? this.clipsEn : this.clipsBn;
+    if (this.context) {
+      this.initClips();
+      this.loadVoices();
+    }
+  }
+  initClips() {
+    if (!this.context) return;
+    const target = this.lang === 'en' ? this.clipsEn : this.clipsBn;
+    const prefix = this.lang === 'en' ? '/audio/en' : '/audio';
+    const ver = this.lang === 'en' ? 'neural-en-1' : 'neural-bn-2';
+    for (const name of Object.keys(phrases)) {
+      if (!target.has(name)) target.set(name, new DecodedClip(this.context, `${prefix}/${name}.mp3?v=${ver}`));
+    }
+    this.clips = target;
   }
   unlock() {
     try {
@@ -151,7 +208,7 @@ export class GameAudio {
       this.context.resume().catch(() => {});
     } catch { /* Sound is optional when a browser cannot create an audio context. */ }
     if (this.context) {
-      for (const name of Object.keys(phrases)) if (!this.clips.has(name)) this.clips.set(name, new DecodedClip(this.context, `/audio/${name}.mp3?v=neural-bn-2`));
+      this.initClips();
       this.voicesReady = this.loadVoices();
     }
     this.musicFailed = false;
@@ -194,6 +251,9 @@ export class GameAudio {
     this.rotation.set(name, index + 1); this.lastLine = line;
     return line;
   }
+  phrase(line) {
+    return this.lang === 'en' ? (phrasesEn[line] ?? phrases[line]) : phrases[line];
+  }
   play(line) {
     const clip = this.clips.get(line);
     if (!clip || !this.settings.voice || document.hidden) return false;
@@ -201,7 +261,7 @@ export class GameAudio {
     this.stopVoice();
     this.current = clip; clip.currentTime = 0; clip.volume = 1;
     const playbackId = this.playbackId;
-    this.caption(phrases[line]); this.duckMusic(true);
+    this.caption(this.phrase(line)); this.duckMusic(true);
     const finished = () => {
       if (playbackId !== this.playbackId) return;
       this.current = null; this.duckMusic(false);

@@ -16,7 +16,7 @@ const put = (key, value) => { try { localStorage.setItem(`snake-arena.v2.${key}`
 const saved = get('sound', {});
 const sound = { effects: saved?.effects !== false, voice: saved?.voice !== false, music: saved?.music !== false };
 let captionTimer;
-const audio = new GameAudio(sound, text => { clearTimeout(captionTimer); ui.caption.textContent = text; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = text; if (text) captionTimer = setTimeout(() => { ui.caption.textContent = ''; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = ''; }, 6500); });
+const audio = new GameAudio(sound, text => { clearTimeout(captionTimer); ui.caption.textContent = text; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = text; if (text) captionTimer = setTimeout(() => { ui.caption.textContent = ''; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = ''; }, 6500); }, lang());
 const renderer = new ArenaRenderer(ui.board);
 let session = null, game = null, previous = null, screen = 'menu';
 let frameAt = performance.now(), accumulator = 0, countdownEnd = 0, lastCount = null;
@@ -185,9 +185,10 @@ function showResults() {
   const rival = friendGhost ? t("{name}'s ghost", { name: friendGhost.name }) : t('your ghost');
   const ghostResult = recording ? score > recording.score ? t('You beat {rival}.', { rival }) : score === recording.score ? t('A tie with {rival}.', { rival }) : t('{rival} keeps the crown.', { rival }) : null;
   const line = audio.pick(roastBank({ reason: game.reason, score, newBest: score > 0 && lastRun.newBest, ghost: !recording ? null : score > recording.score ? 'won' : score === recording.score ? 'tie' : 'lost', theme: prefs.theme }));
-  lastRun.line = phrases[line];
-  overlay(t('RUN COMPLETE'), phrases[line], `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
-  ui.overlayTitle.lang = 'bn'; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
+  const lineText = audio.phrase(line);
+  lastRun.line = lineText;
+  overlay(t('RUN COMPLETE'), lineText, `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
+  ui.overlayTitle.lang = audio.lang; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
   ui.resultActions.hidden = false; ui.shareButton.hidden = false;
   lastRun.shot = copyBoard();
 }
@@ -332,7 +333,18 @@ function copyBoard() {
 function openStudy() {
   pause(); ui.studyDialog.showModal(); document.title = 'Physics Notes · Chapter 4';
 }
-function syncLanguage() { ui.langButton.textContent = lang() === 'bn' ? 'English' : 'বাংলা'; ui.soundButton.textContent = t('Sound'); }
+function syncLanguage() {
+  ui.langButton.textContent = lang() === 'bn' ? 'English' : 'বাংলা';
+  ui.soundButton.textContent = t('Sound');
+  audio.setLanguage(lang());
+  ui.caption.lang = lang();
+  if (ui.voicePreviewCaption) ui.voicePreviewCaption.lang = lang();
+  if (ui.previewSound) ui.previewSound.textContent = t('Hear a reaction');
+  if (ui.voiceSample) {
+    ui.voiceSample.textContent = lang() === 'bn' ? 'চল ভাই, খেলা শুরু!' : "Let's go, game on!";
+    ui.voiceSample.lang = lang();
+  }
+}
 ui.langButton.onclick = () => { applyLanguage(lang() === 'bn' ? 'en' : 'bn'); syncLanguage(); fillLooks(); syncView(); updateSetup(); };
 syncLanguage();
 ui.momButton.onclick = openStudy; ui.studyClose.onclick = () => { ui.studyDialog.close(); audio.unlock(); audio.voice('momGone', true); };
@@ -381,7 +393,7 @@ for (const [name, id] of [['effects','effectsSetting'], ['voice','voiceSetting']
   ui[id].checked = sound[name];
   ui[id].onchange = () => { sound[name] = ui[id].checked; put('sound', sound); audio.unlock(); audio.update(); };
 }
-ui.previewSound.onclick = () => { audio.unlock(); if (!sound.voice) { sound.voice = true; ui.voiceSetting.checked = true; put('sound', sound); } audio.voice('preview', true); ui.previewSound.textContent = t('Next Bangla reaction'); };
+ui.previewSound.onclick = () => { audio.unlock(); if (!sound.voice) { sound.voice = true; ui.voiceSetting.checked = true; put('sound', sound); } audio.voice('preview', true); ui.previewSound.textContent = t('Next reaction'); };
 const keyDirs = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
 window.addEventListener('keydown', event => {
   if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || document.querySelector('dialog[open]')) return;

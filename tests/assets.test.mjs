@@ -11,6 +11,15 @@ test('every Bangla reaction ships as an MP3 with its script, and the offline cac
     assert.ok(worker.includes(`'${name}'`),`${name} must be cached for offline play`);
   }
 });
+test('every English reaction ships as an MP3 with its script, and the offline cache lists it', async () => {
+  const base = new URL('../web/audio/', import.meta.url); const credits = JSON.parse(await readFile(new URL('credits-en.json', base), 'utf8'));
+  const worker = await readFile(new URL('../web/sw.js', import.meta.url), 'utf8');
+  for (const [name, text] of Object.entries(credits.lines)) {
+    assert.match(text, /[A-Za-z]/); const bytes = await readFile(new URL(`en/${name}.mp3`, base));
+    assert.equal(bytes[0], 0xff, `${name} must start on an MP3 frame`); assert.equal(bytes[1] & 0xe0, 0xe0); assert.ok(bytes.length > 1500, `${name} is too short`);
+    assert.ok(worker.includes(`'${name}'`), `${name} must be cached for offline play`);
+  }
+});
 test('the offline cache lists every script the app loads',async()=>{
   const worker=await readFile(new URL('../web/sw.js',import.meta.url),'utf8');
   for(const file of await readdir(new URL('../web/js/',import.meta.url)))assert.ok(worker.includes(`/js/${file}`),`${file} must be cached for offline play`);

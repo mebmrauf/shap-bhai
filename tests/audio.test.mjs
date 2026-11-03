@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { GameAudio, phrases, reactions, escapedDanger } from '../web/js/audio.js';
+import { GameAudio, phrases, phrasesEn, reactions, escapedDanger } from '../web/js/audio.js';
 import { createGame, queueTurn, step } from '../web/js/engine.js';
 function fixture() {
   globalThis.document = { hidden: false };
@@ -18,6 +18,26 @@ test('every reaction is backed by a generated clip and matching caption', async 
   assert.deepEqual(credits.lines, phrases);
   assert.deepEqual(new Set(reactions.preview), new Set(Object.keys(phrases)));
   for (const bank of Object.values(reactions)) for (const name of bank) assert.ok(phrases[name]);
+});
+test('every English reaction is backed by a generated clip and matching caption', async () => {
+  const credits = JSON.parse(await readFile(new URL('../web/audio/credits-en.json', import.meta.url), 'utf8'));
+  assert.deepEqual(credits.lines, phrasesEn);
+  assert.deepEqual(new Set(Object.keys(phrasesEn)), new Set(Object.keys(phrases)));
+  for (const bank of Object.values(reactions)) for (const name of bank) assert.ok(phrasesEn[name]);
+});
+test('switching to English voices uses English clips and English captions', () => {
+  const { a, captions } = fixture();
+  a.setLanguage('en');
+  for (const name of Object.keys(phrasesEn)) {
+    a.clips.set(name, {
+      paused: true, ended: false, currentTime: 0,
+      play() { this.paused = false; return Promise.resolve(); },
+      pause() { this.paused = true; }
+    });
+  }
+  a.voice('start', true);
+  assert.equal(captions.at(-1), phrasesEn.start);
+  assert.equal(a.phrase('wall'), phrasesEn.wall);
 });
 test('repeated crashes rotate rather than repeating the same line', () => {
   const { a, captions } = fixture();
