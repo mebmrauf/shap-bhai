@@ -79,12 +79,12 @@ export const phrasesEn = Object.freeze({
 export const reactions = Object.freeze({
   start: ['start'], eat: ['eat'], combo: ['combo', 'eat'], win: ['win'], draw: ['draw'],
   wall: ['wall', 'scream', 'ah'], self: ['self', 'ah', 'scream'],
-  lose: ['lose', 'wall', 'help', 'scream', 'ah'], danger: ['closeCall1', 'run', 'closeCall2', 'help'],
+  lose: ['lose', 'wall', 'scream', 'ah'], danger: ['closeCall1', 'closeCall2', 'run'],
   preview: ['wall', 'help', 'run', 'lose', 'scream', 'ah', 'eat', 'self', 'win', 'start', 'combo', 'draw', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'duelStart', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'duelWinWall', 'duelWinSelf', 'duelWinHit', 'duelLoseWall', 'duelLoseSelf', 'duelLoseHit', 'duelWinTime', 'duelLoseTime', 'duelMatchWin', 'duelMatchLose', 'duelHeadOn', 'duelTie', 'playerOneWin', 'playerTwoWin', 'momGone', 'rankOne', 'kalNagini'],
   roastWallLow: ['roastWall1', 'roastWall2', 'roastWall3'], roastWallMid: ['roastWall4', 'roastWall5', 'roastWall1'], roastWallHigh: ['roastWall6', 'roastWall7'],
   roastSelfLow: ['roastSelf1', 'roastSelf2', 'roastSelf3'], roastSelfHigh: ['roastSelf4', 'roastSelf5', 'roastSelf2'], roastTraffic: ['roastTraffic1', 'roastTraffic2'], roastTrafficOther: ['roastTraffic2'],
   roastBest: ['roastBest1', 'roastBest2'], roastGhost: ['roastGhost1', 'roastGhost2'],
-  loadshedding: ['chaosPower'], traffic: ['chaosTraffic'], flood: ['chaosFlood'], wedding: ['chaosWedding'],
+  loadshedding: ['chaosPower'], traffic: ['chaosTraffic', 'help'], flood: ['chaosFlood'], wedding: ['chaosWedding'],
   loadsheddingEnd: ['chaosPowerBack'], trafficEnd: ['chaosTrafficEnd'], floodEnd: ['chaosFloodEnd'], weddingEnd: ['chaosWeddingEnd'], slip: ['chaosSlip'],
   roastZero: ['roastZero'], roastGhostWon: ['roastGhostWon'], roastGhostTie: ['roastGhostTie'], roastFull: ['roastFull'],
   foodFuchka: ['foodFuchka'], foodJhal: ['foodJhal'], foodRosho: ['foodRosho'], foodIlish: ['foodIlish'], foodBiryani: ['foodBiryani'],
@@ -92,7 +92,7 @@ export const reactions = Object.freeze({
   startDaily: ['startDaily'], startChaos: ['startChaos'], startGhost: ['startGhost'], duelStart: ['duelStart'],
   duelWinWall: ['duelWinWall'], duelWinSelf: ['duelWinSelf'], duelWinHit: ['duelWinHit'], duelLoseWall: ['duelLoseWall'], duelLoseSelf: ['duelLoseSelf'], duelLoseHit: ['duelLoseHit'],
   duelWinTime: ['duelWinTime'], duelLoseTime: ['duelLoseTime'], duelMatchWin: ['duelMatchWin'], duelMatchLose: ['duelMatchLose'], duelHeadOn: ['duelHeadOn'], duelTie: ['duelTie'],
-  playerOneWin: ['playerOneWin'], playerTwoWin: ['playerTwoWin'], momGone: ['momGone'], rankOne: ['rankOne'], kalNagini: ['kalNagini']
+  playerOneWin: ['playerOneWin'], playerTwoWin: ['playerTwoWin'], momGone: ['momGone'], rankOne: ['rankOne'], kalNagini: ['kalNagini'], help: ['help']
 });
 // Every spoken line answers something that just happened. These are pure so each scenario can be tested.
 export function roastBank({ reason, score = 0, newBest = false, ghost = null, theme = 'dhaka' } = {}) {
