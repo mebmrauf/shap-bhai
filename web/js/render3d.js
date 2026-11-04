@@ -5,7 +5,7 @@ import { LOOKS, boardTextures, groundTexture, floralBand, decorate, foodModel, s
 
 const AMBER = { head: '#d96a0a', body: ['#ff9a2e', '#ffe3a6', '#ff9a2e'] };
 const cellX = x => x + .5 - SIZE / 2, cellZ = y => y + .5 - SIZE / 2;
-const RING = 8, STEPS = 2, CELL_REPEAT = 2.4;
+const RING = 10, STEPS = 3, CELL_REPEAT = 2.4;
 
 // Scales, a spine pattern and a pale belly, in the skin's colours.
 const skinTextures = new Map();
@@ -77,16 +77,18 @@ export class Arena3D {
     this.canvas = canvas; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const phone = matchMedia('(pointer: coarse)').matches;
     this.phone = phone;
-    this.high = isCapable() && !phone;
+    const capable = isCapable();
+    this.high = capable;
     this.renderer = new WebGLRenderer({
       canvas,
-      antialias: !phone,
+      antialias: capable,
       alpha: false,
       failIfMajorPerformanceCaveat: true,
       powerPreference: 'high-performance',
       preserveDrawingBuffer: false
     });
-    this.pixelRatio = Math.min(devicePixelRatio || 1, phone ? 1.0 : Math.min(1.35, devicePixelRatio || 1));
+    const maxDpr = capable ? (phone ? 1.6 : 1.5) : 1.0;
+    this.pixelRatio = Math.min(devicePixelRatio || 1, maxDpr);
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.toneMapping = ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.3;
     this.renderer.shadowMap.enabled = this.high;
