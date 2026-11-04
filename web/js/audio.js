@@ -12,7 +12,7 @@ export const phrases = Object.freeze({
   roastWall7: 'সবাই দেখছে, ওস্তাদ দেয়ালে গিয়া ঠেকছে।', roastSelf1: 'নিজের লেজ খাইয়া ফেললা? এত ক্ষুধা?',
   roastSelf2: 'শত্রু লাগে না, তুমি নিজেই যথেষ্ট।', roastSelf3: 'নিজের সাথেই মারামারি? থামো ভাই।',
   roastSelf4: 'এত লম্বা হইলা, নিজের লেজ চিনো না?', roastSelf5: 'গিঁট্টু লাইগা গেছে! এখন খুলবে কে?',
-  roastTraffic1: 'জ্যামে মরলা! ঢাকায় স্বাগতম।', roastTraffic2: 'বাস কি তোমারে সাইড দিব ভাবছিলা?',
+  roastTraffic1: 'জ্যামে মরলা! ঢাকায় স্বাগতম।', roastTraffic2: 'বাস কি তোমারে সাইড দিবো ভাবছিলা?',
   roastBest1: 'নতুন রেকর্ড! আজকে ভাত বেশি খাইছো নাকি?', roastBest2: 'এই তো! এবার স্ক্রিনশট দিয়া সবাইরে জ্বালাও।',
   roastGhost1: 'ভূতের কাছেও হাইরা গেলা?', roastGhost2: 'ভূত তোমারে ধুইয়া দিল।',
   chaosPower: 'কারেন্ট গেলো! আবার?', chaosTraffic: 'সামনে জ্যাম! বাস আসতেছে!',
@@ -196,7 +196,7 @@ export class GameAudio {
     if (!this.context) return;
     const target = this.lang === 'en' ? this.clipsEn : this.clipsBn;
     const prefix = this.lang === 'en' ? '/audio/en' : '/audio';
-    const ver = this.lang === 'en' ? 'neural-en-1' : 'neural-bn-2';
+    const ver = this.lang === 'en' ? 'neural-en-1' : 'neural-bn-3';
     for (const name of Object.keys(phrases)) {
       if (!target.has(name)) target.set(name, new DecodedClip(this.context, `${prefix}/${name}.mp3?v=${ver}`));
     }

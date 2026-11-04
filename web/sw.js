@@ -32,7 +32,7 @@ const VOICES = ['start', 'eat', 'combo', 'wall', 'self', 'win', 'lose', 'draw', 
 // Fetched one by one after install, so a dropped connection cannot cost the whole offline cache.
 // The app also requests these on Play, and anything missed is cached then.
 const EXTRAS = [
-  ...VOICES.map(name => `/audio/${name}.mp3?v=neural-bn-2`),
+  ...VOICES.map(name => `/audio/${name}.mp3?v=neural-bn-3`),
   ...VOICES.map(name => `/audio/en/${name}.mp3?v=neural-en-1`),
   '/audio/credits.json',
   '/audio/credits-en.json',
