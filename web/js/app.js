@@ -52,13 +52,47 @@ function updateSetup() {
   renderCards();
   ui.bestLabel.parentElement.hidden = false; ui.bestLabel.hidden = false; ui.bestValue.textContent = num(best());
   ui.rulesText.replaceChildren();
-  const paragraphs = [
-    t('Use arrow keys, W A S D, the direction buttons, or swipe on the board. You cannot reverse into your neck.'),
-    t('One turn is applied per movement step. Two quick turns can be queued. Escape or P pauses; switching tabs also pauses.'),
-    t('Each bite adds a body segment. Speed increases slightly every 5 bites. Fill the board to win.'),
-    ...(style === 'chaos' ? [t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')] : style === 'ghost' ? [t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')] : [])
+  const sections = [
+    {
+      title: t('Phone & touch controls'),
+      items: [
+        t('Swipe anywhere on the screen or 3D board to turn (Up, Down, Left, Right).'),
+        t('Or tap the on-screen direction arrow buttons at the bottom.'),
+        t('Tap the Pause button at the top to pause or resume.')
+      ]
+    },
+    {
+      title: t('Keyboard & laptop controls'),
+      items: [
+        t('Use Arrow keys (↑ ↓ ← →) or W A S D to steer.'),
+        t('Press Esc or P to pause. Switching tabs also pauses automatically.')
+      ]
+    },
+    {
+      title: t('Rules & mechanics'),
+      items: [
+        t('Eat food to grow longer and increase your score. Speed rises slightly every 5 bites.'),
+        t('Crashing into walls or your own tail ends the run.'),
+        t('You cannot reverse directly 180° into your neck.'),
+        t('You can queue up to 2 quick turns in advance for fast corners.')
+      ]
+    },
+    ...(style === 'chaos' ? [{
+      title: t('Chaos: Bangladesh edition'),
+      items: [
+        t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')
+      ]
+    }] : style === 'ghost' ? [{
+      title: t('Race your ghost'),
+      items: [
+        t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')
+      ]
+    }] : [])
   ];
-  for (const text of paragraphs) { const p = document.createElement('p'); p.textContent = text; ui.rulesText.append(p); }
+  for (const s of sections) {
+    const h = document.createElement('h3'); h.textContent = s.title; ui.rulesText.append(h);
+    for (const text of s.items) { const p = document.createElement('p'); p.textContent = text; ui.rulesText.append(p); }
+  }
   ui.board.setAttribute('aria-label', t('Board preview. Your snake is ready.'));
   preview = createGame({ mode: 'classic', seed: 1 });
   preview.snakes[0].body = [{x:8,y:8},{x:7,y:8},{x:6,y:8},{x:5,y:8},{x:4,y:8},{x:4,y:9},{x:4,y:10},{x:4,y:11},{x:5,y:11},{x:6,y:11},{x:7,y:11}]; preview.food = [{x:13,y:8}];
@@ -416,13 +450,45 @@ for (const button of ui.touchControls.querySelectorAll('button')) button.addEven
   steer(0, button.dataset.dir);
 }, { passive: false });
 let swipe = null;
-ui.board.addEventListener('pointerdown', event => { if (event.pointerType === 'mouse') return; swipe = { x: event.clientX, y: event.clientY }; try { ui.board.setPointerCapture(event.pointerId); } catch { /* The swipe still works inside the board. */ } });
-ui.board.addEventListener('pointermove', event => {
+function startSwipe(x, y, target, pointerId) {
+  swipe = { x, y };
+  if (pointerId !== undefined && target?.setPointerCapture) {
+    try { target.setPointerCapture(pointerId); } catch {}
+  }
+}
+function moveSwipe(x, y) {
   if (!swipe) return;
-  const dir = swipeTurn(swipe, event.clientX, event.clientY);
+  const dir = swipeTurn(swipe, x, y);
   if (dir) steer(0, dir);
-});
-for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) ui.board.addEventListener(name, () => swipe = null);
+}
+function endSwipe() {
+  swipe = null;
+}
+for (const target of [ui.board, ui.board3d, ui.arena]) {
+  if (!target) continue;
+  target.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse') return;
+    if (event.target.closest('button, select, input, dialog, .site-header, .overlay-panel, a')) return;
+    startSwipe(event.clientX, event.clientY, event.currentTarget, event.pointerId);
+  }, { passive: true });
+  target.addEventListener('pointermove', event => {
+    moveSwipe(event.clientX, event.clientY);
+  }, { passive: true });
+  for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+    target.addEventListener(name, endSwipe);
+  }
+  target.addEventListener('touchstart', event => {
+    if (event.target.closest('button, select, input, dialog, .site-header, .overlay-panel, a')) return;
+    const t = event.touches?.[0];
+    if (t) startSwipe(t.clientX, t.clientY);
+  }, { passive: true });
+  target.addEventListener('touchmove', event => {
+    const t = event.touches?.[0];
+    if (t) moveSwipe(t.clientX, t.clientY);
+  }, { passive: true });
+  target.addEventListener('touchend', endSwipe, { passive: true });
+  target.addEventListener('touchcancel', endSwipe, { passive: true });
+}
 window.addEventListener('blur', () => pause());
 document.addEventListener('visibilitychange', () => { if (document.hidden) { pause(); audio.setActive(false); } });
 // Opened with ?debug: shows on the phone itself what the game receives, for problems no desktop can reproduce.

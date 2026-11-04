@@ -224,7 +224,8 @@ canvas {
   inset:0;
 }
 #board3d {
-  pointer-events:none;
+  pointer-events:auto;
+  touch-action:none;
 }
 #board:focus-visible {
   outline:0;
@@ -557,11 +558,20 @@ body:has(#app.playing) .site-header {
   font-size:13px;
   line-height:1.6;
 }
-.rules-text p {
-  margin:0 0 12px;
-  color:var(--soft);
+.rules-text h3 {
+  margin:14px 0 6px;
   font-size:14px;
-  line-height:1.65;
+  font-weight:700;
+  color:var(--yellow);
+}
+.rules-text h3:first-child {
+  margin-top:0;
+}
+.rules-text p {
+  margin:0 0 8px;
+  color:var(--ink);
+  font-size:13px;
+  line-height:1.6;
 }
 #codeField label {
   display:block;
