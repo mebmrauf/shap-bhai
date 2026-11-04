@@ -170,10 +170,16 @@ function renderCards() {
   cardsFor(ui.skin, ui.skinCards, (card, value) => swatch(SKINS[value].body)(card));
   const chosen = SKINS[prefs.skin] ?? SKINS.kalnagini; ui.looksSummary.textContent = t(chosen.label); ui.snakeDot.style.background = `linear-gradient(135deg,${chosen.body.join(',')})`;
 }
-function showScreen(name) {
+function showScreen(name, push = true) {
   for (const id of ['home', 'solo', 'looks', 'how']) if (ui[`${id}Screen`]) ui[`${id}Screen`].hidden = id !== name;
   error();
   (name === 'home' ? ui.startButton : ui[`${name}Screen`].querySelector('[data-back]')).focus({ preventScroll: true });
+  if (push && screen === 'menu' && !friendGhost) {
+    const hash = name === 'home' ? '' : `#${name}`;
+    if (location.hash !== hash) {
+      try { history.pushState({ screen: name }, '', hash || location.pathname); } catch {}
+    }
+  }
 }
 async function start() {
   if (ui.startButton.disabled || updater.applyPending(true)) return;
@@ -425,7 +431,24 @@ const brand = document.querySelector('.brand');
 if (brand) brand.onclick = event => { event.preventDefault(); if (screen !== 'menu') requestLeave(); else showScreen('home'); };
 ui.soloMode.onclick = () => { updateSetup(); showScreen('solo'); };
 ui.looksButton.onclick = () => showScreen('looks'); ui.snakeChip.onclick = () => showScreen('looks'); ui.howButton.onclick = () => showScreen('how');
-for (const button of document.querySelectorAll('[data-back]')) button.onclick = () => showScreen('home');
+for (const button of document.querySelectorAll('[data-back]')) button.onclick = () => {
+  if (history.state?.screen && history.state.screen !== 'home') history.back();
+  else showScreen('home');
+};
+window.addEventListener('popstate', event => {
+  const openDialog = document.querySelector('dialog[open]');
+  if (openDialog) {
+    openDialog.close();
+    if (openDialog === ui.studyDialog) { audio.unlock(); audio.voice('momGone', true); }
+    return;
+  }
+  if (screen !== 'menu') {
+    requestLeave();
+    return;
+  }
+  const target = event.state?.screen ?? (location.hash ? location.hash.slice(1) : 'home');
+  showScreen(['solo', 'looks', 'how'].includes(target) ? target : 'home', false);
+});
 for (const button of document.querySelectorAll('[data-play]')) button.onclick = start;
 for (const id of ['speed']) if (ui[id]) ui[id].onchange = updateSetup;
 ui.style.onchange = () => { friendGhost = null; updateSetup(); };
@@ -532,6 +555,10 @@ const updater = keepUpdated({ isBusy: () => screen !== 'menu' || !!document.quer
 window.addEventListener('load', () => updater.start());
 renderer.skin = SKINS[prefs.skin]; fillLooks(); syncView(); const initialStyle = new URLSearchParams(location.search).get('style'); ui.style.value = initialStyle === 'chaos' ? 'chaos' : 'classic';
 updateSetup(); requestAnimationFrame(frame);
+if (location.hash) {
+  const initial = location.hash.slice(1);
+  if (['solo', 'looks', 'how'].includes(initial)) showScreen(initial, false);
+}
 // The 2D board stays the fallback, so 3D is only ever an upgrade.
 import('./render3d.js').then(({ Arena3D }) => {
   try {
