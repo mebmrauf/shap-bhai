@@ -1,7 +1,7 @@
 import { Scene, PerspectiveCamera, WebGLRenderer, Color, Fog, HemisphereLight, DirectionalLight, PointLight, Mesh, Group, InstancedMesh, Object3D, BoxGeometry, SphereGeometry, PlaneGeometry, CircleGeometry, BufferGeometry, BufferAttribute, MeshStandardMaterial, MeshBasicMaterial, RepeatWrapping, BackSide, Vector3, ACESFilmicToneMapping, PCFSoftShadowMap, DynamicDrawUsage } from '../vendor/three-0.187.0-r2/three.min.js';
 import { SIZE, DIRECTIONS } from './engine.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
-import { LOOKS, boardTextures, groundTexture, floralBand, decorate, foodModel, snakeHead, trafficModel, texture, mat } from './world3d.js';
+import { LOOKS, boardTextures, groundTexture, floralBand, decorate, foodModel, snakeHead, obstacleModel, trafficModel, texture, mat } from './world3d.js';
 
 const AMBER = { head: '#d96a0a', body: ['#ff9a2e', '#ffe3a6', '#ff9a2e'] };
 const cellX = x => x + .5 - SIZE / 2, cellZ = y => y + .5 - SIZE / 2;
@@ -228,7 +228,11 @@ export class Arena3D {
       for (const p of c?.warnings ?? []) { const m = new Mesh(tile, this.warnMaterial); m.position.set(cellX(p.x), .025, cellZ(p.y)); this.chaos.add(m); }
       for (const p of c?.water ?? []) { const m = new Mesh(tile, this.waterMaterial); m.position.set(cellX(p.x), .03, cellZ(p.y)); m.receiveShadow = true; this.chaos.add(m); }
       (c?.obstacles ?? []).forEach((p, i) => {
-        const model = trafficModel(i); model.position.set(cellX(p.x), this.reduced ? 0 : 3, cellZ(p.y)); model.userData.drop = true; this.chaos.add(model);
+        const model = obstacleModel(this.themeName, i);
+        model.traverse(o => { if (o.isMesh) o.castShadow = true; });
+        model.position.set(cellX(p.x), this.reduced ? 0 : 3, cellZ(p.y));
+        model.userData.drop = true;
+        this.chaos.add(model);
       });
     }
     this.warnMaterial.opacity = .3 + Math.abs(Math.sin(this.time * 7)) * .45;

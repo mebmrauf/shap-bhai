@@ -85,6 +85,7 @@ test('solo voice lines match how the run ended', () => {
   const cases = [
     [{ reason: 'wall', score: 2 }, 'roastWallLow'], [{ reason: 'wall', score: 8 }, 'roastWallMid'], [{ reason: 'wall', score: 25 }, 'roastWallHigh'],
     [{ reason: 'self', score: 2 }, 'roastSelfLow'], [{ reason: 'self', score: 12 }, 'roastSelfHigh'], [{ reason: 'traffic', score: 1 }, 'roastTraffic'],
+    [{ reason: 'traffic', score: 1, theme: 'sundarbans' }, 'roastTrafficOther'], [{ reason: 'traffic', score: 1, theme: 'coxs' }, 'roastTrafficOther'],
     [{ reason: 'wall', score: 0 }, 'roastZero'], [{ reason: 'wall', score: 40, newBest: true }, 'roastBest'], [{ reason: 'board-full', score: 400 }, 'roastFull'],
     [{ reason: 'wall', score: 3, ghost: 'lost' }, 'roastGhost'], [{ reason: 'wall', score: 30, newBest: true, ghost: 'won' }, 'roastGhostWon'], [{ reason: 'self', score: 3, ghost: 'tie' }, 'roastGhostTie']
   ];

@@ -2,7 +2,7 @@ import { SIZE, DIRECTIONS } from './engine.js';
 import { foodKind } from './themes.js';
 const FOOD_COLORS = [['#b9782f', '#e0a55c'], ['#d9cfa8', '#f6efd2'], ['#d8d4c2', '#fffdf2'], ['#8fa1aa', '#cfd8dc']];
 export class ArenaRenderer {
-  constructor(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.flat = false; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; this.width = 0; this.height = 0; this.free = { left: 0, right: 0, top: 0, bottom: 0 }; }
+  constructor(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.flat = false; this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; this.width = 0; this.height = 0; this.free = { left: 0, right: 0, top: 0, bottom: 0 }; this.theme = 'rooftop'; }
   setFree(free) { this.free = free; }
   resize() {
     const { width, height } = this.canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
@@ -42,7 +42,24 @@ export class ArenaRenderer {
       c.strokeStyle = '#b6d78860'; c.lineWidth = 1.5; c.setLineDash([3, 5]); c.beginPath();
       c.moveTo(...project(head.x + .5, head.y + .5)); c.lineTo(...project(food.x + .5, head.y + .5)); c.lineTo(...project(food.x + .5, food.y + .5)); c.stroke(); c.setLineDash([]);
     }
-    for (const p of chaos?.obstacles ?? []) { const [px, py] = project(p.x, p.y, this.flat ? 0 : .2); c.fillStyle = '#7a1420'; c.fillRect(px + 1, py + u * .2, u - 2, u * tilt); c.fillStyle = '#e63946'; c.fillRect(px + 1, py, u - 2, u * tilt * .8); c.fillStyle = '#dff6ff'; c.fillRect(px + u * .15, py + u * .12, u * .7, u * .22); }
+    for (const p of chaos?.obstacles ?? []) {
+      const [px, py] = project(p.x, p.y, this.flat ? 0 : .2);
+      if (this.theme === 'sundarbans') {
+        c.fillStyle = '#8a4208'; c.beginPath(); c.roundRect(px + 1, py + u * .15, u - 2, u * tilt * .85, u * .18); c.fill();
+        c.fillStyle = '#e88b24'; c.beginPath(); c.roundRect(px + 1, py, u - 2, u * tilt * .75, u * .18); c.fill();
+        c.fillStyle = '#f7dcb0'; c.beginPath(); c.roundRect(px + u * .2, py + u * tilt * .35, u * .6, u * tilt * .35, u * .1); c.fill();
+        c.fillStyle = '#1a1208'; for (let s = 0; s < 3; s++) c.fillRect(px + u * (.2 + s * .25), py + u * .04, u * .1, u * tilt * .3);
+      } else if (this.theme === 'coxs') {
+        c.fillStyle = '#0f4c5c'; c.beginPath(); c.roundRect(px + 1, py + u * .15, u - 2, u * tilt * .85, u * .2); c.fill();
+        c.fillStyle = '#e36414'; c.beginPath(); c.roundRect(px + 1, py, u - 2, u * tilt * .75, u * .2); c.fill();
+        c.fillStyle = '#7fd8e8'; c.beginPath(); c.roundRect(px + u * .18, py + u * .1, u * .64, u * tilt * .28, u * .1); c.fill();
+        c.fillStyle = '#fb8b24'; c.fillRect(px + u * .3, py + u * tilt * .45, u * .4, u * tilt * .2);
+      } else {
+        c.fillStyle = '#7a1420'; c.fillRect(px + 1, py + u * .2, u - 2, u * tilt);
+        c.fillStyle = '#e63946'; c.fillRect(px + 1, py, u - 2, u * tilt * .8);
+        c.fillStyle = '#dff6ff'; c.fillRect(px + u * .15, py + u * .12, u * .7, u * .22);
+      }
+    }
     for (const f of game.food) {
       const [x, y] = project(f.x + .5, f.y + .58);
       if (f.feast) { c.fillStyle = '#d9d9d9'; c.beginPath(); c.ellipse(x, y - u * .05, u * .36, u * .2, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#f2b632'; c.beginPath(); c.ellipse(x, y - u * .18, u * .28, u * .22, 0, 0, Math.PI * 2); c.fill(); continue; }

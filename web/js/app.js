@@ -17,14 +17,20 @@ const saved = get('sound', {});
 const sound = { effects: saved?.effects !== false, voice: saved?.voice !== false, music: saved?.music !== false };
 let captionTimer;
 const audio = new GameAudio(sound, text => { clearTimeout(captionTimer); ui.caption.textContent = text; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = text; if (text) captionTimer = setTimeout(() => { ui.caption.textContent = ''; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = ''; }, 6500); }, lang());
+const prefs = { theme: 'rooftop', skin: 'kalnagini', flat: false, ...get('prefs', {}) };
 const renderer = new ArenaRenderer(ui.board);
+renderer.theme = prefs.theme;
 let session = null, game = null, previous = null, screen = 'menu';
 let frameAt = performance.now(), accumulator = 0, countdownEnd = 0, lastCount = null;
 let ghost = null, recording = null, ghostIndex = 0, preview = null, resultSaved = '';
 let resumeAfterLeave = false, slipSaid = false;
-const prefs = { theme: 'rooftop', skin: 'kalnagini', flat: false, ...get('prefs', {}) };
 let view3d = null, view3dFailed = false, friendGhost = null, lastRun = null;
-const CHAOS_STATUS = { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' };
+const CHAOS_STATUS = {
+  dhaka: { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' },
+  rooftop: { loadshedding: "No power! Follow your head's glow.", traffic: 'Traffic jam! Get off the red cells.', flood: "Flooded road! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' },
+  coxs: { loadshedding: "No power! Follow your head's glow.", traffic: 'Beach patrol! Watch for buggies and boats.', flood: "High tide! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' },
+  sundarbans: { loadshedding: "Pitch dark jungle! Follow your head's glow.", traffic: 'Wildlife alert! Tigers and deer crossing.', flood: "High tide! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' }
+};
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
 function bestKey(style = ui.style.value, speed = ui.speed.value) { return `best.${style === 'ghost' ? 'classic' : style}.${speed}`; }
@@ -116,6 +122,7 @@ function overlay(eyebrow, title, text, button = '', action = null, focus = true)
   if (focus) ui.overlayTitle.focus({ preventScroll: true });
 }
 function enterGame() {
+  renderer.theme = prefs.theme;
   document.querySelector('.board-actions').prepend(ui.soundButton); ui.soundButton.textContent = t('Sound');
   ui.app.classList.add('playing'); ui.previewTag.hidden = true; ui.overlay.hidden = true; ui.exitButton.hidden = false;
   ui.pauseButton.hidden = false;
@@ -183,7 +190,8 @@ function updateHud() {
   if (ui.p2Mark) ui.p2Mark.hidden = true;
   ui.middleScore.textContent = session.style === 'ghost' ? (recording ? t('TARGET {n}', { n: recording.score }) : t('RECORDING')) : t('BITES');
   ui.timerText.textContent = t('{n} segments', { n: game.snakes[0].body.length });
-  ui.statusText.textContent = game.chaos ? t(CHAOS_STATUS[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'ghost' ? (recording ? (ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.')) : t('Finish this run to save your first ghost.')) : t('Find your rhythm. Watch your tail.');
+  const chaosMap = CHAOS_STATUS[prefs.theme] ?? CHAOS_STATUS.dhaka;
+  ui.statusText.textContent = game.chaos ? t(chaosMap[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'ghost' ? (recording ? (ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.')) : t('Finish this run to save your first ghost.')) : t('Find your rhythm. Watch your tail.');
   ui.board.setAttribute('aria-label', `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
 }
 // Routine lines wait their turn, so they never cut off an event announcement.
@@ -192,7 +200,14 @@ function handleEvents(events) {
     if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); const apples = game.snakes[0].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell) }); audio.voice(bank, e.feast || bank.startsWith('bite')); }
     if (e.type === 'crash') { view3d?.effect('crash'); audio.effect('crash'); }
     // Traffic and floods speak on their warning, because that is when the player can still react.
-    if (e.type === 'chaos') { if (e.phase === 'end') { slipSaid = false; audio.voice(`${e.name}End`); } else if (e.phase === 'warn' || !['traffic', 'flood'].includes(e.name)) audio.voice(e.name, true); }
+    if (e.type === 'chaos') {
+      if (e.phase === 'end') {
+        slipSaid = false; audio.voice(`${e.name}End`);
+      } else if (e.phase === 'warn') {
+        const bank = e.name === 'traffic' ? (prefs.theme === 'sundarbans' ? 'trafficSundarban' : prefs.theme === 'coxs' ? 'trafficCoxs' : 'traffic') : e.name;
+        audio.voice(bank, true);
+      } else if (!['traffic', 'flood'].includes(e.name)) audio.voice(e.name, true);
+    }
   }
   if (!slipSaid && game?.chaos?.water.some(p => p.x === game.snakes[0].body[0].x && p.y === game.snakes[0].body[0].y)) { slipSaid = true; audio.voice('slip', true); }
   if (escapedDanger(previous, game, 0)) audio.voice('danger');
@@ -415,7 +430,7 @@ for (const button of document.querySelectorAll('[data-play]')) button.onclick = 
 for (const id of ['speed']) if (ui[id]) ui[id].onchange = updateSetup;
 ui.style.onchange = () => { friendGhost = null; updateSetup(); };
 ui.viewStyle.onchange = () => { prefs.flat = ui.viewStyle.value === 'flat'; put('prefs', prefs); syncView(); renderCards(); };
-ui.theme.onchange = () => { prefs.theme = ui.theme.value; put('prefs', prefs); view3d?.setTheme(prefs.theme); renderCards(); };
+ui.theme.onchange = () => { prefs.theme = ui.theme.value; put('prefs', prefs); renderer.theme = prefs.theme; view3d?.setTheme(prefs.theme); renderCards(); };
 ui.skin.onchange = () => { prefs.skin = ui.skin.value; put('prefs', prefs); view3d?.setSkin(prefs.skin); renderer.skin = SKINS[prefs.skin]; renderCards(); if (prefs.skin === 'kalnagini') { audio.unlock(); audio.voice('kalNagini', true); } };
 ui.startButton.onclick = start; ui.menuButton.onclick = requestLeave; ui.exitButton.onclick = requestLeave;
 ui.pauseButton.onclick = () => screen === 'paused' ? resume() : pause();

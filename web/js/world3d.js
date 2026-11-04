@@ -77,8 +77,229 @@ export function cng() {
   g.add(box(.02, .16, .3, mat('#1a2a33', .15, .4), .25, .45, 0), box(.4, .012, .3, mat('#d8e8e0', .3), -.05, .22, 0), wheel(.09, -.17, .09, .18), wheel(.09, -.17, .09, -.18), wheel(.09, .28, .09, 0));
   return g;
 }
+// Wildlife for Sundarbans
+let tigerFurMat = null;
+function getTigerFur() {
+  if (!tigerFurMat) {
+    const stripes = texture(128, 64, (c, w, h) => {
+      c.fillStyle = '#e88b24'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#f7dcb0'; c.fillRect(0, h * .72, w, h * .28);
+      c.fillStyle = '#15120e'; const r = seeded(31);
+      for (let x = 3; x < w; x += 12) {
+        c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 5 + r() * 3, h * (.35 + r() * .3)); c.lineTo(x + 7, 0); c.fill();
+      }
+    });
+    tigerFurMat = mat('#ffffff', .82, 0, { map: stripes });
+  }
+  return tigerFurMat;
+}
+
+export function sundarbanTiger() {
+  const g = new Group(), fur = getTigerFur();
+  const torso = ball(.34, fur, -.04, .36, 0, 14); torso.scale.set(1.3, .78, .68);
+  const head = ball(.22, fur, .32, .48, 0, 14); head.scale.set(1, .92, .95);
+  const muzzle = ball(.11, mat('#f7dcb0', .8), .48, .42, 0, 10);
+  const nose = ball(.035, mat('#1a1208', .4), .56, .45, 0, 6);
+  const earL = ball(.065, fur, .3, .64, .13, 8);
+  const earR = ball(.065, fur, .3, .64, -.13, 8);
+  const eyeL = ball(.035, mat('#ffd166', .2, 0, { emissive: '#ffd166', emissiveIntensity: .25 }), .44, .52, .1, 7);
+  const eyeR = ball(.035, mat('#ffd166', .2, 0, { emissive: '#ffd166', emissiveIntensity: .25 }), .44, .52, -.1, 7);
+  g.add(torso, head, muzzle, nose, earL, earR, eyeL, eyeR);
+  for (const [x, z] of [[-.26, .17], [-.26, -.17], [.18, .17], [.18, -.17]]) {
+    g.add(cyl(.065, .075, .32, fur, x, .16, z, 8));
+  }
+  const tail = cyl(.035, .055, .46, fur, -.48, .42, 0, 6); tail.rotation.z = .85; g.add(tail);
+  return g;
+}
+
+let deerMat = null;
+function getDeerMat() {
+  if (!deerMat) {
+    const spots = texture(128, 64, (c, w, h) => {
+      c.fillStyle = '#b06d2e'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#f5eedb'; c.fillRect(0, h * .75, w, h * .25);
+      c.fillStyle = '#ffffff'; const r = seeded(83);
+      for (let i = 0; i < 40; i++) {
+        c.beginPath(); c.arc(r() * w, r() * (h * .7), 1.2 + r() * 1.8, 0, 7); c.fill();
+      }
+    });
+    deerMat = mat('#ffffff', .85, 0, { map: spots });
+  }
+  return deerMat;
+}
+
+export function sundarbanDeer() {
+  const g = new Group(), fur = getDeerMat(), brown = mat('#8c4e1b', .85), hornMat = mat('#e8dfd3', .9);
+  const body = ball(.28, fur, -.06, .42, 0, 14); body.scale.set(1.22, .75, .58);
+  const neck = cyl(.06, .095, .32, fur, .18, .58, 0, 8); neck.rotation.z = -.4;
+  const head = ball(.13, fur, .26, .76, 0, 12); head.scale.set(1.1, .8, .72);
+  const snout = ball(.07, brown, .37, .72, 0, 8);
+  const nose = ball(.025, mat('#15100a', .3), .43, .73, 0, 6);
+  const earL = cyl(.02, .05, .15, fur, .22, .9, .08, 6); earL.rotation.set(.35, 0, -.2);
+  const earR = cyl(.02, .05, .15, fur, .22, .9, -.08, 6); earR.rotation.set(-.35, 0, -.2);
+  const antlerL = cyl(.015, .025, .32, hornMat, .24, .98, .07, 5); antlerL.rotation.set(.22, 0, -.3);
+  const antlerR = cyl(.015, .025, .32, hornMat, .24, .98, -.07, 5); antlerR.rotation.set(-.22, 0, -.3);
+  const tineL = cyl(.012, .018, .14, hornMat, .29, 1.05, .1, 5); tineL.rotation.set(.4, 0, .4);
+  const tineR = cyl(.012, .018, .14, hornMat, .29, 1.05, -.1, 5); tineR.rotation.set(-.4, 0, .4);
+  const eyeL = ball(.028, mat('#100b06', .2), .31, .8, .075, 6);
+  const eyeR = ball(.028, mat('#100b06', .2), .31, .8, -.075, 6);
+  for (const [x, z] of [[-.22, .13], [-.22, -.13], [.14, .13], [.14, -.13]]) {
+    g.add(cyl(.032, .042, .42, fur, x, .21, z, 7));
+  }
+  const tail = ball(.05, mat('#f5eedb', .9), -.36, .48, 0, 6);
+  g.add(body, neck, head, snout, nose, earL, earR, antlerL, antlerR, tineL, tineR, eyeL, eyeR, tail);
+  return g;
+}
+
+let crocMat = null;
+function getCrocMat() {
+  if (!crocMat) {
+    const scales = texture(128, 64, (c, w, h) => {
+      c.fillStyle = '#2f441e'; c.fillRect(0, 0, w, h);
+      c.strokeStyle = '#1d2c12'; c.lineWidth = 1.5;
+      for (let y = 0; y < h; y += 8) {
+        for (let x = 0; x < w; x += 10) c.strokeRect(x + (y % 16 ? 5 : 0), y, 9, 7);
+      }
+    });
+    crocMat = mat('#ffffff', .72, .1, { map: scales });
+  }
+  return crocMat;
+}
+
+export function sundarbanCroc() {
+  const g = new Group(), skin = getCrocMat(), belly = mat('#707d4b', .8);
+  const body = ball(.28, skin, -.05, .15, 0, 14); body.scale.set(1.5, .44, .75);
+  const snout = ball(.18, skin, .35, .13, 0, 12); snout.scale.set(1.4, .32, .58);
+  const jaw = ball(.16, belly, .33, .08, 0, 10); jaw.scale.set(1.3, .22, .52);
+  const eyeL = ball(.036, mat('#d4af37', .15, 0, { emissive: '#8a7018', emissiveIntensity: .2 }), .3, .23, .085, 7);
+  const eyeR = ball(.036, mat('#d4af37', .15, 0, { emissive: '#8a7018', emissiveIntensity: .2 }), .3, .23, -.085, 7);
+  for (let i = 0; i < 6; i++) {
+    const spike = new Mesh(new ConeGeometry(.032, .07, 4), skin);
+    spike.position.set(-.38 + i * .12, .26, 0); spike.castShadow = true;
+    g.add(spike);
+  }
+  const tail = cyl(.03, .13, .58, skin, -.54, .12, 0, 7); tail.rotation.z = 1.57;
+  for (const [x, z, rotZ] of [[-.22, .24, .4], [-.22, -.24, -.4], [.16, .24, .35], [.16, -.24, -.35]]) {
+    const leg = cyl(.045, .055, .2, skin, x, .08, z, 6);
+    leg.rotation.z = rotZ; leg.rotation.x = z > 0 ? .35 : -.35;
+    g.add(leg);
+  }
+  g.add(body, snout, jaw, eyeL, eyeR, tail);
+  return g;
+}
+
+export function sundarbanElephant() {
+  const g = new Group(), hide = mat('#5c636a', .88, 0), tuskMat = mat('#fffae8', .4, 0);
+  const body = ball(.38, hide, -.06, .4, 0, 14); body.scale.set(1.22, .92, .82);
+  const head = ball(.25, hide, .3, .54, 0, 14); head.scale.set(.9, .95, .82);
+  for (const side of [-1, 1]) {
+    const ear = ball(.21, hide, .24, .56, side * .25, 10);
+    ear.scale.set(.25, .9, .12); ear.rotation.y = side * .25;
+    g.add(ear);
+    const tusk = new Mesh(new ConeGeometry(.022, .22, 6), tuskMat);
+    tusk.rotation.set(-side * .2, 0, -1.25);
+    tusk.position.set(.44, .38, side * .11); tusk.castShadow = true;
+    g.add(tusk);
+    g.add(ball(.022, mat('#1a1a1a', .2), .42, .58, side * .17, 6));
+  }
+  const trunkBase = cyl(.065, .09, .22, hide, .46, .4, 0, 8); trunkBase.rotation.z = -.48;
+  const trunkMid = cyl(.045, .065, .2, hide, .54, .24, 0, 8); trunkMid.rotation.z = .25;
+  const trunkTip = cyl(.03, .045, .14, hide, .58, .12, 0, 7); trunkTip.rotation.z = .75;
+  for (const [x, z] of [[-.26, .19], [-.26, -.19], [.16, .19], [.16, -.19]]) {
+    g.add(cyl(.082, .095, .32, hide, x, .16, z, 8));
+  }
+  const tail = cyl(.018, .024, .3, hide, -.46, .34, 0, 6); tail.rotation.z = .45;
+  g.add(body, head, trunkBase, trunkMid, trunkTip, tail);
+  return g;
+}
+
+// Beach vehicles & hazards for Cox's Bazar
+export function beachAtv(hue = '#ff6b35') {
+  const g = new Group(), paint = mat(hue, .4, .1), rollbar = mat('#2b2d42', .6, .8);
+  for (const x of [-.26, .26]) {
+    for (const z of [-.24, .24]) {
+      const w = wheel(.12, x, .12, z);
+      w.scale.set(1.15, 1.15, 1.35);
+      g.add(w);
+    }
+  }
+  g.add(box(.62, .18, .36, paint, 0, .22, 0));
+  const hood = box(.24, .12, .34, paint, .24, .24, 0); hood.rotation.z = -.25; g.add(hood);
+  g.add(box(.28, .1, .28, mat('#1a1a1a', .9), -.06, .34, 0));
+  g.add(cyl(.018, .018, .32, rollbar, -.16, .45, .15, 6));
+  g.add(cyl(.018, .018, .32, rollbar, -.16, .45, -.15, 6));
+  g.add(box(.03, .03, .32, rollbar, -.16, .6, 0));
+  g.add(cyl(.016, .016, .22, CHROME, .16, .42, 0, 6));
+  g.add(box(.02, .02, .3, mat('#111', .8), .16, .52, 0));
+  g.add(box(.02, .08, .18, mat('#fff3b0', .2, 0, { emissive: '#ffe66d', emissiveIntensity: .8 }), .36, .24, 0));
+  return g;
+}
+
+export function beachSampan() {
+  const g = new Group(), wood = mat('#6f4e37', .85, 0), darkWood = mat('#3e2723', .9, 0);
+  const hull = ball(.42, wood, 0, .24, 0, 16); hull.scale.set(1.9, .6, .65);
+  const deck = box(.7, .04, .28, darkWood, 0, .26, 0);
+  const prow = cyl(.02, .06, .36, darkWood, .58, .38, 0, 6); prow.rotation.z = -.75;
+  const stern = cyl(.02, .06, .36, darkWood, -.58, .38, 0, 6); stern.rotation.z = .75;
+  const roof = new Mesh(new CylinderGeometry(.2, .2, .36, 10, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateY(Math.PI / 2), mat('#d4a373', .85));
+  roof.position.set(-.04, .38, 0); roof.castShadow = true;
+  const oar = cyl(.016, .016, .7, darkWood, .08, .36, .18, 5); oar.rotation.set(.3, 0, .45);
+  g.add(hull, deck, prow, stern, roof, oar);
+  return g;
+}
+
+export function beachSpeedboat(stripe = '#0077b6') {
+  const g = new Group(), white = mat('#f8f9fa', .4, .1), color = mat(stripe, .4, .1);
+  const body = box(.8, .22, .44, white, 0, .14, 0);
+  const bow = new Mesh(new ConeGeometry(.26, .36, 4).rotateZ(-Math.PI / 2).rotateY(Math.PI / 4), white);
+  bow.position.set(.44, .14, 0); bow.scale.set(.8, .6, 1.2); bow.castShadow = true;
+  const stripeMesh = box(.8, .05, .446, color, 0, .18, 0);
+  const cockpit = box(.44, .12, .34, mat('#212529', .85), -.02, .21, 0);
+  const glass = box(.03, .14, .36, mat('#a8dadc', .15, .5, { transparent: true, opacity: .75 }), .16, .3, 0);
+  glass.rotation.z = -.4;
+  const motor = box(.14, .24, .12, mat('#1d3557', .5, .6), -.44, .2, 0);
+  g.add(body, bow, stripeMesh, cockpit, glass, motor);
+  return g;
+}
+
+export function beachCrab() {
+  const g = new Group(), shellMat = mat('#e63946', .5, 0), clawMat = mat('#d62828', .4, 0);
+  const shell = ball(.3, shellMat, 0, .14, 0, 14); shell.scale.set(1.15, .45, .9);
+  const eyeL = cyl(.015, .018, .12, shellMat, .16, .26, .09, 6); eyeL.rotation.z = -.3;
+  const eyeR = cyl(.015, .018, .12, shellMat, .16, .26, -.09, 6); eyeR.rotation.z = -.3;
+  const beadL = ball(.028, mat('#050505', .2), .19, .31, .09, 6);
+  const beadR = ball(.028, mat('#050505', .2), .19, .31, -.09, 6);
+  for (const side of [-1, 1]) {
+    const arm = cyl(.025, .035, .2, clawMat, .22, .18, side * .24, 6);
+    arm.rotation.set(side * .4, 0, -side * .7);
+    const claw = ball(.09, clawMat, .32, .24, side * .28, 8);
+    claw.scale.set(1.5, .7, .6);
+    const pincer = new Mesh(new ConeGeometry(.03, .1, 4), clawMat);
+    pincer.rotation.set(0, 0, -1.2); pincer.position.set(.41, .25, side * .28); pincer.castShadow = true;
+    g.add(arm, claw, pincer);
+  }
+  for (const [x, z, angle] of [
+    [-.18, .28, .5], [0, .32, 0], [.14, .28, -.5],
+    [-.18, -.28, -.5], [0, -.32, 0], [.14, -.28, .5]
+  ]) {
+    const leg = cyl(.016, .022, .24, shellMat, x, .08, z, 5);
+    leg.rotation.set(z > 0 ? .6 : -.6, 0, angle);
+    g.add(leg);
+  }
+  g.add(shell, eyeL, eyeR, beadL, beadR);
+  return g;
+}
+
 const vehicles = [() => rickshaw('#d7263d'), () => bus('#1f7a8c'), cng, () => bus('#b5382a'), () => rickshaw('#0f8b8d'), () => bus('#3a5a9b')];
-export const trafficModel = index => vehicles[index % vehicles.length]();
+const sundarbanObstacles = [sundarbanTiger, sundarbanDeer, sundarbanCroc, sundarbanElephant];
+const coxsObstacles = [() => beachAtv('#ff6b35'), beachSampan, () => beachSpeedboat('#0077b6'), beachCrab, () => beachAtv('#06d6a0'), () => beachSpeedboat('#ef476f')];
+
+export function obstacleModel(theme, index) {
+  if (theme === 'sundarbans') return sundarbanObstacles[index % sundarbanObstacles.length]();
+  if (theme === 'coxs') return coxsObstacles[index % coxsObstacles.length]();
+  return vehicles[index % vehicles.length]();
+}
+export const trafficModel = index => obstacleModel('dhaka', index);
 
 const newsprint = () => texture(64, 64, (c, w, h) => { c.fillStyle = '#e6dfc6'; c.fillRect(0, 0, w, h); c.fillStyle = '#4a4a44'; for (let y = 4; y < h; y += 5) for (let x = 3; x < w; x += 12) c.fillRect(x, y, 6 + (x * y) % 5, 1.6); });
 const crisp = () => texture(128, 128, (c, w, h) => { c.fillStyle = '#d9983f'; c.fillRect(0, 0, w, h); speckle(c, w, h, 500, ['#a8611c', '#f0c070', '#7a4310'], seeded(11), 5); });
