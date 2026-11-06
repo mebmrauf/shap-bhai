@@ -1,67 +1,25 @@
-# Verification — 29 October 2026
+# Verification — 6 November 2026
 
-## Automated
+The current product is a solo game: Classic, Chaos and Ghost. Older verification notes described features outside this scope and have been replaced.
 
-**43 tests passed.** The suite covers:
+## Current validation
 
-- One cell per tick, growth, first apple, reverse-turn rejection, and two-turn buffering.
-- Wall/self/opponent collisions, head-on and head-swap draws, simultaneous deaths, vacating/growing tails, and survival precedence over score.
-- Symmetric starts, equal duel speed, 90-second scoring, full-board completion, deterministic food spawning.
-- Arcade scoring caps, active-time expiry, and apple-based speed progression.
-- Replay integrity, bounded input, tampering, and separation from Arcade/unfinished runs.
-- AI wall avoidance, independence from human queued input, and body/score invariants across 30 seeded bot matches.
-- Room membership, authentication, shared countdown, authoritative ticking, duplicate/stale inputs, ready consent, score preservation, match reset, disconnect and leave handling.
-- HTTP methods, JSON, content type, origin, static file boundary, and audio delivery.
-- Private snapshots, in-flight input acknowledgement, lost-response retry, non-overlapping polling, and readiness races.
-- Eight shipped Bangla WAV clips contain non-silent PCM audio and their Bengali scripts.
+Run `npm run build:static` to build the versioned static artifact. Automated test files, the npm test command and test CI workflow were removed at the user’s request. Before removal, **125 tests passed**. That historical suite covered solo movement, two-turn input buffering, wall/self collisions, vacating tails, growth, deterministic food, speed progression, full-board completion, replay integrity, Chaos warnings and events, bilingual audio/captions, solo share-card copy, translations, assets, HTTP boundaries and update coordination. It also covered internal Arcade and legacy leaderboard validation.
 
-## Browser playtests
+Before removal, regression checks verified each supported engine mode starts with one snake, the removed competitive mode is rejected, and the former room API returns 404. The historical HTTP checks used loopback sockets.
 
-Performed using normal UI and keyboard controls:
+## Review scope
 
-- Classic: collected apples, turned, paused, resumed, crashed, saved a best and replay.
-- Ghost: raced that recording while taking a different route; observed the separate blue replay and score target.
-- Same keyboard: controlled both players, collected an apple for each, shared pause/resume, verified Player 2's win and round score.
-- Computer: observed the bot collect apples and turn independently using the shared engine.
-- Arcade: collected an apple; confirmed combo meter pauses with gameplay.
-- Online: created and joined a room in two browser tabs, steered the guest, and verified identical winner and 1–0 round tally on both screens. A ready click waited for the other player, then round 2 retained the tally. Leaving closed the opponent's room cleanly.
-- Sound dialog: previewed a Bangla clip and verified controls and no browser console errors.
-- Layout: visually inspected narrow 445px and wide 1280px views. Corrected game sizing and kept audio controls beside the board. The browser's requested 375px viewport override did not change the actual embedded viewport; no 375px-device claim is made.
+Source review included all application modules, static hosting, the service worker, manifest, deployment workflows, audio metadata and tests. Browser checks use the local Node server and desktop Chromium. Physical touch devices, iOS Safari, real installed PWA updates, cleared music redistribution rights, real database persistence and production load are outside this verification.
 
-Issues found during browser testing and corrected: stale online result tally, misleading online pause hint, duplicate/inactive pause/result controls, stale board accessibility label, and menu returning at the previous game's scroll position.
+The default server does not initialize the legacy leaderboard service. Daily challenges, online score posting, profiles and shared ghost links are not connected to the current UI. The static build and GitHub Pages workflow now stamp the same content hash as Node hosting.
 
-## Limits
+## Adventure playthroughs
 
-No physical touch-device, real high-latency WAN, public hosting, multi-instance/load, or human evaluation of Bangla voice naturalness was performed. The Bangla voice is synthesized. The musical loop is original synthesized pluck/percussion, not a recording of a Bangla song. AI difficulty is fixed and visible rules do not adapt secretly. The presentation uses Canvas 2.5D, with a flat-view option.
+A temporary deterministic planner completed each story with Kal Nagini, seed 1, and verified the resulting version 3 recording. Dhaka: 308 ticks, 20 deliveries, 4 encounters. Rooftop: 267 ticks, 20 deliveries, 5 encounters. Beach: 281 ticks, 20 deliveries, 3 encounters. Sundarbans: 320 ticks, 20 deliveries, 4 encounters. This validates reachability and replay consistency, not human difficulty or enjoyment.
 
-## Dhaka 3D build (2026-11-01)
+All 116 new adventure MP3s (58 Bangla, 58 English) have matching source scripts and offline-cache entries. The historical automatic checks validated file structure; human listening and physical-phone playtesting are still needed for voice naturalness and final difficulty tuning.
 
-Tested in the desktop app's browser at phone and desktop sizes, with Chromium's WebGL.
+The historical dialogue regression checks covered all worlds, wall/self/tiger/bus outcomes, zero and high scores, wins, reward availability versus collection, rescued versus stolen sweets, character selection versus actual hat-tricks, same-step resolved warnings, warning priority across ticks, and matching audio cache versions.
 
-- Solo daily and Chaos runs, computer 1 vs 1, and an online room with about 350 ms of added delay and a scripted second player. Result screens and voice captions matched each outcome.
-- Offline: with the server stopped, the page reloaded, 3D and Bangla worked, a computer match ran, and sampled voice clips decoded from the cache.
-- Leaderboard rules ran against real Postgres in a throwaway schema, which was then dropped.
-- Simulated weak links, real client and room code, 12 seconds each, comparing frames where the head did not move and multi-cell jumps per frame:
-
-| Link | Frozen, before | Frozen, after | Jumps, before | Jumps, after |
-|---|---:|---:|---:|---:|
-| 60 ms | 16% | 7% | 0 | 0 |
-| 200 ms | 59% | 7% | 3 | 0 |
-| 500 ms with jitter | 79% | 22% | 19 | 6 |
-| 400 ms, jitter, 5% loss | 77% | 14% | 17 | 1 |
-
-Not covered: real phones and real mobile networks, iOS Safari, listening to the generated voice clips (only duration and loudness were measured), and a real two-person online match.
-
-## Rickshaw Pop UI and self-update (2026-11-01)
-
-Layout audit for off-screen and clipped controls, with no findings on the final build, at 320x568, 390x844, 844x390, 768x1024 and 1180x820 with touch forced on, and 1440x900 without touch. The audit covered the home screen, menus, play and results, though not every state at every size.
-
-Self-update, simulated by changing a game file and restarting the server: on the menu, the page reloaded itself into the new version. During a game, the page was not interrupted and updated on leaving to the menu.
-
-Not covered: a real installed app on a real phone, real tablets (touch was forced on in a desktop browser), and iOS Safari.
-
-## Chaos events in real play (2026-11-01)
-
-A temporary autopilot, since removed, played the real game in the browser: load shedding, traffic, floods and wedding biryani all fired. It ate biryani (+3 points plus extra growth), drove into floodwater (the "সাঁতার জানো তো?" line played), crashed into a bus (reason `traffic`, with the matching roast), and reached 78 segments with no page errors.
-
-Bugs this found and fixed: a routine speed line cut off the blackout announcement, and the last run's roast carried into the next countdown.
+The result overlay displays one joke, selected from the same recorded line that is spoken. A browser-level function test verified that equality and the absence of a second joke in both languages.

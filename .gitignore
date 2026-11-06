@@ -1,6 +1,22 @@
+# Dependencies and generated builds
 node_modules/
+dist/
+coverage/
+
+# Local secrets (keep the public configuration example)
 .env
 .env.*
 !.env.example
+
+# Logs and operating-system files
+*.log
 .DS_Store
-coverage/
+
+# Test sources and generated reports
+/tests/
+/test/
+/__tests__/
+*.test.*
+*.spec.*
+playwright-report/
+test-results/

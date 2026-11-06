@@ -2,29 +2,20 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { createHash, createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { Rooms, RoomError } from './rooms.mjs';
+import { HttpError } from './errors.mjs';
+import { buildId } from './build-id.mjs';
 const ROOT = fileURLToPath(new URL('../web/', import.meta.url));
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ttf': 'font/ttf', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
-// Changes whenever any game file changes, which is what makes browsers pick up a new version.
-function buildId() {
-  const hash = createHash('sha256');
-  for (const name of fs.readdirSync(ROOT, { recursive: true }).map(String).sort()) {
-    const file = path.join(ROOT, name);
-    if (fs.statSync(file).isFile() && name !== 'sw.js' && !path.basename(name).startsWith('.')) hash.update(name).update(fs.readFileSync(file));
-  }
-  return hash.digest('hex').slice(0, 12);
-}
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.svg', '.json']);
 const REPLAY_BYTES = 300000;
 export function createServer({ leaderboard = null } = {}) {
-  const rooms = new Rooms(), rates = new Map(), build = buildId();
+  const rates = new Map(), build = buildId(ROOT);
   const ipSecret = process.env.IP_HASH_SECRET || randomBytes(32).toString('hex');
   // Render's proxy is the socket peer, so the real client is the first forwarded address.
   // shortcut: a client can forge this header to dodge rate limits; use the platform's verified IP header if abuse appears.
   const clientKey = req => createHmac('sha256', ipSecret).update((process.env.RENDER && req.headers['x-forwarded-for']?.split(',')[0].trim()) || req.socket.remoteAddress || '').digest('hex');
-  const ticker = setInterval(() => rooms.advance(), 20); ticker.unref();
   const server = http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -44,17 +35,17 @@ export function createServer({ leaderboard = null } = {}) {
     function rateFor() {
       const ip = clientKey(req), now = Date.now();
       let rate = rates.get(ip);
-      if (!rate || now - rate.start > 10000) { rate = { start: now, count: 0, opens: 0, writes: 0 }; rates.set(ip, rate); }
+      if (!rate || now - rate.start > 10000) { rate = { start: now, count: 0, writes: 0 }; rates.set(ip, rate); }
       if (rates.size > 1000) for (const [key, entry] of rates) if (now - entry.start > 10000) rates.delete(key);
       return rate;
     }
     async function readJson(limit) {
-      if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) throw new RoomError('Origin not allowed.', 403);
-      if (!req.headers['content-type']?.startsWith('application/json')) throw new RoomError('Send JSON.', 415);
-      if (Number(req.headers['content-length']) > limit) throw new RoomError('Request too large.', 413);
+      if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) throw new HttpError('Origin not allowed.', 403);
+      if (!req.headers['content-type']?.startsWith('application/json')) throw new HttpError('Send JSON.', 415);
+      if (Number(req.headers['content-length']) > limit) throw new HttpError('Request too large.', 413);
       let raw = '', bytes = 0;
-      for await (const chunk of req) { bytes += chunk.length; if (bytes > limit) throw new RoomError('Request too large.', 413); raw += chunk; }
-      try { return JSON.parse(raw); } catch { throw new RoomError('Invalid JSON.'); }
+      for await (const chunk of req) { bytes += chunk.length; if (bytes > limit) throw new HttpError('Request too large.', 413); raw += chunk; }
+      try { return JSON.parse(raw); } catch { throw new HttpError('Invalid JSON.'); }
     }
     try {
       const url = new URL(req.url, 'http://localhost');
@@ -62,14 +53,6 @@ export function createServer({ leaderboard = null } = {}) {
         if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); return json(405, { error: 'Use GET or HEAD.' }); }
         if (req.method === 'HEAD') { res.writeHead(200); return res.end(); }
         return json(200, { status: 'ok', uptime: Math.floor(process.uptime()), timestamp: Date.now() });
-      }
-      if (url.pathname === '/api/rooms') {
-        if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return json(405, { error: 'Use POST.' }); }
-        const rate = rateFor();
-        if (++rate.count > 400) return json(429, { error: 'Too many requests. Wait a moment.' });
-        const body = await readJson(16384);
-        if (['create', 'join'].includes(body?.action) && ++rate.opens > 12) throw new RoomError('Too many room requests. Wait a moment.', 429);
-        return json(200, rooms.request(body));
       }
       if (url.pathname.startsWith('/api/')) {
         const ghostMatch = url.pathname.match(/^\/api\/ghosts\/([^/]+)$/);
@@ -102,13 +85,12 @@ export function createServer({ leaderboard = null } = {}) {
       if (gzip) file.pipe(zlib.createGzip()).pipe(res); else file.pipe(res);
     } catch (error) {
       if (res.headersSent) return res.end();
-      if (error instanceof RoomError) return json(error.status, { error: error.message });
+      if (error instanceof HttpError) return json(error.status, { error: error.message });
       // Database failures reach the log by code only, and players get a plain message.
       if (req.url.startsWith('/api/') && !(error instanceof TypeError)) { console.error('Request failed:', error.code ?? 'unknown'); return json(503, { error: 'The leaderboard is unavailable right now.' }); }
       json(404, { error: 'Not found.' });
     }
   });
-  server.on('close', () => clearInterval(ticker));
   return server;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

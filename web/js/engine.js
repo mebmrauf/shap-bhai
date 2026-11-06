@@ -1,9 +1,9 @@
-// This is the only simulation used by solo, AI, local multiplayer and the server.
+// Deterministic solo rules shared by gameplay and replay verification.
+import { WORLDS, TRAITS, STORY_GOALS } from './adventures.js';
 export const SIZE = 20;
 export const DIRECTIONS = Object.freeze({ up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] });
 export const SPEEDS = Object.freeze({ relaxed: 180, normal: 140, fast: 105 });
 export const COMBO_MS = 8000;
-export const ROUND_MS = 90000;
 export const MAX_TICKS = 18000;
 export const CHAOS_EVENTS = Object.freeze(['loadshedding', 'traffic', 'flood', 'wedding']);
 const key = p => `${p.x},${p.y}`;
@@ -29,17 +29,24 @@ export function dailySeed(day) {
   for (const ch of `snake-arena:${day}`) hash = Math.imul(hash ^ ch.charCodeAt(0), 16777619);
   return hash >>> 0 || 1;
 }
-export function createGame({ mode = 'classic', speed = 'normal', seed = 1 } = {}) {
-  if (!['classic', 'arcade', 'duel', 'chaos'].includes(mode) || !Object.hasOwn(SPEEDS, speed) || !Number.isInteger(seed)) throw new Error('Invalid game settings');
+export function createGame({ mode = 'classic', speed = 'normal', seed = 1, theme = null, skin = 'nagin' } = {}) {
+  if (!['classic', 'arcade', 'chaos'].includes(mode) || !Object.hasOwn(SPEEDS, speed) || !Number.isInteger(seed)) throw new Error('Invalid game settings');
+  if (theme !== null && (!Object.hasOwn(WORLDS, theme) || !Object.hasOwn(TRAITS, skin))) throw new Error('Invalid adventure settings');
   const g = { version: 2, mode, speed, seed: seed >>> 0 || 1, randomState: seed >>> 0 || 1, tick: 0, elapsedMs: 0, status: 'playing', winner: null, reason: '', food: [], events: [], actions: [] };
-  g.snakes = mode === 'duel' ? [snake(0, 4, 7, 'right'), snake(1, 15, 12, 'left')] : [snake(0, 6, 10, 'right')];
-  g.food = mode === 'duel' ? [{ x: 10, y: 7 }, { x: 9, y: 12 }] : [{ x: 10, y: 10 }];
+  g.snakes = [snake(0, 6, 10, 'right')];
+  g.food = [{ x: 10, y: 10 }];
   if (mode === 'chaos') g.chaos = { name: null, phase: 'idle', until: 40, last: null, warnings: [], obstacles: [], water: [], blackout: false };
+  if (theme) {
+    g.version = 3; g.theme = theme; g.skin = skin;
+    delete g.chaos;
+    g.food[0].kind = WORLDS[theme].food;
+    g.adventure = { theme, skin, phase: 'rest', next: mode === 'chaos' ? 24 : 34, until: 0, phaseAt: 0, path: [], warnings: [], obstacles: [], water: [], actor: null, delivered: 0, chapter: 0, dodged: 0, stolen: 0, gifts: 0, giftExpires: 0 };
+  }
   return g;
 }
 export function stepDuration(g) {
-  if (g.mode === 'duel') return 180;
-  return Math.max(85, SPEEDS[g.speed] - Math.floor(g.snakes[0].apples / 5) * 7);
+  const duration = Math.max(85, SPEEDS[g.speed] - Math.floor(g.snakes[0].apples / 5) * 7);
+  return g.adventure?.skin === 'tea' ? Math.round(duration * 1.12) : duration;
 }
 export const canTurn = (heading, dir) => dir !== heading && !opposite(heading, dir);
 export function queueTurn(g, id, dir) {
@@ -55,18 +62,13 @@ function spawnFood(g) {
   const occupied = new Set(g.snakes.flatMap(s => s.body).map(key));
   for (const f of g.food) occupied.add(key(f));
   if (g.chaos) for (const p of [...g.chaos.warnings, ...g.chaos.obstacles, ...g.chaos.water]) occupied.add(key(p));
+  if (g.adventure) for (const p of [...g.adventure.warnings, ...g.adventure.obstacles, ...g.adventure.water]) occupied.add(key(p));
   const free = [];
   for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) if (!occupied.has(`${x},${y}`)) free.push({ x, y });
   if (!free.length) return false;
-  if (g.mode === 'duel') {
-    // Respawn in rotationally symmetric pairs only after both apples are eaten.
-    const symmetric = free.filter(p => !occupied.has(`${SIZE - 1 - p.x},${SIZE - 1 - p.y}`));
-    const candidates = symmetric.length ? symmetric : free;
-    const p = candidates[Math.floor(random(g) * candidates.length)];
-    g.food.push(p);
-    const q = { x: SIZE - 1 - p.x, y: SIZE - 1 - p.y };
-    if (!occupied.has(key(q)) && !same(p, q)) g.food.push(q);
-  } else g.food.push(free[Math.floor(random(g) * free.length)]);
+  const food = free[Math.floor(random(g) * free.length)];
+  if (g.adventure) food.kind = WORLDS[g.theme].food;
+  g.food.push(food);
   return true;
 }
 // Chaos cells must keep clear of the snake's next few moves, so nothing lands on a player unseen.
@@ -125,32 +127,121 @@ function finish(g, reason, winner) {
   g.status = 'finished'; g.reason = reason; g.winner = winner;
   g.events.push({ type: 'finish', reason, winner });
 }
+function adventureEvent(g, phase, extra = {}) { g.events.push({ type: 'adventure', theme: g.theme, phase, ...extra }); }
+function restAdventure(g) {
+  const a = g.adventure;
+  a.phase = 'rest'; a.next = g.tick + (g.mode === 'chaos' ? 25 : 45);
+  a.warnings = []; a.obstacles = []; a.water = []; a.actor = null;
+}
+function rewardAdventure(g) {
+  const a = g.adventure;
+  a.dodged++;
+  if (g.skin === 'nagin') {
+    g.snakes[0].score += 2; adventureEvent(g, 'trait', { skin: g.skin, points: 2 });
+  }
+  g.food = g.food.filter(f => !f.gift);
+  if (spawnFood(g)) { g.food.at(-1).gift = g.theme; a.giftExpires = g.tick + 70; adventureEvent(g, 'gift'); }
+}
+function startEncounter(g) {
+  const a = g.adventure, head = g.snakes[0].body[0], world = WORLDS[g.theme];
+  const warning = (g.mode === 'chaos' ? 12 : 17) + (g.skin === 'kalnagini' ? 6 : 0);
+  a.phase = 'warn'; a.until = g.tick + warning;
+  if (world.encounter === 'bus') {
+    let row = 2 + Math.floor(random(g) * 16);
+    if (Math.abs(row - head.y) < 3) row = head.y < 10 ? 16 : 3;
+    a.path = Array.from({ length: SIZE }, (_, x) => ({ x, y: row }));
+    if (random(g) < .5) a.path.reverse();
+    a.actor = { kind: 'bus', ...a.path[0], dir: a.path[0].x === 0 ? 'right' : 'left', state: 'warn' };
+  } else if (world.encounter === 'tiger') {
+    const target = { x: Math.max(4, Math.min(15, head.x)), y: Math.max(4, Math.min(15, head.y)) };
+    const dir = Object.keys(DIRECTIONS)[Math.floor(random(g) * 4)], [dx, dy] = DIRECTIONS[dir];
+    a.path = Array.from({ length: 4 }, (_, i) => ({ x: target.x - dx * (3 - i), y: target.y - dy * (3 - i) }));
+    a.actor = { kind: 'tiger', ...a.path[0], dir, state: 'warn' };
+  } else if (world.encounter === 'pigeon') {
+    const food = g.food.find(f => !f.gift) ?? { x: 10, y: 10 };
+    a.path = [{ x: food.x, y: food.y }];
+    a.actor = { kind: 'pigeon', ...a.path[0], dir: 'down', state: 'warn' };
+  } else {
+    a.row = 3 + Math.floor(random(g) * 8);
+    a.path = Array.from({ length: SIZE * 6 }, (_, i) => ({ x: i % SIZE, y: a.row + Math.floor(i / SIZE) }));
+    a.actor = { kind: 'crab', x: 1, y: a.row + 6, dir: 'right', state: 'warn' };
+  }
+  a.warnings = a.path.map(p => ({ ...p }));
+  adventureEvent(g, 'warn');
+}
+function advanceAdventure(g) {
+  const a = g.adventure, kind = WORLDS[g.theme].encounter;
+  if (a.giftExpires && g.tick >= a.giftExpires) { g.food = g.food.filter(f => !f.gift); a.giftExpires = 0; }
+  if (a.phase === 'rest') { if (g.tick >= a.next) startEncounter(g); return; }
+  if (a.phase === 'warn') {
+    if (g.tick < a.until) return;
+    a.phase = 'active'; a.phaseAt = g.tick; a.warnings = []; a.actor.state = 'active';
+    a.until = g.tick + ({ bus: SIZE, tiger: 8, pigeon: 6, tide: 24 }[kind]);
+    if (kind === 'pigeon') {
+      g.food = g.food.filter(f => !same(f, a.path[0])); a.stolen++;
+      adventureEvent(g, 'stolen');
+    } else adventureEvent(g, 'active');
+  }
+  if (g.tick >= a.until) {
+    restAdventure(g);
+    if (kind !== 'pigeon') rewardAdventure(g);
+    return;
+  }
+  const at = g.tick - a.phaseAt;
+  if (kind === 'bus' || kind === 'tiger') {
+    const index = kind === 'bus' ? at : Math.floor(at / 2);
+    Object.assign(a.actor, a.path[index]);
+    a.obstacles = [a.path[index]];
+    if (kind === 'bus' && index > 0) a.obstacles.push(a.path[index - 1]);
+  } else if (kind === 'tide') {
+    const shift = Math.min(3, Math.floor(Math.min(at, 23 - at) / 3));
+    a.water = Array.from({ length: SIZE * 3 }, (_, i) => ({ x: i % SIZE, y: a.row + shift + Math.floor(i / SIZE) }));
+    a.actor.x = 1 + at % 18;
+  }
+}
+function eatAdventure(g, food) {
+  const a = g.adventure, snake = g.snakes[0];
+  if (food.gift) {
+    a.gifts++; adventureEvent(g, 'treat', { points: g.skin === 'tiger' ? 5 : 3 });
+    if (g.skin === 'tiger') adventureEvent(g, 'trait', { skin: g.skin });
+    return;
+  }
+  a.delivered++;
+  if (g.skin === 'jersey' && a.delivered % 3 === 0) { snake.score++; adventureEvent(g, 'trait', { skin: g.skin, points: 1 }); }
+  if (a.phase === 'warn' && g.theme === 'rooftop' && same(food, a.path[0])) {
+    const points = g.skin === 'tiger' ? 5 : 3;
+    snake.score += points; a.dodged++; restAdventure(g); adventureEvent(g, 'rescued', { points });
+    if (g.skin === 'nagin') { snake.score += 2; adventureEvent(g, 'trait', { skin: g.skin, points: 2 }); }
+  }
+  if (a.delivered >= STORY_GOALS[a.chapter]) {
+    a.chapter++; adventureEvent(g, a.chapter === 3 ? 'complete' : 'chapter', { chapter: a.chapter });
+  }
+}
 export function step(g) {
   if (g.status !== 'playing') return g;
   g.events = [];
   const dt = stepDuration(g);
   g.tick++; g.elapsedMs += dt;
   if (g.chaos) advanceChaos(g);
+  if (g.adventure) advanceAdventure(g);
   const next = [], grows = [];
   for (const s of g.snakes) {
     // Floodwater carries the head straight on; queued turns wait for dry ground.
-    const turn = g.chaos?.water.some(p => same(p, s.body[0])) ? undefined : s.queue.shift();
+    const inWater = [...(g.chaos?.water ?? []), ...(g.adventure?.water ?? [])].some(p => same(p, s.body[0]));
+    const turn = inWater ? undefined : s.queue.shift();
     if (turn) { s.dir = turn; g.actions.push([g.tick, s.id, turn]); }
     const [dx, dy] = DIRECTIONS[s.dir];
     next[s.id] = { x: s.body[0].x + dx, y: s.body[0].y + dy };
     grows[s.id] = g.food.some(f => same(f, next[s.id])) || s.pending > 0;
     if (g.elapsedMs > s.comboUntil) s.combo = 0;
   }
-  // Resolve all intended positions against the same snapshot. A non-growing tail
-  // vacates on this tick; every other body cell remains solid, including heads.
+  // A non-growing tail vacates on this tick; every other body cell stays solid.
   const occupied = new Set(g.snakes.flatMap(s => grows[s.id] ? s.body : s.body.slice(0, -1)).map(key));
   for (const s of g.snakes) {
     if (!inside(next[s.id])) s.death = 'wall';
     else if (g.chaos?.obstacles.some(p => same(p, next[s.id]))) s.death = 'traffic';
-    else if (occupied.has(key(next[s.id]))) s.death = s.body.some(p => same(p, next[s.id])) ? 'self' : 'opponent';
-  }
-  if (g.snakes.length === 2 && (same(next[0], next[1]) || (same(next[0], g.snakes[1].body[0]) && same(next[1], g.snakes[0].body[0])))) {
-    for (const s of g.snakes) s.death = 'head-on';
+    else if (g.adventure?.obstacles.some(p => same(p, next[s.id]) || same(p, s.body[0]))) s.death = g.theme === 'sundarbans' ? 'tiger' : 'traffic';
+    else if (occupied.has(key(next[s.id]))) s.death = 'self';
   }
   for (const s of g.snakes) {
     if (s.death) { s.alive = false; g.events.push({ type: 'crash', id: s.id, reason: s.death }); continue; }
@@ -164,27 +255,18 @@ export function step(g) {
       s.combo = g.mode === 'arcade' ? Math.min(3, s.combo + 1) : 1;
       s.comboUntil = g.elapsedMs + COMBO_MS;
       // Biryani is worth 3 points and two extra segments.
-      const points = eaten.feast ? 3 : s.combo;
+      const points = eaten.gift ? (g.skin === 'tiger' ? 5 : 3) : eaten.feast ? 3 : s.combo;
       if (eaten.feast) s.pending = (s.pending ?? 0) + 2;
       s.score += points;
-      g.events.push({ type: 'eat', id: s.id, points, cell: next[s.id], feast: !!eaten.feast });
+      g.events.push({ type: 'eat', id: s.id, points, cell: next[s.id], feast: !!eaten.feast, ...(g.adventure ? { gift: !!eaten.gift, kind: eaten.kind } : {}) });
+      if (g.adventure) eatAdventure(g, eaten);
     }
   }
-  const alive = g.snakes.filter(s => s.alive);
-  if (alive.length < g.snakes.length) {
-    finish(g, g.mode === 'duel' ? (alive.length ? 'survivor' : 'double-crash') : g.snakes[0].death, g.mode === 'duel' && alive.length ? alive[0].id : null);
-  } else if (!g.food.some(f => !f.feast) && !spawnFood(g)) {
-    const winner = g.mode === 'duel' ? (g.snakes[0].score === g.snakes[1].score ? null : Number(g.snakes[1].score > g.snakes[0].score)) : 0;
-    finish(g, 'board-full', winner);
-  } else if (g.mode === 'duel' && g.elapsedMs >= ROUND_MS) {
-    const [a, b] = g.snakes;
-    finish(g, 'time', a.score === b.score ? null : Number(b.score > a.score));
-  } else if (g.tick >= MAX_TICKS) finish(g, 'limit', g.mode === 'duel' ? null : 0);
+  if (!g.snakes[0].alive) finish(g, g.snakes[0].death, null);
+  else if (g.adventure?.chapter === 3) finish(g, 'story-complete', 0);
+  else if (!g.food.some(f => !f.feast && !f.gift) && !spawnFood(g)) finish(g, 'board-full', 0);
+  else if (g.tick >= MAX_TICKS) finish(g, 'limit', 0);
   return g;
-}
-export function publicState(g) {
-  const { actions, events, randomState, seed, ...state } = g;
-  return structuredClone({ ...state, snakes: state.snakes.map(({ queue, ...snake }) => snake), events });
 }
 // One finger stroke is one turn. A thumb moves in an arc, so a second turn needs a long, clearly sideways move.
 export function swipeTurn(swipe, x, y) {
@@ -196,68 +278,18 @@ export function swipeTurn(swipe, x, y) {
   swipe.x = x; swipe.y = y; swipe.dir = dir;
   return dir;
 }
-// Display-only: carries a server snapshot forward so a slow link still moves smoothly.
-// It never decides food, scores or deaths. A snake that would crash holds still until the server rules.
-export function predict(state, ticks, me = 0, turns = []) {
-  const shown = { ...state, food: [...state.food], snakes: state.snakes.map(s => ({ ...s, body: [...s.body] })) };
-  const queue = [...turns];
-  for (let t = 0; t < ticks; t++) {
-    const solid = new Set(shown.snakes.flatMap(s => s.body).map(key));
-    for (const s of shown.snakes) {
-      if (!s.alive) continue;
-      if (s.id === me && queue.length) { const turn = queue.shift(); if (!opposite(s.dir, turn)) s.dir = turn; }
-      const [dx, dy] = DIRECTIONS[s.dir], next = { x: s.body[0].x + dx, y: s.body[0].y + dy };
-      if (!inside(next) || solid.has(key(next))) continue;
-      const food = shown.food.findIndex(f => same(f, next));
-      s.body.unshift(next);
-      if (food >= 0) shown.food.splice(food, 1); else s.body.pop();
-    }
-  }
-  return shown;
-}
-// A space-aware opponent. It sees current positions only, never your queued turn.
-export function chooseBotTurn(g, id = 1) {
-  const s = g.snakes[id], other = g.snakes.find(p => p.id !== id);
-  const blocked = new Set(g.snakes.flatMap(p => p.body.slice(0, -1)).map(key));
-  const danger = new Set();
-  if (other) for (const [dir, [dx, dy]] of Object.entries(DIRECTIONS)) {
-    if (!opposite(dir, other.dir)) danger.add(key({ x: other.body[0].x + dx, y: other.body[0].y + dy }));
-  }
-  function space(start) {
-    const seen = new Set([key(start)]), stack = [start];
-    while (stack.length) {
-      const p = stack.pop();
-      for (const [dx, dy] of Object.values(DIRECTIONS)) {
-        const q = { x: p.x + dx, y: p.y + dy }, k = key(q);
-        if (inside(q) && !blocked.has(k) && !seen.has(k)) { seen.add(k); stack.push(q); }
-      }
-    }
-    return seen.size;
-  }
-  let best = s.dir, bestValue = -Infinity;
-  for (const [dir, [dx, dy]] of Object.entries(DIRECTIONS)) {
-    if (opposite(dir, s.dir)) continue;
-    const p = { x: s.body[0].x + dx, y: s.body[0].y + dy };
-    if (!inside(p) || blocked.has(key(p))) continue;
-    const distance = Math.min(...g.food.map(f => Math.abs(f.x - p.x) + Math.abs(f.y - p.y)), 40);
-    const area = space(p);
-    const value = Math.min(area, s.body.length + 15) * 8 - distance * 2 - (danger.has(key(p)) ? 120 : 0) + (dir === s.dir ? .1 : 0);
-    if (value > bestValue) { bestValue = value; best = dir; }
-  }
-  return best;
-}
 export function makeRecording(g) {
   if (g.status !== 'finished' || g.mode !== 'classic') return null;
-  return { version: 2, seed: g.seed, speed: g.speed, ticks: g.tick, score: g.snakes[0].score, actions: g.actions.map(a => [...a]) };
+  return { version: g.version, seed: g.seed, speed: g.speed, ticks: g.tick, score: g.snakes[0].score, actions: g.actions.map(a => [...a]), ...(g.adventure ? { theme: g.theme, skin: g.skin } : {}) };
 }
 export function replayRecording(record) {
-  if (!record || record.version !== 2 || !Number.isInteger(record.seed) || !Object.hasOwn(SPEEDS, record.speed) || !Number.isInteger(record.ticks) || record.ticks < 1 || record.ticks > MAX_TICKS || !Number.isInteger(record.score) || !Array.isArray(record.actions) || record.actions.length > MAX_TICKS) throw new Error('Invalid replay');
+  if (!record || ![2, 3].includes(record.version) || (record.version === 3 && (!Object.hasOwn(WORLDS, record.theme) || !Object.hasOwn(TRAITS, record.skin))) || !Number.isInteger(record.seed) || !Object.hasOwn(SPEEDS, record.speed) || !Number.isInteger(record.ticks) || record.ticks < 1 || record.ticks > MAX_TICKS || !Number.isInteger(record.score) || !Array.isArray(record.actions) || record.actions.length > MAX_TICKS) throw new Error('Invalid replay');
   let last = 0;
   for (const action of record.actions) {
     if (!Array.isArray(action) || action.length !== 3 || !Number.isInteger(action[0]) || action[0] <= last || action[0] > record.ticks || action[1] !== 0 || !Object.hasOwn(DIRECTIONS, action[2])) throw new Error('Invalid replay input');
     last = action[0];
   }
-  const g = createGame({ seed: record.seed, speed: record.speed });
+  const g = createGame({ seed: record.seed, speed: record.speed, ...(record.version === 3 ? { theme: record.theme, skin: record.skin } : {}) });
   let index = 0;
   while (g.tick < record.ticks && g.status === 'playing') {
     if (record.actions[index]?.[0] === g.tick + 1) {

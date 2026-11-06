@@ -3,11 +3,11 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Shap Bhai: a 3D Snake game in Bangla with daily challenges and offline play",
+  "description": "Shap Bhai: four story worlds, five snake personalities, and offline solo adventures",
   "scripts": {
     "dev": "node scripts/server.mjs",
     "start": "node scripts/server.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "build:static": "node scripts/build-static.mjs"
   },
   "engines": {
     "node": ">=20.12"

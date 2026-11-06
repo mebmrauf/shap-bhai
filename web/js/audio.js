@@ -1,10 +1,12 @@
+import { adventureVoices } from './adventures.js';
 import { SIZE } from './engine.js';
 
 export const phrases = Object.freeze({
+  ...Object.fromEntries(Object.entries(adventureVoices).map(([key, pair]) => [key, pair[0]])),
   start: 'চলো ভাই, খেলা শুরু!', eat: 'উউহু!', combo: 'ওস্তাদ! দারুণ খেলছো!',
   wall: 'ওমাগো! মরে গেলাম গো!', self: 'আই ইয়ো!',
   win: 'জিতছি রে! মিষ্টি খাওয়াও!', lose: 'ও আল্লাহ! কী মারটাই না মারলো!',
-  draw: 'দুইজনই শেষ! আবার হবে নাকি?', scream: 'আআআআআ!', ah: 'আআআহহ!',
+  scream: 'আআআআআ!', ah: 'আআআহহ!',
   help: 'ও বাবা গো! কেউ বাঁচাও আমাকে!', run: 'পালাওওওও!',
   roastWall1: 'দেয়াল তো নড়ে নাই, ভাই।', roastWall2: 'শুরু হইতেই শেষ! এইটা কি ট্রেলার ছিল?',
   roastWall3: 'চোখ কই থাকে তোমার? ফোনে?', roastWall4: 'ভালোই তো চলতেছিল, দেয়াল দেইখা প্রেমে পড়ে গেলা?',
@@ -23,26 +25,20 @@ export const phrases = Object.freeze({
   bite10: 'দশটা শেষ! পেট ভরে নাই?', bite20: 'বিশটা! সাপ তো হাতি হয়ে গেলো!',
   bite30: 'ত্রিশ! তুমি কি মানুষ?', startDaily: 'আজকের চ্যালেঞ্জ! পুরা দেশ দেখতেছে।',
   startChaos: 'ঢাকায় স্বাগতম! সাবধানে চালাও।', startGhost: 'ভূত রেডি! দৌড় দাও!',
-  duelStart: 'দুই সাপ, এক মাঠ। শুরু!', closeCall1: 'অল্পের জন্য বাঁচলা!',
+  closeCall1: 'অল্পের জন্য বাঁচলা!',
   closeCall2: 'আরেকটু হইলেই শেষ ছিল!', chaosPowerBack: 'কারেন্ট আসছে! বাঁচলাম!',
   chaosTrafficEnd: 'জ্যাম ছুটছে, টান দাও!', chaosFloodEnd: 'পানি নামছে!',
   chaosWeddingEnd: 'বিরিয়ানি শেষ! দাওয়াত খতম।', chaosSlip: 'সাঁতার জানো তো?',
   roastZero: 'একটাও খাইতে পারলা না?', roastGhostWon: 'ভূতরে হারাইলা! সাবাশ!',
   roastGhostTie: 'ভূতের সাথে ড্র! ভূতও অবাক।', roastFull: 'পুরা মাঠ তোমার! তুমিই ওস্তাদ!',
-  duelWinWall: 'ও দেয়ালে মারছে! তুমি জিতেছো!', duelWinSelf: 'ও নিজের লেজ খাইছে! তুমি জিতেছো!',
-  duelWinHit: 'ও তোমার গায়ে ধাক্কা খাইছে! রাউন্ড তোমার!', duelLoseWall: 'দেয়ালে মেরে রাউন্ড দিয়া দিলা!',
-  duelLoseSelf: 'নিজের লেজ খাইয়া হারলা!', duelLoseHit: 'ওর গায়ে ধাক্কা! রাউন্ড গেলো!',
-  duelWinTime: 'সময় শেষ! বেশি খাইয়া জিতলা!', duelLoseTime: 'সময় শেষ! ও বেশি খাইছে!',
-  duelMatchWin: 'ম্যাচ তোমার! মিষ্টি খাওয়াও!', duelMatchLose: 'ম্যাচ গেলো! আবার হবে নাকি?',
-  duelHeadOn: 'মুখোমুখি ধাক্কা! দুইজনই শেষ!', duelTie: 'সমান সমান! কেউ কম না!',
-  playerOneWin: 'এক নম্বর খেলোয়াড় জিতেছে!', playerTwoWin: 'দুই নম্বর খেলোয়াড় জিতেছে!',
   momGone: 'আম্মু গেছে! চলো আবার!', rankOne: 'আজকের এক নম্বর তুমি!', kalNagini: 'কালনাগিনী আসছে! সবাই সরে দাঁড়াও!'
 });
 export const phrasesEn = Object.freeze({
+  ...Object.fromEntries(Object.entries(adventureVoices).map(([key, pair]) => [key, pair[1]])),
   start: "Let's go, game on!", eat: 'Ooh yeah!', combo: 'Masterclass! Great play!',
   wall: 'Oh no! Hit the wall!', self: 'Ouch! Bit my own tail!',
   win: 'Victory! Sweet victory!', lose: 'Oh man! What a crash!',
-  draw: 'Both down! Rematch?', scream: 'Aaahhhh!', ah: 'Aahh!',
+  scream: 'Aaahhhh!', ah: 'Aahh!',
   help: 'Help! Somebody save me!', run: 'Run for it!',
   roastWall1: "The wall didn't move, bro.", roastWall2: 'Done already? Was that a trailer?',
   roastWall3: 'Where are you looking? At your phone?', roastWall4: 'Going so well, did you fall in love with the wall?',
@@ -61,26 +57,19 @@ export const phrasesEn = Object.freeze({
   bite10: 'Ten down! Still hungry?', bite20: 'Twenty! Snake turned into an elephant!',
   bite30: 'Thirty! Are you even human?', startDaily: "Today's challenge! The whole country is watching.",
   startChaos: 'Welcome to Dhaka! Drive carefully.', startGhost: 'Ghost is ready! Run!',
-  duelStart: 'Two snakes, one arena. Go!', closeCall1: 'Close call!',
+  closeCall1: 'Close call!',
   closeCall2: 'That was inches from disaster!', chaosPowerBack: 'Power is back! We survived!',
   chaosTrafficEnd: 'Traffic cleared, floor it!', chaosFloodEnd: 'Water is draining!',
   chaosWeddingEnd: "Biryani is gone! Party's over.", chaosSlip: 'Hope you know how to swim!',
   roastZero: 'Not even a single bite?', roastGhostWon: 'You beat the ghost! Well done!',
   roastGhostTie: "Tied with a ghost! Even it's shocked.", roastFull: 'Whole board is yours! You are the master!',
-  duelWinWall: 'They crashed into the wall! You win!', duelWinSelf: 'They bit their own tail! You win!',
-  duelWinHit: 'They crashed into you! Round is yours!', duelLoseWall: 'Crashed into the wall and gave away the round!',
-  duelLoseSelf: 'Bit your own tail and lost!', duelLoseHit: 'Ran right into them! Round lost!',
-  duelWinTime: "Time is up! More food, you win!", duelLoseTime: 'Time is up! They ate more!',
-  duelMatchWin: 'Match point! Sweet victory!', duelMatchLose: 'Match lost! Rematch?',
-  duelHeadOn: 'Head-on collision! Both down!', duelTie: 'Dead tie! Neither backed down!',
-  playerOneWin: 'Player One wins!', playerTwoWin: 'Player Two wins!',
   momGone: 'Mom left! Back to the game!', rankOne: 'Number one on the board today!', kalNagini: 'Kal Nagini has arrived! Clear the way!'
 });
 export const reactions = Object.freeze({
-  start: ['start'], eat: ['eat'], combo: ['combo', 'eat'], win: ['win'], draw: ['draw'],
-  wall: ['wall', 'scream', 'ah'], self: ['self', 'ah', 'scream'],
+  ...Object.fromEntries(Object.keys(adventureVoices).map(key => [key, [key]])),
+  start: ['start'], eat: ['eat'], combo: ['combo', 'eat'], win: ['win'], wall: ['wall', 'scream', 'ah'], self: ['self', 'ah', 'scream'],
   lose: ['lose', 'wall', 'scream', 'ah'], danger: ['closeCall1', 'closeCall2', 'run'],
-  preview: ['wall', 'help', 'run', 'lose', 'scream', 'ah', 'eat', 'self', 'win', 'start', 'combo', 'draw', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'duelStart', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'duelWinWall', 'duelWinSelf', 'duelWinHit', 'duelLoseWall', 'duelLoseSelf', 'duelLoseHit', 'duelWinTime', 'duelLoseTime', 'duelMatchWin', 'duelMatchLose', 'duelHeadOn', 'duelTie', 'playerOneWin', 'playerTwoWin', 'momGone', 'rankOne', 'kalNagini'],
+  preview: [...Object.keys(adventureVoices), 'wall', 'help', 'run', 'lose', 'scream', 'ah', 'eat', 'self', 'win', 'start', 'combo', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'momGone', 'rankOne', 'kalNagini'],
   roastWallLow: ['roastWall1', 'roastWall2', 'roastWall3'], roastWallMid: ['roastWall4', 'roastWall5', 'roastWall1'], roastWallHigh: ['roastWall6', 'roastWall7'],
   roastSelfLow: ['roastSelf1', 'roastSelf2', 'roastSelf3'], roastSelfHigh: ['roastSelf4', 'roastSelf5', 'roastSelf2'], roastTraffic: ['roastTraffic1', 'roastTraffic2'], roastTrafficOther: ['roastWall6', 'roastWall7'],
   roastBest: ['roastBest1', 'roastBest2'], roastGhost: ['roastGhost1', 'roastGhost2'],
@@ -89,10 +78,7 @@ export const reactions = Object.freeze({
   roastZero: ['roastZero'], roastGhostWon: ['roastGhostWon'], roastGhostTie: ['roastGhostTie'], roastFull: ['roastFull'],
   foodFuchka: ['foodFuchka'], foodJhal: ['foodJhal'], foodRosho: ['foodRosho'], foodIlish: ['foodIlish'], foodBiryani: ['foodBiryani'],
   speedUp: ['speedUp'], bite10: ['bite10'], bite20: ['bite20'], bite30: ['bite30'],
-  startDaily: ['startDaily'], startChaos: ['startChaos'], startGhost: ['startGhost'], duelStart: ['duelStart'],
-  duelWinWall: ['duelWinWall'], duelWinSelf: ['duelWinSelf'], duelWinHit: ['duelWinHit'], duelLoseWall: ['duelLoseWall'], duelLoseSelf: ['duelLoseSelf'], duelLoseHit: ['duelLoseHit'],
-  duelWinTime: ['duelWinTime'], duelLoseTime: ['duelLoseTime'], duelMatchWin: ['duelMatchWin'], duelMatchLose: ['duelMatchLose'], duelHeadOn: ['duelHeadOn'], duelTie: ['duelTie'],
-  playerOneWin: ['playerOneWin'], playerTwoWin: ['playerTwoWin'], momGone: ['momGone'], rankOne: ['rankOne'], kalNagini: ['kalNagini'], help: ['help']
+  startDaily: ['startDaily'], startChaos: ['startChaos'], startGhost: ['startGhost'], momGone: ['momGone'], rankOne: ['rankOne'], kalNagini: ['kalNagini'], help: ['help']
 });
 // Every spoken line answers something that just happened. These are pure so each scenario can be tested.
 export function roastBank({ reason, score = 0, newBest = false, ghost = null, theme = 'dhaka' } = {}) {
@@ -106,15 +92,25 @@ export function roastBank({ reason, score = 0, newBest = false, ghost = null, th
   if (reason === 'self') return score >= 10 ? 'roastSelfHigh' : 'roastSelfLow';
   return score >= 20 ? 'roastWallHigh' : score >= 5 ? 'roastWallMid' : 'roastWallLow';
 }
-export function duelBank({ winner, me = 0, shared = false, reason, death = null, matchOver = false }) {
-  if (winner === null) return death === 'head-on' ? 'duelHeadOn' : reason === 'time' || reason === 'board-full' ? 'duelTie' : 'draw';
-  // On one keyboard there is no "you", so the line names the player instead.
-  if (shared) return winner === 0 ? 'playerOneWin' : 'playerTwoWin';
-  const won = winner === me;
-  if (matchOver) return won ? 'duelMatchWin' : 'duelMatchLose';
-  if (reason === 'time' || reason === 'board-full') return won ? 'duelWinTime' : 'duelLoseTime';
-  const how = death === 'wall' ? 'Wall' : death === 'self' ? 'Self' : 'Hit';
-  return `duel${won ? 'Win' : 'Lose'}${how}`;
+export function resultBank(run) {
+  if (!run.adventure) return roastBank(run);
+  if (run.reason === 'story-complete') return `win_${run.theme}`;
+  if (run.reason === 'tiger') return 'caught_sundarbans';
+  if (run.reason === 'traffic' && run.theme === 'dhaka') return 'caught_dhaka';
+  if (run.reason === 'wall' && ['rooftop', 'coxs'].includes(run.theme)) return `caught_${run.theme}`;
+  return roastBank({ ...run, score: Math.max(1, run.score ?? 0), newBest: false, ghost: null });
+}
+export function adventureReaction(event) {
+  const { phase, theme, skin } = event;
+  if (phase === 'warn') return { bank: `warn_${theme}`, priority: 100, force: true };
+  if (phase === 'active' && theme !== 'rooftop') return { bank: `active_${theme}`, priority: 90, force: theme === 'sundarbans' };
+  if (phase === 'chapter' && [1, 2].includes(event.chapter)) return { bank: `chapter_${theme}_${event.chapter}`, priority: 80, force: true };
+  if (phase === 'rescued' && theme === 'rooftop') return { bank: 'collect_rooftop', priority: 70, force: true };
+  if (phase === 'treat' && theme !== 'rooftop') return { bank: `collect_${theme}`, priority: 70, force: true };
+  if (phase === 'stolen' && theme === 'rooftop') return { bank: 'stolen_rooftop', priority: 70, force: true };
+  if (phase === 'gift' && theme !== 'rooftop') return { bank: `gift_${theme}`, priority: 50, force: false };
+  if (phase === 'trait') return { bank: skin === 'jersey' ? 'goal_jersey' : `trait_${skin}`, priority: 60, force: skin === 'jersey' };
+  return null;
 }
 export function biteBank({ apples, points = 1, feast = false, kind = 0, arcade = false }) {
   if (feast) return 'foodBiryani';
@@ -123,8 +119,8 @@ export function biteBank({ apples, points = 1, feast = false, kind = 0, arcade =
   if (arcade && points >= 3) return 'combo';
   return ['foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish'][kind];
 }
-export function startBank({ duel = false, style = 'classic', skin = 'nagin', theme = 'dhaka' } = {}) {
-  if (duel) return 'duelStart';
+export function startBank({ adventure = false, style = 'classic', skin = 'nagin', theme = 'dhaka' } = {}) {
+  if (adventure) return `intro_${theme}_${skin}`;
   if (skin === 'kalnagini') return 'kalNagini';
   if (style === 'chaos') return ['coxs', 'sundarbans'].includes(theme) ? 'start' : 'startChaos';
   if (style === 'ghost') return 'startGhost';
@@ -181,22 +177,25 @@ class DecodedClip {
 export class GameAudio {
   constructor(settings, caption, lang = 'bn') {
     this.settings = settings; this.caption = caption; this.lang = lang; this.context = null; this.active = false;
-    this.clipsBn = new Map(); this.clipsEn = new Map(); this.clips = this.clipsBn;
+    this.clipsBn = new Map(); this.clipsEn = new Map(); this.clips = this.clipsBn; this.priority = []; this.currentPriority = 0;
     this.rotation = new Map(); this.lastLine = null; this.playbackId = 0; this.current = null; this.lastVoice = -Infinity; this.musicBuffer = null; this.musicSource = null; this.musicGain = null; this.musicLoading = null; this.musicFailed = false;
   }
   setLanguage(lang = 'bn') {
     this.lang = lang === 'en' ? 'en' : 'bn';
     this.clips = this.lang === 'en' ? this.clipsEn : this.clipsBn;
-    if (this.context) {
+    if (this.context && this.settings.voice) {
       this.initClips();
       this.loadVoices();
     }
+  }
+  setAdventure(theme, skin) {
+    this.priority = [`intro_${theme}_${skin}`, `warn_${theme}`, `trait_${skin}`, `caught_${theme}`, `gift_${theme}`, `chapter_${theme}_1`, `chapter_${theme}_2`, `win_${theme}`];
   }
   initClips() {
     if (!this.context) return;
     const target = this.lang === 'en' ? this.clipsEn : this.clipsBn;
     const prefix = this.lang === 'en' ? '/audio/en' : '/audio';
-    const ver = this.lang === 'en' ? 'neural-en-1' : 'neural-bn-3';
+    const ver = this.lang === 'en' ? 'adventure-en-2' : 'adventure-bn-4';
     for (const name of Object.keys(phrases)) {
       if (!target.has(name)) target.set(name, new DecodedClip(this.context, `${prefix}/${name}.mp3?v=${ver}`));
     }
@@ -207,16 +206,17 @@ export class GameAudio {
       this.context ??= new (window.AudioContext || window.webkitAudioContext)();
       this.context.resume().catch(() => {});
     } catch { /* Sound is optional when a browser cannot create an audio context. */ }
-    if (this.context) {
+    if (this.context && this.settings.voice) {
       this.initClips();
       this.voicesReady = this.loadVoices();
-    }
+    } else this.voicesReady = Promise.resolve();
     this.musicFailed = false;
     if (this.settings.music) this.loadMusic();
   }
   // Three at a time keeps a weak connection responsive. Failed clips retry on the next unlock or play.
   async loadVoices() {
-    const queue = [...this.clips.values()].filter(clip => !clip.buffer);
+    const order = [...this.priority, ...Object.keys(phrases).filter(name => !this.priority.includes(name))];
+    const queue = order.map(name => this.clips.get(name)).filter(clip => clip && !clip.buffer);
     const worker = async () => { while (queue.length) await queue.shift().load().catch(() => {}); };
     await Promise.all([worker(), worker(), worker()]);
   }
@@ -236,12 +236,13 @@ export class GameAudio {
       else if (name === 'go') this.tone(880, .18, 'triangle', .07);
     }
   }
-  voice(name, force = false) {
+  voice(name, force = false, priority = 0) {
     const options = reactions[name];
     if (!options || !this.settings.voice || document.hidden) return false;
+    if (this.current && !this.current.paused && !this.current.ended && priority < this.currentPriority) return false;
     const now = performance.now();
     if (!force && (now - this.lastVoice < 6500 || (this.current && !this.current.paused && !this.current.ended))) return false;
-    return this.play(this.pick(name));
+    return this.play(this.pick(name), priority);
   }
   pick(name) {
     const options = reactions[name];
@@ -254,17 +255,17 @@ export class GameAudio {
   phrase(line) {
     return this.lang === 'en' ? (phrasesEn[line] ?? phrases[line]) : phrases[line];
   }
-  play(line) {
+  play(line, priority = 0) {
     const clip = this.clips.get(line);
     if (!clip || !this.settings.voice || document.hidden) return false;
     this.lastVoice = performance.now();
     this.stopVoice();
-    this.current = clip; clip.currentTime = 0; clip.volume = 1;
+    this.current = clip; this.currentPriority = priority; clip.currentTime = 0; clip.volume = 1;
     const playbackId = this.playbackId;
-    this.caption(this.phrase(line)); this.duckMusic(true);
+    this.caption(this.phrase(line), Math.max(6500, (clip.buffer?.duration ?? 5) * 1000 + 750)); this.duckMusic(true);
     const finished = () => {
       if (playbackId !== this.playbackId) return;
-      this.current = null; this.duckMusic(false);
+      this.current = null; this.currentPriority = 0; this.duckMusic(false);
     };
     clip.onended = finished;
     clip.onerror = () => {
@@ -277,7 +278,7 @@ export class GameAudio {
   stopVoice() {
     this.playbackId++;
     if (this.current) { this.current.pause(); this.current.currentTime = 0; }
-    this.current = null; this.duckMusic(false);
+    this.current = null; this.currentPriority = 0; this.duckMusic(false);
   }
   async loadMusic() {
     if (this.musicBuffer) return this.musicBuffer;
@@ -323,7 +324,7 @@ export class GameAudio {
     this.active = active;
     if (!active || document.hidden) {
       this.stopMusic();
-      // Repeated online result snapshots must not cut off the loss/win reaction.
+      // Repeated inactive updates must let the result reaction finish.
       if (wasActive || document.hidden) this.stopVoice();
       return;
     }

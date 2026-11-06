@@ -290,6 +290,29 @@ export function beachCrab() {
   return g;
 }
 
+export function rooftopPigeon() {
+  const g = new Group(), feather = mat('#8592a4', .8), neck = mat('#5a8f78', .45);
+  const body = ball(.32, feather, 0, .25, 0); body.scale.set(1.3, .85, .8);
+  g.add(body, ball(.19, neck, .27, .55, 0), ball(.035, mat('#171524'), .41, .59, .12), ball(.035, mat('#171524'), .41, .59, -.12));
+  const beak = new Mesh(new ConeGeometry(.06, .2, 5), mat('#edb650')); beak.rotation.z = -Math.PI / 2; beak.position.set(.49, .53, 0); g.add(beak);
+  for (const side of [-1, 1]) { const wing = ball(.28, feather, -.06, .25, side * .32); wing.scale.set(1.3, .18, 1); wing.userData.wing = side; g.add(wing); }
+  return g;
+}
+
+export function adventureGift(theme) {
+  const g = new Group(), gold = mat('#ffd23f', .28, .45), white = mat('#fff2c7', .25);
+  if (theme === 'dhaka') {
+    g.add(cyl(.19, .15, .4, gold, 0, .2, 0), cyl(.16, .16, .025, mat('#64341c'), 0, .41, 0));
+    const handle = new Mesh(new TorusGeometry(.12, .035, 6, 12), gold); handle.position.set(.22, .25, 0); g.add(handle);
+  } else if (theme === 'coxs') {
+    const shell = ball(.26, gold, 0, .08, 0); shell.scale.set(1.3, .3, 1); g.add(shell, ball(.19, white, 0, .25, 0));
+  } else {
+    g.add(cyl(.23, .2, .35, gold, 0, .2, 0), cyl(.24, .24, .08, mat('#a96624'), 0, .41, 0));
+    g.add(box(.25, .16, .012, white, 0, .22, .21));
+  }
+  return g;
+}
+
 const vehicles = [() => rickshaw('#d7263d'), () => bus('#1f7a8c'), cng, () => bus('#b5382a'), () => rickshaw('#0f8b8d'), () => bus('#3a5a9b')];
 const sundarbanObstacles = [sundarbanTiger, sundarbanDeer, sundarbanCroc, sundarbanElephant];
 const coxsObstacles = [() => beachAtv('#ff6b35'), beachSampan, () => beachSpeedboat('#0077b6'), beachCrab, () => beachAtv('#06d6a0'), () => beachSpeedboat('#ef476f')];

@@ -1,11 +1,21 @@
 import { Scene, PerspectiveCamera, WebGLRenderer, Color, Fog, HemisphereLight, DirectionalLight, PointLight, Mesh, Group, InstancedMesh, Object3D, BoxGeometry, SphereGeometry, PlaneGeometry, CircleGeometry, BufferGeometry, BufferAttribute, MeshStandardMaterial, MeshBasicMaterial, RepeatWrapping, BackSide, Vector3, ACESFilmicToneMapping, PCFSoftShadowMap, DynamicDrawUsage } from '../vendor/three-0.187.0-r2/three.min.js';
 import { SIZE, DIRECTIONS } from './engine.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
-import { LOOKS, boardTextures, groundTexture, floralBand, decorate, foodModel, snakeHead, obstacleModel, trafficModel, texture, mat } from './world3d.js';
+import { LOOKS, boardTextures, groundTexture, floralBand, decorate, foodModel, snakeHead, obstacleModel, rooftopPigeon, beachCrab, adventureGift, texture, mat } from './world3d.js';
 
-const AMBER = { head: '#d96a0a', body: ['#ff9a2e', '#ffe3a6', '#ff9a2e'] };
 const cellX = x => x + .5 - SIZE / 2, cellZ = y => y + .5 - SIZE / 2;
 const RING = 10, STEPS = 3, CELL_REPEAT = 2.4;
+function disposeGroup(group, keep = new Set()) {
+  const geometries = new Set(), materials = new Set(), textures = new Set();
+  group.traverse(o => {
+    if (o.geometry) geometries.add(o.geometry);
+    for (const material of [o.material].flat()) if (material && !keep.has(material)) {
+      materials.add(material);
+      for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+    }
+  });
+  for (const resource of [...textures, ...materials, ...geometries]) resource.dispose();
+}
 
 // Scales, a spine pattern and a pale belly, in the skin's colours.
 const skinTextures = new Map();
@@ -102,7 +112,7 @@ export class Arena3D {
     this.animated = []; this.foods = new Map(); this.foodModels = new Map(); this.bulges = []; this.particles = []; this.chaosKey = '';
     this.dummy = new Object3D(); this.tint = new Color();
     const bump = scaleBump();
-    this.snakes = [0, 1].map(() => {
+    this.snakes = [0].map(() => {
       const material = new MeshStandardMaterial({ color: 0xffffff, roughness: .36, metalness: .06, bumpMap: bump, bumpScale: 1.2 });
       const body = new SnakeBody(material), head = snakeHead(); head.group.traverse(o => { if (o.isMesh) o.castShadow = true; });
       this.scene.add(body.mesh, head.group);
@@ -111,11 +121,17 @@ export class Arena3D {
     this.ghost = new SnakeBody(new MeshStandardMaterial({ color: 0x6fe3ff, transparent: true, opacity: .42, depthWrite: false, emissive: 0x2299bb, emissiveIntensity: .8, roughness: .3 })); this.ghost.mesh.castShadow = false; this.scene.add(this.ghost.mesh);
     // Weak devices get a soft blob under the snake instead of real shadows.
     const disc = new CircleGeometry(.5, 14).rotateX(-Math.PI / 2);
-    this.blobs = new InstancedMesh(disc, new MeshBasicMaterial({ color: 0, transparent: true, opacity: .3, depthWrite: false }), SIZE * SIZE * 2 + 8); this.blobs.frustumCulled = false; this.blobs.visible = !this.high; this.scene.add(this.blobs);
+    this.blobs = new InstancedMesh(disc, new MeshBasicMaterial({ color: 0, transparent: true, opacity: .3, depthWrite: false }), SIZE * SIZE + 8); this.blobs.frustumCulled = false; this.blobs.visible = !this.high; this.scene.add(this.blobs);
     this.particleMesh = new InstancedMesh(new SphereGeometry(.09, 6, 5), new MeshBasicMaterial({ color: 0xffffff }), 48); this.particleMesh.count = 0; this.particleMesh.frustumCulled = false; this.scene.add(this.particleMesh);
     this.warnMaterial = new MeshBasicMaterial({ color: 0xff2d2d, transparent: true, opacity: .5, depthWrite: false });
     this.waterMaterial = new MeshStandardMaterial({ color: 0x1f7fd0, transparent: true, opacity: .88, roughness: .1, metalness: .1, depthWrite: false });
     this.chaos = new Group(); this.scene.add(this.chaos);
+    this.adventureActors = new Map();
+    const adventureTile = new PlaneGeometry(.94, .94).rotateX(-Math.PI / 2);
+    this.adventureWarningMaterial = new MeshBasicMaterial({ color: '#ff4242', transparent: true, opacity: .5, depthWrite: false });
+    this.adventureWarnings = new InstancedMesh(adventureTile, this.adventureWarningMaterial, SIZE * 6);
+    this.adventureWater = new InstancedMesh(adventureTile, this.waterMaterial, SIZE * 3);
+    for (const mesh of [this.adventureWarnings, this.adventureWater]) { mesh.count = 0; mesh.frustumCulled = false; this.scene.add(mesh); }
     this.setSkin(skin); this.setTheme(theme);
     // Shop signs are painted in Bangla, so paint them again if the font arrived late.
     if (!document.fonts.check('700 34px Bangla', 'ঢাকা')) document.fonts.load('700 34px Bangla', 'ঢাকা').then(() => this.setTheme(this.themeName)).catch(() => {});
@@ -130,7 +146,7 @@ export class Arena3D {
   }
   setTheme(name) {
     this.themeName = THEMES[name] ? name : 'dhaka'; const t = THEMES[this.themeName], look = LOOKS[this.themeName];
-    if (this.world) { this.scene.remove(this.world); this.world.traverse(o => { o.geometry?.dispose(); for (const m of [o.material].flat()) if (m) { m.dispose(); } }); this.scene.environment?.dispose(); }
+    if (this.world) { this.scene.remove(this.world); disposeGroup(this.world); }
     this.world = new Group(); this.animated = []; this.look = look;
     this.sky = this.buildSky(look); this.world.add(this.sky);
     this.scene.fog.color.set(look.fog); this.fogColor = new Color(look.fog);
@@ -203,10 +219,10 @@ export class Arena3D {
   syncFood(food, glow) {
     const live = new Set();
     for (const f of food) {
-      const key = `${f.x},${f.y},${f.feast ? 1 : 0}`; live.add(key);
+      const key = `${f.x},${f.y},${f.gift ?? (f.feast ? 1 : 0)},${f.kind ?? ''}`; live.add(key);
       if (!this.foods.has(key)) {
-        const kind = f.feast ? 'feast' : foodKind(f);
-        if (!this.foodModels.has(kind)) { const made = foodModel(kind); made.traverse(o => { if (o.isMesh) { o.castShadow = true; o.material = o.material.clone(); o.material.emissive = o.material.color.clone(); if (o.material.map) o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .03; } }); this.foodModels.set(kind, made); }
+        const kind = f.gift ? `gift-${f.gift}` : f.feast ? 'feast' : foodKind(f);
+        if (!this.foodModels.has(kind)) { const made = f.gift ? adventureGift(f.gift) : foodModel(kind); made.traverse(o => { if (o.isMesh) { o.castShadow = true; o.material = o.material.clone(); o.material.emissive = o.material.color.clone(); if (o.material.map) o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .03; } }); this.foodModels.set(kind, made); }
         const model = this.foodModels.get(kind).clone(); model.position.set(cellX(f.x), 0, cellZ(f.y)); model.userData.seed = f.x * 3 + f.y; model.scale.setScalar(f.feast ? 1.85 : 1.8);
         this.scene.add(model); this.foods.set(key, model);
       }
@@ -223,6 +239,7 @@ export class Arena3D {
     const key = c ? JSON.stringify([c.warnings, c.obstacles, c.water]) : '';
     if (key !== this.chaosKey) {
       this.chaosKey = key;
+      disposeGroup(this.chaos, new Set([this.warnMaterial, this.waterMaterial]));
       this.chaos.clear();
       const tile = new PlaneGeometry(.96, .96); tile.rotateX(-Math.PI / 2);
       for (const p of c?.warnings ?? []) { const m = new Mesh(tile, this.warnMaterial); m.position.set(cellX(p.x), .025, cellZ(p.y)); this.chaos.add(m); }
@@ -238,6 +255,35 @@ export class Arena3D {
     this.warnMaterial.opacity = .3 + Math.abs(Math.sin(this.time * 7)) * .45;
     this.waterMaterial.opacity = .84 + Math.sin(this.time * 3) * .06;
     for (const child of this.chaos.children) if (child.userData.drop && child.position.y > 0) child.position.y = Math.max(0, child.position.y - .22);
+  }
+  syncAdventure(a, old, alpha) {
+    for (const [mesh, cells] of [[this.adventureWarnings, a?.warnings ?? []], [this.adventureWater, a?.water ?? []]]) {
+      mesh.count = cells.length;
+      for (let i = 0; i < cells.length; i++) {
+        this.dummy.position.set(cellX(cells[i].x), .035, cellZ(cells[i].y)); this.dummy.rotation.set(0, 0, 0); this.dummy.scale.setScalar(1); this.dummy.updateMatrix(); mesh.setMatrixAt(i, this.dummy.matrix);
+      }
+      if (cells.length) mesh.instanceMatrix.needsUpdate = true;
+    }
+    this.adventureWarningMaterial.color.set(a?.theme === 'coxs' ? '#37bfff' : a?.theme === 'rooftop' ? '#ffcf32' : '#ff4242');
+    this.adventureWarningMaterial.opacity = this.reduced ? .55 : .36 + Math.abs(Math.sin(this.time * 5)) * .25;
+    for (const model of this.adventureActors.values()) model.visible = false;
+    if (!a?.actor) return;
+    const actor = a.actor;
+    if (!this.adventureActors.has(actor.kind)) {
+      const model = actor.kind === 'tiger' ? obstacleModel('sundarbans', 0) : actor.kind === 'bus' ? obstacleModel('dhaka', 1) : actor.kind === 'pigeon' ? rooftopPigeon() : beachCrab();
+      model.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      this.adventureActors.set(actor.kind, model); this.scene.add(model);
+    }
+    const model = this.adventureActors.get(actor.kind), before = old?.actor;
+    const f = before?.kind === actor.kind && before.state === actor.state ? alpha : 1;
+    const x = before && f < 1 ? before.x + (actor.x - before.x) * f : actor.x, y = before && f < 1 ? before.y + (actor.y - before.y) * f : actor.y;
+    const warning = actor.state === 'warn';
+    model.visible = true; model.position.set(cellX(x), actor.kind === 'pigeon' ? warning ? 1.8 : .1 : 0, cellZ(y));
+    const [dx, dy] = DIRECTIONS[actor.dir]; model.rotation.y = Math.atan2(-dy, dx);
+    model.scale.setScalar(actor.kind === 'bus' ? 1.5 : actor.kind === 'tiger' ? 1.2 : 1.6);
+    if (actor.kind === 'tiger' && warning) model.scale.y *= .7;
+    if (actor.kind === 'pigeon' && !this.reduced) model.traverse(o => { if (o.userData.wing) o.rotation.x = o.userData.wing * Math.sin(this.time * 14) * .6; });
+    if (actor.kind === 'tiger' && !warning && !this.reduced) model.position.y = Math.sin(alpha * Math.PI) * .35;
   }
   drawSnake(view, snake, old, alpha, palette, blobStart) {
     const points = snake.body.map((p, i) => {
@@ -269,7 +315,7 @@ export class Arena3D {
     if (!game || !this.resize()) return;
     const now = performance.now(), gap = now - this.clock, dt = Math.min(.1, gap / 1000); this.clock = now; this.time += dt;
     // Weak devices keep their frame rate: shadows go first, then scenery, then resolution.
-    // Judged by the clock, not a frame count: at 5 fps a frame count takes far longer than a round lasts.
+    // Judged by the clock, not a frame count: at 5 fps a frame count takes far longer than a run lasts.
     if (gap < 1000) { this.frames++; this.spent += gap; }
     if (this.spent >= 800) {
       const avg = this.spent / this.frames;
@@ -291,8 +337,7 @@ export class Arena3D {
     this.bulges = this.bulges.filter(b => this.time - b.start < 2.2);
     const alpha = this.reduced ? 1 : Math.min(1, Math.max(0, fraction));
     let blobs = 0;
-    game.snakes.forEach((s, index) => { blobs = this.drawSnake(this.snakes[index], s, previous?.snakes[s.id], alpha, index === 0 && game.mode !== 'duel' ? this.skin : index === 0 ? SKINS.nagin : AMBER, blobs); });
-    for (let i = game.snakes.length; i < 2; i++) { this.snakes[i].body.mesh.visible = false; this.snakes[i].head.group.visible = false; }
+    game.snakes.forEach((s, index) => { blobs = this.drawSnake(this.snakes[index], s, previous?.snakes[s.id], alpha, this.skin, blobs); });
     if (this.blobs.visible) { this.blobs.count = blobs; this.blobs.instanceMatrix.needsUpdate = true; }
     this.ghost.mesh.visible = !!ghost;
     if (ghost) {
@@ -301,6 +346,7 @@ export class Arena3D {
     }
     const wantDark = game.chaos?.blackout ? 1 : 0; this.dark += (wantDark - this.dark) * Math.min(1, dt * (this.reduced ? 30 : 7));
     this.syncFood(game.food, .03 + this.dark * .8); this.syncChaos(game.chaos);
+    this.syncAdventure(game.adventure, previous?.adventure, alpha);
     this.hemi.intensity = this.baseHemi * (1 - this.dark * .95); this.sun.intensity = this.baseSun * (1 - this.dark * .98);
     const night = 1 - this.dark * .94; this.sky.material.color.setScalar(night); this.scene.fog.color.copy(this.fogColor).multiplyScalar(night);
     this.headLight.position.set(this.snakes[0].head.group.position.x, 1.5, this.snakes[0].head.group.position.z); this.headLight.intensity = this.dark * 34;

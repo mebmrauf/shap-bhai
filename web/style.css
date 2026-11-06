@@ -42,7 +42,6 @@
   --i-pause:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='6' y='4' width='4.5' height='16' rx='1.5'/%3E%3Crect x='13.5' y='4' width='4.5' height='16' rx='1.5'/%3E%3C/svg%3E");
   --i-exit:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
   --i-solo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M4 20h10a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h9'/%3E%3Ccircle cx='19.5' cy='4' r='1.6' fill='%23000'/%3E%3C/svg%3E");
-  --i-versus:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 4 11 11M4 4h4M4 4v4M20 4 9 15M20 4h-4M20 4v4M6 20l3-3-2-2M18 20l-3-3 2-2'/%3E%3C/svg%3E");
   --i-looks:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18c1.7 0 2.2-1.300 1.500-2.500-.8-1.400.2-3 1.800-3H18a3 3 0 0 0 3-3c0-5.200-4-9.500-9-9.500ZM7.500 13a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3Zm3-4.500a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3Zm5 0a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3Z'/%3E%3C/svg%3E");
   --i-trophy:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 3h10v2h4v3a4 4 0 0 1-4.300 4A5 5 0 0 1 13 14.900V18h3v3H8v-3h3v-3.100A5 5 0 0 1 7.300 12 4 4 0 0 1 3 8V5h4Zm0 4H5v1a2 2 0 0 0 2 2Zm10 0v3a2 2 0 0 0 2-2V7Z'/%3E%3C/svg%3E");
   --i-help:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9a4 4 0 1 1 6.500 3.100c-1.500 1.100-2.500 2-2.500 3.400'/%3E%3Ccircle cx='12' cy='20' r='.8'/%3E%3C/svg%3E");
@@ -288,7 +287,7 @@ body:has(#app.playing) .site-header {
 }
 
 /* Home and menus */
-#app:not(.playing) :is(.arena-top,.scoreboard,.arena-bottom,.controls-hint,.touch-controls,.caption,.connection-status) {
+#app:not(.playing) :is(.arena-top,.scoreboard,.arena-bottom,.controls-hint,.touch-controls,.caption) {
   display:none;
 }
 #app:not(.playing) .setup {
@@ -481,6 +480,18 @@ body:has(#app.playing) .site-header {
   line-height:1.35;
   color:var(--muted);
 }
+.world-brief {
+  padding:14px;
+  margin:14px 0 20px;
+  border-left:4px solid var(--accent);
+  border-radius:0 12px 12px 0;
+  background:var(--card);
+  color:var(--ink);
+}
+.world-brief h4 { margin:0 0 8px; font-size:17px; }
+.world-brief p { margin:6px 0; font-size:13px; line-height:1.55; }
+#themeCards .card,#skinCards .card { align-content:start; }
+#themeCards .card small,#skinCards .card small { text-align:left; line-height:1.45; }
 .card[aria-pressed=true] {
   background:var(--card-on);
   border-color:var(--yellow);
@@ -614,24 +625,8 @@ body:has(#app.playing) .site-header {
   text-align:center;
   pointer-events:none;
 }
-.caption:empty,.connection-status:empty,.arena:has(#overlay:not([hidden])) .caption {
+.caption:empty:empty,.arena:has(#overlay:not([hidden])) .caption {
   display:none;
-}
-.connection-status {
-  position:absolute;
-  z-index:2;
-  bottom:calc(var(--inset-b) + 54px);
-  left:50%;
-  transform:translateX(-50%);
-  width:max-content;
-  max-width:calc(100% - 20px);
-  margin:0;
-  padding:4px 12px;
-  border-radius:999px;
-  background:#7a1228f0;
-  color:#fff;
-  font-size:12px;
-  pointer-events:none;
 }
 .countdown {
   position:absolute;
@@ -664,7 +659,7 @@ body:has(#app.playing) .site-header {
   font-size:14px;
 }
 
-/* Result, pause and room card */
+/* Result and pause card */
 .overlay {
   position:fixed;
   z-index:20;
@@ -1020,24 +1015,6 @@ body:has(#overlay:not([hidden])) #app.playing .arena {
   line-height:1;
   font-weight:900;
   font-variant-numeric:tabular-nums;
-}
-.player-mark {
-  display:inline-flex;
-  flex-shrink:0;
-  justify-content:center;
-  align-items:center;
-  width:26px;
-  height:26px;
-  border:2px solid var(--dark);
-  border-radius:50%;
-  background:#a8f04a;
-  color:#163626;
-  font-size:12px;
-  font-weight:900;
-}
-.player-mark.p2 {
-  background:#ff9a2e;
-  color:#342308;
 }
 .round-label {
   min-width:0;
@@ -1509,11 +1486,7 @@ html[data-touch] .controls-hint {
   #app.playing .score-player strong {
     font-size:18px;
   }
-  #app.playing .player-mark {
-    width:21px;
-    height:21px;
-  }
-  /* The side panel is narrow, so the round count takes its own line instead of being cut off. */
+  #app.playing   /* The side panel is narrow, so the round count takes its own line instead of being cut off. */
   #app.playing .scoreboard {
     flex-wrap:wrap;
     row-gap:1px;

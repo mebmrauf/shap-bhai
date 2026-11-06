@@ -1,4 +1,4 @@
-// Cosmetic only: boards and skins never change the rules or the simulation.
+// Visual palettes. Adventure rules and character traits live in adventures.js.
 export const THEMES = Object.freeze({
   dhaka: { label: 'Dhaka street', sky: '#f6b26b', ground: '#4b4f58', tiles: ['#3b4048', '#454b54'], edge: '#d7263d', trim: '#ffc300', food: 'ফুচকা' },
   rooftop: { label: 'Old Dhaka rooftop', sky: '#f7a8b8', ground: '#a85a42', tiles: ['#7d4a38', '#8a5441'], edge: '#0f8b8d', trim: '#ffd166', food: 'রসগোল্লা' },
@@ -13,4 +13,4 @@ export const SKINS = Object.freeze({
   jersey: { label: 'Jersey Snake', head: '#c8102e', body: ['#006a4e', '#006a4e', '#e4002b'] }
 });
 // 0 fuchka, 1 jhalmuri, 2 roshogolla, 3 ilish. Decided by the cell, so the picture and the spoken line always match.
-export const foodKind = cell => (cell.x * 7 + cell.y * 13) % 4;
+export const foodKind = cell => Number.isInteger(cell.kind) ? cell.kind : (cell.x * 7 + cell.y * 13) % 4;

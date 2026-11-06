@@ -1,11 +1,12 @@
 import { createGame, queueTurn, clearTurns, step, stepDuration, makeRecording, replayRecording, dailySeed, dhakaDay, swipeTurn, canTurn } from './engine.js';
 import { ArenaRenderer } from './render.js';
-import { GameAudio, escapedDanger, roastBank, biteBank, startBank, phrases } from './audio.js';
+import { GameAudio, escapedDanger, resultBank, adventureReaction, biteBank, startBank, phrases } from './audio.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
 import { t, num, lang, applyLanguage } from './i18n.js';
 import { keepUpdated } from './update.js';
 import { sendLink, shareCard, bnDigits } from './social.js';
 import { paintCard, CARD_STYLES } from './cards.js';
+import { WORLDS, TRAITS, STORY_GOALS, storyText } from './adventures.js';
 const $ = id => document.getElementById(id);
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(el => [el.id, el]));
 applyLanguage();
@@ -16,8 +17,10 @@ const put = (key, value) => { try { localStorage.setItem(`snake-arena.v2.${key}`
 const saved = get('sound', {});
 const sound = { effects: saved?.effects !== false, voice: saved?.voice !== false, music: saved?.music !== false };
 let captionTimer;
-const audio = new GameAudio(sound, text => { clearTimeout(captionTimer); ui.caption.textContent = text; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = text; if (text) captionTimer = setTimeout(() => { ui.caption.textContent = ''; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = ''; }, 6500); }, lang());
+const audio = new GameAudio(sound, (text, duration = 6500) => { clearTimeout(captionTimer); ui.caption.textContent = text; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = text; if (text) captionTimer = setTimeout(() => { ui.caption.textContent = ''; if (ui.voicePreviewCaption) ui.voicePreviewCaption.textContent = ''; }, duration); }, lang());
 const prefs = { theme: 'rooftop', skin: 'kalnagini', flat: false, ...get('prefs', {}) };
+if (!Object.hasOwn(WORLDS, prefs.theme)) prefs.theme = 'rooftop';
+if (!Object.hasOwn(TRAITS, prefs.skin)) prefs.skin = 'kalnagini';
 const renderer = new ArenaRenderer(ui.board);
 renderer.theme = prefs.theme;
 let session = null, game = null, previous = null, screen = 'menu';
@@ -31,24 +34,29 @@ const CHAOS_STATUS = {
   coxs: { loadshedding: "No power! Follow your head's glow.", traffic: 'Beach patrol! Watch for buggies and boats.', flood: "High tide! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' },
   sundarbans: { loadshedding: "Pitch dark jungle! Follow your head's glow.", traffic: 'Wildlife alert! Tigers and deer crossing.', flood: "High tide! You can't turn in the water.", wedding: 'Biryani! 3 points and extra growth.' }
 };
-const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })) });
+const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })), ...(g.adventure ? { adventure: { actor: g.adventure.actor ? { ...g.adventure.actor } : null } } : {}) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
-function bestKey(style = ui.style.value, speed = ui.speed.value) { return `best.${style === 'ghost' ? 'classic' : style}.${speed}`; }
+function bestKey(style = ui.style.value, speed = ui.speed.value) { return `best.adventure3.${style === 'ghost' ? 'classic' : style}.${prefs.theme}.${prefs.skin}.${speed}`; }
 function best(style, speed) { const n = get(bestKey(style, speed), 0); return Number.isInteger(n) && n >= 0 ? n : 0; }
 function loadGhost(speed) {
-  const record = get(`ghost.${speed}`, null);
+  const record = get(`ghost.adventure3.${prefs.theme}.${prefs.skin}.${speed}`, null);
   if (!record) return null;
-  try { if (record.speed !== speed) return null; replayRecording(record); return record; } catch { return null; }
+  try { if (record.version !== 3 || record.speed !== speed || record.theme !== prefs.theme || record.skin !== prefs.skin) return null; replayRecording(record); return record; } catch { return null; }
 }
 function error(message = '') { ui.setupError.textContent = message; ui.setupError.hidden = !message; }
 function updateSetup() {
   const style = ui.style.value;
+  const world = WORLDS[prefs.theme], trait = TRAITS[prefs.skin];
+  audio.setAdventure(prefs.theme, prefs.skin);
+  ui.worldIntro.textContent = `${storyText(world.title, lang())}${lang() === 'bn' ? '।' : '.'} ${storyText(['২০ খাবার, তিন অধ্যায়, এক ছোট্ট নায়ক।', '20 deliveries. Three chapters. One little hero.'], lang())}`;
+  ui.worldBrief.replaceChildren();
+  for (const [tag, text] of [['h4', world.title], ['p', world.story], ['p', world.rule]]) { const el = document.createElement(tag); el.textContent = storyText(text, lang()); ui.worldBrief.append(el); }
   error();
   const record = style === 'ghost' ? friendGhost?.record ?? loadGhost(ui.speed.value) : null;
   ui.speed.disabled = style === 'ghost' && !!friendGhost;
   const descriptions = {
-    classic: t('The original rules. Eat, grow longer, and avoid walls and your tail.'),
-    chaos: t('Load shedding, traffic jams, floods and wedding biryani, all on the way to your high score.'),
+    classic: storyText(world.story, lang()),
+    chaos: `${storyText(world.story, lang())} ${storyText(['ক্যাওসে বিপদ ঘন ঘন আসে, সাবধানের সময়ও কম!', 'Chaos brings encounters sooner, with shorter warnings!'], lang())}`,
     ghost: friendGhost ? t("Race {name}'s {score}-point run on the same starting board. Their blue ghost cannot hit you.", { name: friendGhost.name, score: record.score }) : record ? t('Race your {score}-point best on the same starting board. The blue ghost cannot hit you.', { score: record.score }) : t('Finish a Classic run to set a ghost. Your first race records one automatically.')
   };
   ui.modeDescription.textContent = descriptions[style];
@@ -59,6 +67,7 @@ function updateSetup() {
   ui.bestLabel.parentElement.hidden = false; ui.bestLabel.hidden = false; ui.bestValue.textContent = num(best());
   ui.rulesText.replaceChildren();
   const sections = [
+    { title: storyText(world.title, lang()), items: [storyText(world.story, lang()), storyText(world.rule, lang()), `${t(SKINS[prefs.skin].label)} · ${storyText(trait.title, lang())}: ${storyText(trait.description, lang())}`] },
     {
       title: t('Phone & touch controls'),
       items: [
@@ -86,12 +95,12 @@ function updateSetup() {
     ...(style === 'chaos' ? [{
       title: t('Chaos: Bangladesh edition'),
       items: [
-        t('Red cells become traffic in about two seconds, and hitting a bus ends the run. Floodwater carries you straight until you reach dry ground. Biryani scores 3. Chaos runs never count towards daily leaderboards.')
+        storyText(['একই গল্প, আরও তাড়া। বিপদ ঘন ঘন আসে এবং সতর্কতার সময় কম।', 'The same story with more bustle: encounters arrive more often and warnings are shorter.'], lang())
       ]
     }] : style === 'ghost' ? [{
       title: t('Race your ghost'),
       items: [
-        t('Your ghost replays its recorded turns on its own board. Both runs use the same seed; different routes can produce different later apple positions. Higher score wins; equal scores are a draw.')
+        storyText(['ভূত একই বিশ্ব আর একই সাপ নিয়ে নিজের খেলা আবার চালায়। দুজনের শুরু একই, কিন্তু পথ আলাদা হলে খাবার ও বাঘের লক্ষ্য বদলায়। বেশি স্কোরে জয়; সমান হলে ড্র।', 'The ghost replays the same world and snake on its own board. Both runs share a seed; different routes can change food and tiger targets. Higher score wins; equal scores draw.'], lang())
       ]
     }] : [])
   ];
@@ -99,11 +108,10 @@ function updateSetup() {
     const h = document.createElement('h3'); h.textContent = s.title; ui.rulesText.append(h);
     for (const text of s.items) { const p = document.createElement('p'); p.textContent = text; ui.rulesText.append(p); }
   }
-  ui.board.setAttribute('aria-label', t('Board preview. Your snake is ready.'));
-  preview = createGame({ mode: 'classic', seed: 1 });
-  preview.snakes[0].body = [{x:8,y:8},{x:7,y:8},{x:6,y:8},{x:5,y:8},{x:4,y:8},{x:4,y:9},{x:4,y:10},{x:4,y:11},{x:5,y:11},{x:6,y:11},{x:7,y:11}]; preview.food = [{x:13,y:8}];
+  ui.board.setAttribute('aria-label', t('Board preview. Your snake is ready.')); ui.board3d.setAttribute('aria-label', ui.board.getAttribute('aria-label'));
+  preview = createGame({ mode: 'classic', seed: 1, theme: prefs.theme, skin: prefs.skin });
+  preview.snakes[0].body = [{x:8,y:8},{x:7,y:8},{x:6,y:8},{x:5,y:8},{x:4,y:8},{x:4,y:9},{x:4,y:10},{x:4,y:11},{x:5,y:11},{x:6,y:11},{x:7,y:11}]; preview.food = [{x:13,y:8,kind:world.food}];
   ui.p1Name.textContent = t('Your snake'); ui.p2Name.textContent = t('Best');
-  if (ui.p2Mark) ui.p2Mark.hidden = true;
   ui.p1Score.textContent = num(0); ui.p2Score.textContent = num(best());
   ui.middleScore.textContent = style === 'ghost' ? t('GHOST RACE') : t(style.toUpperCase());
   ui.arenaLabel.textContent = t('THE PRACTICE GREEN');
@@ -128,25 +136,25 @@ function enterGame() {
   ui.pauseButton.hidden = false;
   ui.touchControls.hidden = false;
   ui.startButton.disabled = false;
-  ui.board.setAttribute('tabindex', '0'); ui.board.focus({ preventScroll: true });
+  const activeBoard = prefs.flat || view3dFailed ? ui.board : ui.board3d; activeBoard.setAttribute('tabindex', '0'); activeBoard.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 function beginLocalRound() {
   playControls(true);
-  earlyTurns = {}; resultSaved = ''; recording = session.style === 'ghost' ? friendGhost?.record ?? loadGhost(session.speed) : null;
+  earlyTurns = []; resultSaved = ''; recording = session.style === 'ghost' ? friendGhost?.record ?? loadGhost(session.speed) : null;
   const seed = recording?.seed ?? randomSeed();
-  game = createGame({ mode: session.style === 'chaos' ? 'chaos' : 'classic', speed: session.speed, seed });
+  game = createGame({ mode: session.style === 'chaos' ? 'chaos' : 'classic', speed: session.speed, seed, theme: session.theme, skin: session.skin });
   previous = positions(game); accumulator = 0; ghostIndex = 0;
-  ghost = recording ? createGame({ seed: recording.seed, speed: recording.speed }) : null;
+  ghost = recording ? createGame({ seed: recording.seed, speed: recording.speed, theme: recording.theme, skin: recording.skin }) : null;
   screen = 'countdown'; countdownEnd = performance.now() + 3000; lastCount = null;
-  ui.overlay.hidden = true; ui.countdown.hidden = false; ui.countdownText.textContent = t('Get ready');
+  ui.overlay.hidden = true; ui.countdown.hidden = false; ui.countdownText.textContent = storyText(WORLDS[session.theme].title, lang());
   ui.pauseButton.hidden = false; ui.pauseButton.textContent = t('Pause'); audio.stop(); updateHud();
 }
 function playLabel(text) {
   ui.startButton.replaceChildren(document.createTextNode(text)); const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true'); ui.startButton.append(arrow);
   for (const button of document.querySelectorAll('[data-play]')) button.textContent = text;
 }
-const CARD_NOTES = { classic: 'Pure snake, no surprises', chaos: 'Load shedding, jams, floods, biryani', ghost: 'Beat a replay of your best run' };
+const CARD_NOTES = { classic: 'A story, a snack, a little trouble', chaos: 'More encounters. Less time to react', ghost: 'Your best with this world and snake' };
 // The selects stay as the single source of truth; each card just sets one.
 function cardsFor(select, container, decorate) {
   if (!select || !container) return;
@@ -166,8 +174,8 @@ function renderCards() {
   ui.speedCards.classList.toggle('locked', ui.speed.disabled);
   for (const card of ui.speedCards.children) card.disabled = ui.speed.disabled;
   const swatch = colors => card => { const chip = document.createElement('i'); chip.className = 'swatch'; chip.style.background = `linear-gradient(135deg,${colors.join(',')})`; card.prepend(chip); };
-  cardsFor(ui.theme, ui.themeCards, (card, value) => swatch([THEMES[value].sky, THEMES[value].tiles[0], THEMES[value].edge])(card));
-  cardsFor(ui.skin, ui.skinCards, (card, value) => swatch(SKINS[value].body)(card));
+  cardsFor(ui.theme, ui.themeCards, (card, value) => { swatch([THEMES[value].sky, THEMES[value].tiles[0], THEMES[value].edge])(card); const note = document.createElement('small'); note.textContent = storyText(WORLDS[value].rule, lang()); card.append(note); });
+  cardsFor(ui.skin, ui.skinCards, (card, value) => { swatch(SKINS[value].body)(card); const note = document.createElement('small'); note.textContent = `${storyText(TRAITS[value].title, lang())} · ${storyText(TRAITS[value].description, lang())}`; card.append(note); });
   const chosen = SKINS[prefs.skin] ?? SKINS.kalnagini; ui.looksSummary.textContent = t(chosen.label); ui.snakeDot.style.background = `linear-gradient(135deg,${chosen.body.join(',')})`;
 }
 function showScreen(name, push = true) {
@@ -184,39 +192,53 @@ function showScreen(name, push = true) {
 async function start() {
   if (ui.startButton.disabled || updater.applyPending(true)) return;
   error(); audio.unlock();
-  session = { mode: 'solo', style: ui.style.value, speed: ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value };
+  session = { mode: 'solo', style: ui.style.value, speed: ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value, theme: prefs.theme, skin: prefs.skin };
   enterGame(); beginLocalRound();
 }
 function updateHud() {
   if (!game || !session) return;
   ui.arenaLabel.textContent = session.style === 'ghost' ? t('GHOST RACE') : t(session.style.toUpperCase());
-  ui.p1Name.textContent = t('Your snake');
+  ui.p1Name.textContent = t(SKINS[session.skin].label);
   ui.p2Name.textContent = ghost ? t('Ghost') : t('Best');
   ui.p1Score.textContent = num(game.snakes[0].score); ui.p2Score.textContent = num(ghost ? ghost.snakes[0].score : best(session.style, session.speed));
-  if (ui.p2Mark) ui.p2Mark.hidden = true;
   ui.middleScore.textContent = session.style === 'ghost' ? (recording ? t('TARGET {n}', { n: recording.score }) : t('RECORDING')) : t('BITES');
   ui.timerText.textContent = t('{n} segments', { n: game.snakes[0].body.length });
   const chaosMap = CHAOS_STATUS[prefs.theme] ?? CHAOS_STATUS.dhaka;
   ui.statusText.textContent = game.chaos ? t(chaosMap[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'ghost' ? (recording ? (ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.')) : t('Finish this run to save your first ghost.')) : t('Find your rhythm. Watch your tail.');
-  ui.board.setAttribute('aria-label', `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`);
+  if (game.adventure) {
+    const a = game.adventure, world = WORLDS[game.theme];
+    ui.middleScore.textContent = `${num(a.delivered)}/${num(STORY_GOALS[2])}`;
+    ui.statusText.textContent = storyText(a.phase === 'warn' ? world.warning : a.phase === 'active' ? world.active : game.food.some(f => f.gift) ? world.reward : world.chapters[Math.min(1, Math.max(0, a.chapter - 1))], lang());
+    if (a.chapter === 0 && a.phase === 'rest' && !game.food.some(f => f.gift)) ui.statusText.textContent = storyText(world.title, lang());
+  }
+  ui.board.setAttribute('aria-label', storyText([`খেলার মাঠ। স্কোর ${num(game.snakes[0].score)}। সাপ ${num(game.snakes[0].body.length)} ঘর লম্বা।`, `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`], lang()));
+  ui.board3d.setAttribute('aria-label', ui.board.getAttribute('aria-label'));
 }
 // Routine lines wait their turn, so they never cut off an event announcement.
 function handleEvents(events) {
+  let reaction = null;
+  const offer = candidate => { if (candidate && (!reaction || candidate.priority > reaction.priority)) reaction = candidate; };
   for (const e of events ?? []) {
-    if (e.type === 'eat') { view3d?.effect('eat', e); audio.effect('eat'); const apples = game.snakes[0].apples, bank = biteBank({ apples, points: e.points, feast: e.feast, kind: foodKind(e.cell) }); audio.voice(bank, e.feast || bank.startsWith('bite')); }
+    if (e.type === 'eat') {
+      view3d?.effect('eat', e); audio.effect('eat');
+      if (!e.gift) {
+        const bank = biteBank({ apples: game.snakes[0].apples, points: e.points, feast: e.feast, kind: e.kind ?? foodKind(e.cell) });
+        offer({ bank, force: e.feast || bank.startsWith('bite'), priority: 30 });
+      }
+    }
+    if (e.type === 'adventure' && (e.phase !== 'warn' || game.adventure?.phase === 'warn')) offer(adventureReaction(e));
     if (e.type === 'crash') { view3d?.effect('crash'); audio.effect('crash'); }
-    // Traffic and floods speak on their warning, because that is when the player can still react.
     if (e.type === 'chaos') {
-      if (e.phase === 'end') {
-        slipSaid = false; audio.voice(`${e.name}End`);
-      } else if (e.phase === 'warn') {
+      if (e.phase === 'end') { slipSaid = false; offer({ bank: `${e.name}End`, priority: 20, force: false }); }
+      else if (e.phase === 'warn') {
         const bank = e.name === 'traffic' ? (prefs.theme === 'sundarbans' ? 'trafficSundarban' : prefs.theme === 'coxs' ? 'trafficCoxs' : 'traffic') : e.name;
-        audio.voice(bank, true);
-      } else if (!['traffic', 'flood'].includes(e.name)) audio.voice(e.name, true);
+        offer({ bank, priority: 100, force: true });
+      } else if (!['traffic', 'flood'].includes(e.name)) offer({ bank: e.name, priority: 90, force: true });
     }
   }
-  if (!slipSaid && game?.chaos?.water.some(p => p.x === game.snakes[0].body[0].x && p.y === game.snakes[0].body[0].y)) { slipSaid = true; audio.voice('slip', true); }
-  if (escapedDanger(previous, game, 0)) audio.voice('danger');
+  if (!slipSaid && game?.chaos?.water.some(p => p.x === game.snakes[0].body[0].x && p.y === game.snakes[0].body[0].y)) { slipSaid = true; offer({ bank: 'slip', priority: 40, force: true }); }
+  if (escapedDanger(previous, game, 0)) offer({ bank: 'danger', priority: 10, force: false });
+  if (reaction && game.status === 'playing') audio.voice(reaction.bank, reaction.force, reaction.priority);
 }
 function saveRun() {
   const score = game.snakes[0].score, key = bestKey(session.style, session.speed);
@@ -224,11 +246,11 @@ function saveRun() {
   const newBest = score > best(session.style, session.speed);
   if (newBest) ok = put(key, score);
   const record = makeRecording(game);
-  lastRun = { newBest, record, reason: game.reason, score, apples: game.snakes[0].apples, line: null };
+  lastRun = { newBest, record, reason: game.reason, score, apples: game.adventure?.delivered ?? game.snakes[0].apples, theme: game.theme, skin: game.skin, chapter: game.adventure?.chapter ?? 0, line: null };
   if (record) {
     const old = loadGhost(session.speed);
     if (!old || record.score > old.score || (record.score === old.score && record.ticks > old.ticks)) {
-      ok = put(`ghost.${session.speed}`, record) && ok;
+      ok = put(`ghost.adventure3.${session.theme}.${session.skin}.${session.speed}`, record) && ok;
       resultSaved = ok ? t('Your best ghost is saved.') : t('Storage is unavailable; this ghost could not be saved.');
     } else resultSaved = t('Your previous best ghost is kept.');
   } else resultSaved = ok ? t('Best saved on this device.') : t('Storage is unavailable; this score could not be saved.');
@@ -239,24 +261,28 @@ function showResults() {
   const score = game.snakes[0].score;
   const rival = friendGhost ? t("{name}'s ghost", { name: friendGhost.name }) : t('your ghost');
   const ghostResult = recording ? score > recording.score ? t('You beat {rival}.', { rival }) : score === recording.score ? t('A tie with {rival}.', { rival }) : t('{rival} keeps the crown.', { rival }) : null;
-  const line = audio.pick(roastBank({ reason: game.reason, score, newBest: score > 0 && lastRun.newBest, ghost: !recording ? null : score > recording.score ? 'won' : score === recording.score ? 'tie' : 'lost', theme: prefs.theme }));
+  const line = audio.pick(resultBank({ adventure: !!game.adventure, reason: game.reason, theme: game.theme ?? prefs.theme, score }));
   const lineText = audio.phrase(line);
-  lastRun.line = lineText;
-  overlay(t('RUN COMPLETE'), lineText, `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
+  const title = lineText;
+  lastRun.line = title;
+  overlay(t('RUN COMPLETE'), title, `${ghostResult ? `${ghostResult}\n` : ''}${t(game.snakes[0].apples === 1 ? '{n} bite · {sec} sec · {saved}' : '{n} bites · {sec} sec · {saved}', { n: game.snakes[0].apples, sec: Math.floor(game.elapsedMs / 1000), saved: resultSaved })}`, t('Play again'), () => { if (updater.applyPending(true)) return; audio.unlock(); beginLocalRound(); });
   ui.overlayTitle.lang = audio.lang; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
   ui.resultActions.hidden = false; ui.shareButton.hidden = false;
+  if (game.adventure) {
+    ui.overlayText.textContent = `${ghostResult ? `${ghostResult}\n` : ''}${num(game.adventure.delivered)}/${num(20)} · ${storyText(TRAITS[game.skin].title, lang())}\n${resultSaved}`;
+  }
   lastRun.shot = copyBoard();
 }
 function pause() {
   if (!['playing', 'countdown'].includes(screen)) return;
-  screen = 'paused'; clearTurns(game); audio.stop(); ui.pauseButton.textContent = t('Resume');
+  screen = 'paused'; clearTurns(game); earlyTurns = []; audio.stop(); ui.pauseButton.textContent = t('Resume');
   overlay(t('TAKE A BREATHER'), t('Paused.'), t('Your snake and timers are waiting for you.'), t('Resume game'), resume);
 }
 function resume() {
   if (screen !== 'paused') return;
   audio.unlock(); playControls(true); clearTurns(game); accumulator = 0; screen = 'countdown'; countdownEnd = performance.now() + 1200; lastCount = null;
   ui.overlay.hidden = true; ui.countdown.hidden = false; ui.countdownText.textContent = t('Back in the game'); ui.pauseButton.textContent = t('Pause');
-  ui.board.focus({ preventScroll: true });
+  (prefs.flat || view3dFailed ? ui.board : ui.board3d).focus({ preventScroll: true });
 }
 function menu() {
   document.querySelector('.header-actions').append(ui.soundButton); ui.soundButton.textContent = t('Sound');
@@ -264,26 +290,26 @@ function menu() {
   ui.momButton.hidden = true; ui.resultActions.hidden = true;
   screen = 'menu'; ui.controlsHint.hidden = false; audio.stop(); ui.app.classList.remove('playing'); ui.overlay.hidden = true; ui.countdown.hidden = true; ui.previewTag.hidden = false;
   ui.pauseButton.hidden = true; ui.exitButton.hidden = true; ui.touchControls.hidden = true; ui.timerText.textContent = '';
-  ui.startButton.disabled = false; ui.continueButton.disabled = false; ui.board.removeAttribute('tabindex'); ui.menuButton.textContent = t('Back to menu');
+  ui.startButton.disabled = false; ui.continueButton.disabled = false; ui.board.removeAttribute('tabindex'); ui.board3d.removeAttribute('tabindex'); ui.menuButton.textContent = t('Back to menu');
   if (!friendGhost) history.replaceState(null, '', location.pathname); updateSetup(); window.scrollTo({ top: 0, behavior: 'instant' }); showScreen('home'); updater.applyPending();
 }
 function requestLeave() {
-  if (['result', 'waiting'].includes(screen)) { menu(); return; }
+  if (screen === 'result') { menu(); return; }
   resumeAfterLeave = ['playing', 'countdown'].includes(screen);
   pause(); ui.leaveText.textContent = t('This run will end. Unfinished runs are not saved as ghosts.');
   ui.leaveDialog.showModal(); ui.stayButton.focus();
 }
-// A press during the countdown is kept for the start. The snake reaches a wall about 2 seconds in, so losing it can cost the round.
-let earlyTurns = {};
+// A press during the countdown is kept for the start. The snake reaches a wall about 2 seconds in, so losing it can end the run.
+let earlyTurns = [];
 function releaseEarlyTurns() {
-  for (const [id, dir] of Object.entries(earlyTurns)) { diagnostics?.note(`early turn ${dir}`); queueTurn(game, 0, dir); }
-  earlyTurns = {};
+  for (const dir of earlyTurns) { diagnostics?.note(`early turn ${dir}`); queueTurn(game, 0, dir); }
+  earlyTurns = [];
 }
 function plannedDirection() {
   return game?.snakes[0].queue.at(-1) ?? game?.snakes[0].dir;
 }
 function steer(id, dir) {
-  if (screen === 'countdown') { earlyTurns[0] = dir; diagnostics?.note(`held ${dir} for the start`); return; }
+  if (screen === 'countdown') { if (earlyTurns.length < 2 && canTurn(earlyTurns.at(-1) ?? game.snakes[0].dir, dir)) earlyTurns.push(dir); diagnostics?.note(`held ${dir} for the start`); return; }
   if (screen !== 'playing') return;
   diagnostics?.note(`turn ${dir}, heading ${game.snakes[0].dir}`);
   queueTurn(game, 0, dir);
@@ -303,7 +329,7 @@ function frame(now) {
   if (screen === 'countdown') {
     const count = Math.max(1, Math.ceil((countdownEnd - now) / 1000));
     if (count !== lastCount) { ui.countdownNumber.textContent = count; lastCount = count; audio.effect('count'); }
-    if (now >= countdownEnd) { screen = 'playing'; releaseEarlyTurns(); accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ style: session.style, skin: prefs.skin, theme: prefs.theme }), true); }
+    if (now >= countdownEnd) { screen = 'playing'; releaseEarlyTurns(); accumulator = 0; ui.countdown.hidden = true; audio.effect('go'); audio.setActive(true); if (game.tick === 0) audio.voice(startBank({ adventure: !!game.adventure, style: session.style, skin: session.skin, theme: session.theme }), true); }
   } else if (screen === 'playing') {
     accumulator += dt;
     while (game.status === 'playing' && accumulator >= stepDuration(game)) {
@@ -364,7 +390,7 @@ function syncView() {
   ui.board3d.hidden = useFlat;
   ui.board.hidden = !useFlat;
   if (ui.viewStyle) ui.viewStyle.value = prefs.flat ? 'flat' : '3d';
-  if (ui.boardSection) ui.boardSection.hidden = prefs.flat;
+  if (ui.boardSection) ui.boardSection.hidden = false;
 }
 function fillLooks() {
   ui.viewStyle.replaceChildren(
@@ -453,8 +479,8 @@ for (const button of document.querySelectorAll('[data-play]')) button.onclick = 
 for (const id of ['speed']) if (ui[id]) ui[id].onchange = updateSetup;
 ui.style.onchange = () => { friendGhost = null; updateSetup(); };
 ui.viewStyle.onchange = () => { prefs.flat = ui.viewStyle.value === 'flat'; put('prefs', prefs); syncView(); renderCards(); };
-ui.theme.onchange = () => { prefs.theme = ui.theme.value; put('prefs', prefs); renderer.theme = prefs.theme; view3d?.setTheme(prefs.theme); renderCards(); };
-ui.skin.onchange = () => { prefs.skin = ui.skin.value; put('prefs', prefs); view3d?.setSkin(prefs.skin); renderer.skin = SKINS[prefs.skin]; renderCards(); if (prefs.skin === 'kalnagini') { audio.unlock(); audio.voice('kalNagini', true); } };
+ui.theme.onchange = () => { prefs.theme = ui.theme.value; put('prefs', prefs); renderer.theme = prefs.theme; view3d?.setTheme(prefs.theme); updateSetup(); };
+ui.skin.onchange = () => { prefs.skin = ui.skin.value; put('prefs', prefs); view3d?.setSkin(prefs.skin); renderer.skin = SKINS[prefs.skin]; updateSetup(); audio.unlock(); audio.voice(`trait_${prefs.skin}`, true); };
 ui.startButton.onclick = start; ui.menuButton.onclick = requestLeave; ui.exitButton.onclick = requestLeave;
 ui.pauseButton.onclick = () => screen === 'paused' ? resume() : pause();
 ui.confirmLeave.onclick = () => { ui.leaveDialog.close(); menu(); };
@@ -465,7 +491,7 @@ for (const [name, id] of [['effects','effectsSetting'], ['voice','voiceSetting']
   ui[id].checked = sound[name];
   ui[id].onchange = () => { sound[name] = ui[id].checked; put('sound', sound); audio.unlock(); audio.update(); };
 }
-ui.previewSound.onclick = () => { audio.unlock(); if (!sound.voice) { sound.voice = true; ui.voiceSetting.checked = true; put('sound', sound); } audio.voice('preview', true); ui.previewSound.textContent = t('Next reaction'); };
+ui.previewSound.onclick = () => { audio.unlock(); if (!sound.voice) { sound.voice = true; ui.voiceSetting.checked = true; put('sound', sound); } audio.voice(`intro_${prefs.theme}_${prefs.skin}`, true); ui.previewSound.textContent = t('Next reaction'); };
 const keyDirs = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
 window.addEventListener('keydown', event => {
   if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || document.querySelector('dialog[open]')) return;
@@ -487,6 +513,7 @@ for (const button of ui.touchControls.querySelectorAll('button')) button.addEven
   if (screen === 'playing' && !canTurn(plannedDirection(), button.dataset.dir)) { button.classList.remove('refused'); void button.offsetWidth; button.classList.add('refused'); }
   steer(0, button.dataset.dir);
 }, { passive: false });
+for (const button of ui.touchControls.querySelectorAll('button')) button.addEventListener('click', event => { if (event.detail === 0) steer(0, button.dataset.dir); });
 let swipe = null;
 function startSwipe(x, y, target, pointerId) {
   swipe = { x, y };
@@ -546,9 +573,9 @@ const diagnostics = new URLSearchParams(location.search).has('debug') ? (() => {
     worst = Math.max(worst, now - lastFrame); lastFrame = now; frames++;
     if (now - windowAt < 1000) return;
     fps = Math.round(frames * 1000 / (now - windowAt)); frames = 0; windowAt = now;
-    const q = view3d?.quality?.() ?? '2D', net = 'offline/local';
+    const q = view3d?.quality?.() ?? '2D';
     box.style.display = ['playing', 'countdown'].includes(screen) ? 'none' : '';
-    box.textContent = `${fps} fps, worst ${Math.round(worst)} ms\n${q}\nscreen ${screen}, ${net}\n${notes.join('\n')}`; worst = 0;
+    box.textContent = `${fps} fps, worst ${Math.round(worst)} ms\n${q}\nscreen ${screen}, solo\n${notes.join('\n')}`; worst = 0;
   } };
 })() : null;
 const updater = keepUpdated({ isBusy: () => screen !== 'menu' || !!document.querySelector('dialog[open]') });

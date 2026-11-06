@@ -14,11 +14,11 @@ const CORE = [
   '/apple-touch-icon.png',
   '/js/app.js',
   '/js/engine.js',
+  '/js/adventures.js',
   '/js/render.js',
   '/js/render3d.js',
   '/js/world3d.js',
   '/js/audio.js',
-  '/js/network.js',
   '/js/themes.js',
   '/js/districts.js',
   '/js/social.js',
@@ -28,12 +28,12 @@ const CORE = [
   '/vendor/three-0.187.0-r2/three.min.js',
   '/fonts/NotoSansBengali-Regular.ttf'
 ];
-const VOICES = ['start', 'eat', 'combo', 'wall', 'self', 'win', 'lose', 'draw', 'scream', 'ah', 'help', 'run', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'duelStart', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'duelWinWall', 'duelWinSelf', 'duelWinHit', 'duelLoseWall', 'duelLoseSelf', 'duelLoseHit', 'duelWinTime', 'duelLoseTime', 'duelMatchWin', 'duelMatchLose', 'duelHeadOn', 'duelTie', 'playerOneWin', 'playerTwoWin', 'momGone', 'rankOne', 'kalNagini'];
+const VOICES = ['intro_dhaka_nagin', 'intro_dhaka_kalnagini', 'intro_dhaka_tiger', 'intro_dhaka_tea', 'intro_dhaka_jersey', 'warn_dhaka', 'gift_dhaka', 'collect_dhaka', 'active_dhaka', 'win_dhaka', 'caught_dhaka', 'chapter_dhaka_1', 'chapter_dhaka_2', 'intro_rooftop_nagin', 'intro_rooftop_kalnagini', 'intro_rooftop_tiger', 'intro_rooftop_tea', 'intro_rooftop_jersey', 'warn_rooftop', 'gift_rooftop', 'collect_rooftop', 'win_rooftop', 'caught_rooftop', 'chapter_rooftop_1', 'chapter_rooftop_2', 'intro_coxs_nagin', 'intro_coxs_kalnagini', 'intro_coxs_tiger', 'intro_coxs_tea', 'intro_coxs_jersey', 'warn_coxs', 'gift_coxs', 'collect_coxs', 'active_coxs', 'win_coxs', 'caught_coxs', 'chapter_coxs_1', 'chapter_coxs_2', 'intro_sundarbans_nagin', 'intro_sundarbans_kalnagini', 'intro_sundarbans_tiger', 'intro_sundarbans_tea', 'intro_sundarbans_jersey', 'warn_sundarbans', 'gift_sundarbans', 'collect_sundarbans', 'active_sundarbans', 'win_sundarbans', 'caught_sundarbans', 'chapter_sundarbans_1', 'chapter_sundarbans_2', 'stolen_rooftop', 'goal_jersey', 'trait_nagin', 'trait_kalnagini', 'trait_tiger', 'trait_tea', 'trait_jersey', 'start', 'eat', 'combo', 'wall', 'self', 'win', 'lose', 'scream', 'ah', 'help', 'run', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'momGone', 'rankOne', 'kalNagini'];
 // Fetched one by one after install, so a dropped connection cannot cost the whole offline cache.
 // The app also requests these on Play, and anything missed is cached then.
 const EXTRAS = [
-  ...VOICES.map(name => `/audio/${name}.mp3?v=neural-bn-3`),
-  ...VOICES.map(name => `/audio/en/${name}.mp3?v=neural-en-1`),
+  ...VOICES.map(name => `/audio/${name}.mp3?v=adventure-bn-4`),
+  ...VOICES.map(name => `/audio/en/${name}.mp3?v=adventure-en-2`),
   '/audio/credits.json',
   '/audio/credits-en.json',
   '/audio/pungi-loop.wav?v=nagin-been-2'
@@ -65,12 +65,12 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Bypass cache for APIs, rooms, and health checks
+  // Bypass cache for APIs and health checks
   if (event.request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/health')) {
     return;
   }
 
-  // Invite and ghost links carry a query string but open the same app shell.
+  // Shortcut and ghost URLs open the same app shell.
   const navigation = event.request.mode === 'navigate';
   const lookup = navigation ? caches.match('/index.html') : caches.match(event.request);
 

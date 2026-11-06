@@ -1,13 +1,15 @@
 # Rebuild decisions
 
-The user selected Snake vs Snake as the main competitive mode. Competition uses equal speed, mirrored starts, simultaneous collision resolution, and first-to-three rounds. Optional solo scoring/replays are kept out of 1v1 rules.
+The game is solo-only. The playable modes are Classic, Chaos and Ghost. Four worlds each have a three-chapter community story, distinct food and a different interactive encounter. Five snakes have visible, deterministic traits. Scores and ghosts are separate for each world, snake and speed.
 
-The home screen has one primary action, which starts the selected mode, and tiles that open separate menus. Bangla is the default language. Buttons that do nothing in a state are hidden. Results explain the cause of death; the scoreboard distinguishes apples from round wins. Sound, pause, leave, and view controls remain beside the active arena.
+The home screen has one primary action, which starts the selected mode, and tiles that open separate menus. Bangla is the default language. Buttons that do nothing in a state are hidden. The scoreboard shows the current score and local best or ghost score. Sound, pause and leave controls remain beside the active arena; view options live in the appearance menu.
 
-Visual direction: a dark game UI over a live 3D board, rickshaw-art colours, lime player 1, amber player 2, cyan ghost. Each menu is its own screen rather than one long page. Player numbers and names supplement color. No decorative emoji. The fixed tilted camera keeps screen-aligned directions; flat view uses the same controls. Reduced motion disables interpolation, bobbing and camera shake.
+Visual direction: a system light/dark interface over a live 3D board, rickshaw-art colours, the selected snake skin, and a cyan ghost. Each menu is its own screen rather than one long page. No decorative emoji. The fixed tilted camera keeps screen-aligned directions; flat view uses the same controls. Reduced motion disables interpolation, bobbing and camera shake.
 
 Assets are local. The interface uses native font stacks plus a bundled Bengali font. Sound uses original Bengali scripts, prerecorded Bangladeshi neural speech clips (AI-generated, not human performances), original oscillator effects, and the user-supplied Nagin been reference loop (reuse rights unverified; see audio credits), with automatic volume reduction during reactions. Music and voice can be disabled independently.
 
 The UI/UX skill's arcade guidance informed clear contrast, keyboard operation, responsive spacing, and visible focus. Its pixel-font and flashy-effect suggestions were not adopted because they conflict with the requested simpler interface. The 21st CLI was unavailable; no 21st components or hosted generation were used.
 
 Layout is set by the shape of the screen rather than by device names. Portrait stacks the board over the panel or controls; landscape puts them side by side. The board always takes the leftover space, and the camera refits to any shape. On-screen controls follow touch support, not width, so tablets get them and desktops do not.
+
+Encounter warnings are gameplay, never decoration. A bus crosses its marked lane; a tiger crouches on a marked trail and pounces; a pigeon steals its marked sweet unless the player reaches it first; a tide carries the snake straight until dry ground. Surviving or helping earns themed rewards. Every story ends at 20 regular deliveries. See ADVENTURES.md for the complete bilingual stories.

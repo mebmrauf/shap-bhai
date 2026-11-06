@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { replayRecording, dailySeed, dhakaDay } from '../web/js/engine.js';
 import { DISTRICTS } from '../web/js/districts.js';
-import { RoomError } from './rooms.mjs';
+import { HttpError } from './errors.mjs';
 import { isBadName } from './name-filter.mjs';
 
 const TOKEN = /^[a-f0-9]{32}$/, CREW = /^[A-Z0-9-]{3,20}$/, GHOST_ID = /^[A-Za-z0-9_-]{8,16}$/;
@@ -24,24 +24,24 @@ const FRIEND = 'তোমার বন্ধু';
 const safeRows = rows => rows.map(row => isBadName(row.name) ? { ...row, name: 'Player' } : row);
 const hashToken = token => createHash('sha256').update(token).digest('hex');
 function requireToken(token) {
-  if (typeof token !== 'string' || !TOKEN.test(token)) throw new RoomError('Invalid player token.');
+  if (typeof token !== 'string' || !TOKEN.test(token)) throw new HttpError('Invalid player token.');
   return hashToken(token);
 }
 function cleanProfile({ name, district = '', crew = '' }) {
   const cleanName = typeof name === 'string' ? name.normalize('NFC').trim() : '';
-  if (!NAME.test(cleanName)) throw new RoomError('Use a 2–20 character name with letters or numbers.');
-  if (isBadName(cleanName)) throw new RoomError('That name is not allowed. Please choose another.');
-  if (district !== '' && !DISTRICTS.includes(district)) throw new RoomError('Choose a district from the list.');
+  if (!NAME.test(cleanName)) throw new HttpError('Use a 2–20 character name with letters or numbers.');
+  if (isBadName(cleanName)) throw new HttpError('That name is not allowed. Please choose another.');
+  if (district !== '' && !DISTRICTS.includes(district)) throw new HttpError('Choose a district from the list.');
   const cleanCrew = typeof crew === 'string' ? crew.trim().toUpperCase() : '';
-  if (cleanCrew && !CREW.test(cleanCrew)) throw new RoomError('Crew codes use 3–20 letters, numbers or dashes.');
-  if (cleanCrew && isBadName(cleanCrew)) throw new RoomError('That crew code is not allowed. Please choose another.');
+  if (cleanCrew && !CREW.test(cleanCrew)) throw new HttpError('Crew codes use 3–20 letters, numbers or dashes.');
+  if (cleanCrew && isBadName(cleanCrew)) throw new HttpError('That crew code is not allowed. Please choose another.');
   return { name: cleanName, district, crew: cleanCrew };
 }
 // Only the known replay fields are kept, so nothing extra is stored or served to other players.
 function verifiedRecord(record) {
-  try { replayRecording(record); } catch { throw new RoomError('That run could not be verified.'); }
+  try { replayRecording(record); } catch { throw new HttpError('That run could not be verified.'); }
   const { version, seed, speed, ticks, score, actions } = record;
-  return { version, seed, speed, ticks, score, actions };
+  return { version, seed, speed, ticks, score, actions, ...(version === 3 ? { theme: record.theme, skin: record.skin } : {}) };
 }
 export class Leaderboard {
   constructor(pool, now = Date.now) { this.pool = pool; this.now = now; this.ready = null; }
@@ -65,11 +65,11 @@ export class Leaderboard {
   async submitDaily({ token, record }) {
     const player = requireToken(token);
     const replayed = verifiedRecord(record);
-    if (replayed.speed !== 'normal') throw new RoomError('Daily runs use Standard speed.');
+    if (replayed.version !== 2 || replayed.speed !== 'normal') throw new HttpError('Daily runs use Standard speed.');
     const day = this.dayFor(replayed.seed);
-    if (!day) throw new RoomError('That daily challenge has ended.');
+    if (!day) throw new HttpError('That daily challenge has ended.');
     const known = await this.query('SELECT 1 FROM snake_players WHERE player = $1', [player]);
-    if (!known.rows.length) throw new RoomError('Set a player name first.', 409);
+    if (!known.rows.length) throw new HttpError('Set a player name first.', 409);
     const saved = await this.query(`INSERT INTO snake_daily_scores AS s (day, player, score, ticks, record) VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (day, player) DO UPDATE SET score = EXCLUDED.score, ticks = EXCLUDED.ticks, record = EXCLUDED.record, updated_at = now()
       WHERE EXCLUDED.score > s.score OR (EXCLUDED.score = s.score AND EXCLUDED.ticks < s.ticks)
@@ -90,12 +90,12 @@ export class Leaderboard {
     }
     if (scope === 'crew') {
       const code = typeof crew === 'string' ? crew.trim().toUpperCase() : '';
-      if (!CREW.test(code)) throw new RoomError('Enter a crew code.');
+      if (!CREW.test(code)) throw new HttpError('Enter a crew code.');
       const { rows } = await this.query(`SELECT p.name, p.district, s.score FROM snake_daily_scores s JOIN snake_players p USING (player)
         WHERE s.day = $1 AND p.crew = $2 ORDER BY s.score DESC, s.ticks ASC, s.updated_at ASC LIMIT 50`, [day, code]);
       return { day, scope, crew: code, rows: safeRows(rows) };
     }
-    if (scope !== 'everyone') throw new RoomError('Unknown leaderboard.');
+    if (scope !== 'everyone') throw new HttpError('Unknown leaderboard.');
     const { rows } = await this.query(`SELECT p.name, p.district, s.score FROM snake_daily_scores s JOIN snake_players p USING (player)
       WHERE s.day = $1 ORDER BY s.score DESC, s.ticks ASC, s.updated_at ASC LIMIT 50`, [day]);
     return { day, scope, rows: safeRows(rows) };
@@ -109,9 +109,9 @@ export class Leaderboard {
     return { id };
   }
   async ghost(id) {
-    if (!GHOST_ID.test(id)) throw new RoomError('Invalid ghost link.');
+    if (!GHOST_ID.test(id)) throw new HttpError('Invalid ghost link.');
     const { rows } = await this.query('SELECT name, record FROM snake_ghosts WHERE id = $1', [id]);
-    if (!rows.length) throw new RoomError('That ghost has faded. Links last 30 days.', 404);
+    if (!rows.length) throw new HttpError('That ghost has faded. Links last 30 days.', 404);
     return { name: isBadName(rows[0].name) ? FRIEND : rows[0].name, record: rows[0].record };
   }
 }

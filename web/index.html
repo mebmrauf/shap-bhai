@@ -2,7 +2,7 @@
 <html lang="bn">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#140f22" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#fff6e3" media="(prefers-color-scheme: light)"><meta name="description" content="Shap Bhai (সাপ ভাই): 3D Snake through the streets of Bangladesh. Eat fuchka, dodge buses, get roasted in Bangla, and beat your friends in today's challenge.">
+  <meta name="theme-color" content="#140f22" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#fff6e3" media="(prefers-color-scheme: light)"><meta name="description" content="Shap Bhai (সাপ ভাই): Four Bangladesh story worlds. Dodge Dhaka buses, outwit rooftop pigeons, ride beach tides and escape tiger uncle. Five snakes, each with a real talent.">
   <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Shap Bhai">
   <meta name="mobile-web-app-capable" content="yes"><meta name="application-name" content="Shap Bhai">
   <title>Shap Bhai</title>
@@ -20,7 +20,7 @@
     <section id="setup" class="setup" aria-labelledby="title">
       <div id="homeScreen" class="menu-screen">
         <h1 id="title"><span>The snake grows.</span> <span class="accent">Your dignity shrinks.</span></h1>
-        <p class="intro">Homework can wait. There's a button for when Mom walks in.</p>
+        <p id="worldIntro" class="intro">Homework can wait. There's a button for when Mom walks in.</p>
         <div class="home-spacer"></div>
         <button id="startButton" class="primary start" type="button">Play <span aria-hidden="true">↗</span></button>
         <div class="home-row"><p class="best-line"><span id="bestLabel">Personal best <b id="bestValue">0</b></span></p><button type="button" id="snakeChip" class="chip"><i id="snakeDot" class="chip-dot"></i><span id="looksSummary"></span></button></div>
@@ -46,6 +46,7 @@
           <h3>View</h3><select id="viewStyle" class="state-select" aria-hidden="true" tabindex="-1"><option value="3d">3D view</option><option value="flat">Flat view</option></select><div id="viewCards" class="cards cards-row cards-two" role="group" aria-label="View"></div>
           <div id="boardSection">
             <h3>Board</h3><select id="theme" class="state-select" aria-hidden="true" tabindex="-1"></select><div id="themeCards" class="cards cards-grid" role="group" aria-label="Board"></div>
+            <article id="worldBrief" class="world-brief" aria-live="polite"></article>
           </div>
           <h3>Snake</h3><select id="skin" class="state-select" aria-hidden="true" tabindex="-1"></select><div id="skinCards" class="cards cards-grid" role="group" aria-label="Snake"></div>
         </div>
@@ -63,7 +64,7 @@
       <div id="scoreboard" class="scoreboard"><div class="score-player"><span id="p1Name">Your snake</span><strong id="p1Score">0</strong></div><div id="middleScore" class="round-label">CLASSIC</div><div class="score-player second"><span id="p2Name">Best</span><strong id="p2Score">0</strong></div></div>
       <div class="arena" id="arena">
         <canvas id="board" role="img" aria-label="Game board." hidden></canvas>
-        <canvas id="board3d" aria-hidden="true"></canvas>
+        <canvas id="board3d" role="img" aria-label="Game board."></canvas>
         <p id="caption" class="caption" lang="bn" role="status"></p>
         <div id="previewTag" class="preview-tag"><span class="live-dot"></span> YOUR NEXT MOVE STARTS HERE</div>
         <div id="overlay" class="overlay" hidden><div class="overlay-panel"><span id="overlayEyebrow" class="eyebrow"></span><strong id="resultScore" class="result-score" hidden></strong><h2 id="overlayTitle" tabindex="-1"></h2><p id="overlayText"></p><p id="rankText" class="rank-text" role="status" hidden></p><div class="overlay-actions"><button id="continueButton" class="primary" type="button"></button><div id="resultActions" class="result-actions" hidden><button id="shareButton" class="secondary" type="button">Share card</button></div><button id="menuButton" class="text-button" type="button">Back to menu</button></div></div></div>

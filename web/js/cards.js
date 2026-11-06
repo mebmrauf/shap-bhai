@@ -1,9 +1,12 @@
 // Share cards: four joke designs, in the player's language. All text is chosen by pure functions so it can be tested.
+import { WORLDS, storyText } from './adventures.js';
 const BN_DIGITS = '০১২৩৪৫৬৭৮৯';
 export const digits = (n, lang) => lang === 'bn' ? String(n).replace(/\d/g, d => BN_DIGITS[d]) : String(n);
 export const CARD_STYLES = Object.freeze(['newspaper', 'wanted', 'marksheet', 'rickshaw']);
 const FOOD = { dhaka: ['ফুচকা', 'fuchka'], rooftop: ['রসগোল্লা', 'roshogolla'], coxs: ['ইলিশ', 'ilish'], sundarbans: ['ঝালমুড়ি', 'jhalmuri'] };
 const HEADLINES = {
+  tiger: ['বাঘ মামার হাতে ধরা, ঝালমুড়ি অক্ষত', 'Caught by tiger uncle. Jhalmuri unharmed.'],
+  story: ['ছোট্ট সাপ, বড় মন। সবাইকে খাওয়ালো!', 'Little snake, big heart. Everyone is fed!'],
   best: ['নতুন রেকর্ড! পাড়ায় মিষ্টি বিতরণ', 'New record! Free sweets for the whole para'],
   zero: ['একটাও না খেয়ে সাপের বিদায়, মা চিন্তিত', 'Snake leaves hungry. Mother worried.'],
   wall: ['দেয়ালে সাপের ধাক্কা, দেয়াল অক্ষত', 'Snake hits wall. Wall is fine.'],
@@ -12,11 +15,15 @@ const HEADLINES = {
   full: ['পুরা মাঠ দখল! সিটি কর্পোরেশন হতবাক', 'Snake occupies entire board. City Corporation stunned.']
 };
 const CRIMES = {
+  tiger: ['বাঘ মামাকে দৌড়ের চ্যালেঞ্জ', 'Challenging tiger uncle to a race'],
+  story: ['পুরো পাড়ার মন জয়', 'Stealing everybody’s hearts'],
   best: ['হাই স্কোর চুরি', 'Stealing the high score'], zero: ['খাবার নষ্ট করা', 'Wasting perfectly good food'],
   wall: ['সরকারি দেয়ালে হামলা', 'Attacking a public wall'], self: ['নিজের লেজ চুরি করে খাওয়া', 'Stealing and eating its own tail'],
   traffic: ['লোকাল বাসের রাস্তা আটকানো', 'Blocking a local bus'], full: ['অবৈধভাবে পুরা মাঠ দখল', 'Illegal occupation of the entire board']
 };
 const ACTIONS = {
+  tiger: ['বাঘ মামার হাতে ধরা পড়লো', 'got caught by tiger uncle'],
+  story: ['সব বন্ধুর মুখে হাসি ফোটালো', 'made every friend smile'],
   best: ['রেকর্ড ভাঙলো', 'broke the record'], zero: ['কিছুই খেতে পারলো না', 'managed to eat nothing'],
   wall: ['দেয়ালে ধাক্কা খাইলো', 'hit a wall'], self: ['নিজের লেজ কামড়াইলো', 'bit its own tail'],
   traffic: ['বাসের সাথে ধাক্কা খাইলো', 'crashed into a bus'], full: ['পুরা মাঠ দখল করলো', 'took over the whole board']
@@ -24,10 +31,11 @@ const ACTIONS = {
 const pick = (table, lang) => table[lang === 'bn' ? 0 : 1];
 // What the run was about. A new record outranks how it ended; a full board outranks everything.
 export function cardMood({ reason, score = 0, newBest = false }) {
+  if (reason === 'story-complete') return 'story';
   if (reason === 'board-full' || reason === 'limit') return 'full';
   if (newBest && score > 0) return 'best';
   if (score === 0) return 'zero';
-  return { wall: 'wall', self: 'self', traffic: 'traffic' }[reason] ?? 'wall';
+  return { wall: 'wall', self: 'self', traffic: 'traffic', tiger: 'tiger' }[reason] ?? 'wall';
 }
 export function grade(score) {
   if (score >= 40) return { gpa: '5.00', letter: 'A+', pass: true };
@@ -43,7 +51,7 @@ export function shareSentence({ apples = 0, theme = 'dhaka', mood, lang = 'bn' }
     : `My snake ate ${apples} ${food[1]} and ${ACTIONS[mood][1]}. Can you beat it?`;
 }
 export function cardCopy(style, { score = 0, apples = 0, theme = 'dhaka', mood = 'wall', lang = 'bn' }) {
-  const bn = lang === 'bn', n = value => digits(value, lang), foodName = pick(FOOD[theme] ?? FOOD.dhaka, lang), sentence = shareSentence({ apples, theme, mood, lang });
+  const bn = lang === 'bn', n = value => digits(value, lang), foodName = pick(FOOD[theme] ?? FOOD.dhaka, lang), sentence = mood === 'story' ? storyText(WORLDS[theme]?.ending, lang) : shareSentence({ apples, theme, mood, lang });
   if (style === 'newspaper') return {
     masthead: bn ? 'দৈনিক সাপের খবর' : 'THE DAILY SNAKE', strap: bn ? 'দাম: একটা ফুচকা' : 'Price: one fuchka',
     headline: pick(HEADLINES[mood], lang), reporter: bn ? 'নিজস্ব প্রতিবেদক, ঢাকা' : 'Our reporter, Dhaka', story: sentence,
@@ -63,7 +71,7 @@ export function cardCopy(style, { score = 0, apples = 0, theme = 'dhaka', mood =
         [bn ? `${foodName} খাওয়া` : `Eating ${foodName}`, result.letter],
         [bn ? 'দেয়াল চেনা' : 'Recognising walls', mark(mood === 'wall' || mood === 'zero', 'A')],
         [bn ? 'লেজ সামলানো' : 'Tail management', mark(mood === 'self', 'A')],
-        [bn ? 'বাস এড়ানো' : 'Avoiding buses', mark(mood === 'traffic', 'B')],
+        [theme === 'sundarbans' ? (bn ? 'বাঘের থাবা এড়ানো' : 'Dodging tiger paws') : (bn ? 'বাস এড়ানো' : 'Avoiding buses'), mark(mood === 'traffic' || mood === 'tiger', 'B')],
         [bn ? 'আম্মুকে ফাঁকি দেওয়া' : 'Hiding from Mom', 'A+']
       ],
       gpaLabel: 'GPA', gpa: n(result.gpa), scoreLabel: bn ? 'মোট স্কোর' : 'TOTAL SCORE', score: n(score), stamp: result.pass ? (bn ? 'পাস!' : 'PASSED') : (bn ? 'ফেল!' : 'FAILED'), pass: result.pass,
@@ -71,60 +79,6 @@ export function cardCopy(style, { score = 0, apples = 0, theme = 'dhaka', mood =
     };
   }
   return { title: bn ? 'ঢাকার রাস্তায় সাপ' : 'SNAKE ON DHAKA ROAD', story: sentence, score: n(score), scoreLabel: bn ? 'স্কোর' : 'SCORE', plate: bn ? 'ঢাকা মেট্রো-সাপ ১১-২২২২' : 'DHAKA METRO-SNAKE 11-2222' };
-}
-
-// 1 vs 1: the same designs, told from the sharer's side.
-const DUEL_HEADLINES = {
-  matchWon: ['ম্যাচ জিতে পাড়ায় মিষ্টি বিতরণ', 'Match won! Free sweets for the whole para'], matchLost: ['ম্যাচ হেরে সাপ বাড়ি ফিরলো, ভাত নাই', 'Match lost. Snake goes home, no dinner.'],
-  winWall: ['প্রতিপক্ষ দেয়ালে! রাউন্ড আমার', 'Rival hits wall. Round is mine.'], winSelf: ['প্রতিপক্ষ নিজের লেজ খেয়ে বিদায়', 'Rival eats own tail, leaves in shame'], winHit: ['আমার গায়ে ধাক্কা খেয়ে প্রতিপক্ষ শেষ', 'Rival crashes into me. Rival is done.'], winTime: ['সময় শেষ, বেশি খেয়ে জিতলাম', 'Time up. I simply ate more.'],
-  loseWall: ['দেয়ালে মেরে রাউন্ড দিয়ে আসলাম', 'I hit a wall and gifted the round'], loseSelf: ['নিজের লেজ খেয়ে রাউন্ড হারালাম', 'I ate my own tail and lost the round'], loseHit: ['ওর গায়ে ধাক্কা, আমার রাউন্ড শেষ', 'I crashed into my rival. Embarrassing.'], loseTime: ['সময় শেষ, ও আমার চেয়ে বেশি খাইছে', 'Time up. They simply ate more.'],
-  headOn: ['মুখোমুখি ধাক্কা! দুই সাপই হাসপাতালে', 'Head-on crash. Both snakes in hospital.'], tie: ['সমান সমান! কেউ কাউকে ছাড়েনি', 'Dead heat. Nobody gave an inch.'],
-  p0: ['এক নম্বর সাপ জিতলো, দুই নম্বর কান্নাকাটি', 'Player 1 wins. Player 2 demands a recount.'], p1: ['দুই নম্বর সাপ জিতলো, এক নম্বর কান্নাকাটি', 'Player 2 wins. Player 1 demands a recount.']
-};
-const DUEL_CRIMES = { won: ['প্রতিপক্ষকে প্রকাশ্যে অপমান', 'Publicly humiliating a rival'], lost: ['হেরে গিয়ে অজুহাত দেওয়া', 'Losing, then making excuses'], draw: ['একসাথে দুর্ঘটনা ঘটানো', 'Causing a joint accident'] };
-export function duelMood({ winner, me = 0, shared = false, reason, death = null, matchOver = false }) {
-  if (winner === null) return death === 'head-on' ? 'headOn' : 'tie';
-  if (shared) return winner === 0 ? 'p0' : 'p1';
-  const won = winner === me;
-  if (matchOver) return won ? 'matchWon' : 'matchLost';
-  const how = reason === 'time' || reason === 'board-full' ? 'Time' : death === 'wall' ? 'Wall' : death === 'self' ? 'Self' : 'Hit';
-  return `${won ? 'win' : 'lose'}${how}`;
-}
-const duelSide = run => run.winner === null ? 'draw' : run.shared ? 'won' : run.winner === run.me ? 'won' : 'lost';
-export function duelSentence(run, lang = 'bn') {
-  const bn = lang === 'bn', [mine, theirs] = run.wins, tally = `${digits(mine, lang)}–${digits(theirs, lang)}`, bot = run.opponent === 'bot';
-  if (run.shared && run.winner !== null) { const high = Math.max(mine, theirs), low = Math.min(mine, theirs), score = `${digits(high, lang)}–${digits(low, lang)}`; return bn ? `${run.winner === 0 ? 'এক' : 'দুই'} নম্বর খেলোয়াড় ${score} এ এগিয়ে। তোমরাও খেলো!` : `Player ${run.winner + 1} leads ${high}–${low}. Your turn next!`; }
-  if (run.winner === null) return bn ? `${bot ? 'কম্পিউটারের' : 'বন্ধুর'} সাথে ড্র, স্কোর ${tally}। কে আসবে?` : `A draw with ${bot ? 'the computer' : 'my friend'}, ${mine}–${theirs}. Who's next?`;
-  if (run.winner === run.me) return bn ? `${bot ? 'কম্পিউটারকে' : 'বন্ধুকে'} হারালাম, স্কোর ${tally}। তুমি পারবা?` : `I beat ${bot ? 'the computer' : 'my friend'}, ${mine}–${theirs}. Can you?`;
-  return bn ? `${bot ? 'কম্পিউটারের' : 'বন্ধুর'} কাছে হারলাম, স্কোর ${tally}। প্রতিশোধ নিবা?` : `${bot ? 'The computer' : 'My friend'} beat me, ${mine}–${theirs}. Avenge me?`;
-}
-export function duelCopy(style, run, lang = 'bn') {
-  const bn = lang === 'bn', n = value => digits(value, lang), mood = duelMood(run), side = duelSide(run), [mine, theirs] = run.wins, tally = `${n(mine)}–${n(theirs)}`;
-  const headline = pick(DUEL_HEADLINES[mood], lang), story = duelSentence(run, lang), scoreLabel = bn ? 'রাউন্ড' : 'ROUNDS';
-  if (style === 'newspaper') return {
-    masthead: bn ? 'দৈনিক সাপের খবর' : 'THE DAILY SNAKE', strap: bn ? 'বিশেষ সংস্করণ: মাঠের লড়াই' : 'Special edition: the duel', headline, reporter: bn ? 'ক্রীড়া প্রতিবেদক, ঢাকা' : 'Sports desk, Dhaka', story,
-    scoreLabel, score: tally, ticker: bn ? 'আম্পায়ার: কোনো পক্ষপাত নাই। পরাজিত পক্ষ: পক্ষপাত আছে।' : 'Referee: no bias. Losing side: plenty of bias.'
-  };
-  if (style === 'wanted') return {
-    title: bn ? 'ওয়ান্টেড!' : 'WANTED', crimeLabel: bn ? 'অপরাধ' : 'CRIME', crime: pick(DUEL_CRIMES[side], lang), evidence: bn ? `প্রমাণ: স্কোরবোর্ড ${tally}` : `Evidence: scoreboard ${tally}`,
-    warning: side === 'lost' ? (bn ? 'রিম্যাচ চাইলে পালাবেন না!' : 'Do not run from a rematch!') : (bn ? 'রিম্যাচের সাহস আছে?' : 'Brave enough for a rematch?'), reward: bn ? 'পুরস্কার: রিম্যাচ আর এক কাপ চা' : 'Reward: a rematch and a cup of tea', score: tally, scoreLabel
-  };
-  if (style === 'marksheet') {
-    const pass = side !== 'lost', mine2 = run.death;
-    return {
-      board: bn ? 'সাপ শিক্ষা বোর্ড, ঢাকা' : 'DHAKA BOARD OF SNAKE EDUCATION', title: bn ? 'দ্বৈত লড়াইয়ের রেজাল্ট' : 'DUEL RESULT',
-      rows: [
-        [bn ? 'প্রতিপক্ষকে হারানো' : 'Beating the rival', side === 'won' ? 'A+' : side === 'draw' ? 'C' : 'F'],
-        [bn ? 'দেয়াল চেনা' : 'Recognising walls', side === 'lost' && mine2 === 'wall' ? 'F' : 'A'],
-        [bn ? 'লেজ সামলানো' : 'Tail management', side === 'lost' && mine2 === 'self' ? 'F' : 'A'],
-        [bn ? 'হেরে গিয়ে অজুহাত' : 'Excuses after losing', side === 'lost' ? 'A+' : 'B'],
-        [bn ? 'আম্মুকে ফাঁকি দেওয়া' : 'Hiding from Mom', 'A+']
-      ],
-      gpaLabel: 'GPA', gpa: n(side === 'won' ? '5.00' : side === 'draw' ? '3.00' : '0.00'), scoreLabel, score: tally, stamp: side === 'won' ? (bn ? 'জয়!' : 'WINNER') : side === 'draw' ? (bn ? 'ড্র!' : 'DRAW') : (bn ? 'হার!' : 'LOSER'), pass,
-      note: side === 'lost' ? (bn ? 'মন্তব্য: রিম্যাচ জরুরি।' : 'Remark: a rematch is urgent.') : (bn ? 'মন্তব্য: মিষ্টি খাওয়াতে হবে।' : 'Remark: sweets are now owed.')
-    };
-  }
-  return { title: bn ? 'মাঠের ফয়সালা' : 'SETTLED ON THE BOARD', story, score: tally, scoreLabel, plate: bn ? 'ঢাকা মেট্রো-সাপ ১-ভি-১' : 'DHAKA METRO-SNAKE 1-V-1' };
 }
 
 const FONT = 'Bangla, "Segoe UI", system-ui, sans-serif';
@@ -261,11 +215,11 @@ function drawRickshaw(c, t, line, shot, host) {
 export async function paintCard(canvas, style, run, { lang, shot, host }) {
   await Promise.all([document.fonts.load(`900 60px Bangla`, 'বাংলা'), document.fonts.load(`700 40px Bangla`, 'বাংলা')]).catch(() => {});
   canvas.width = 1080; canvas.height = 1920;
-  const c = canvas.getContext('2d'), mood = run.duel ? duelMood(run) : cardMood(run), copy = run.duel ? duelCopy(style, run, lang) : cardCopy(style, { ...run, mood, lang });
+  const c = canvas.getContext('2d'), mood = cardMood(run), copy = cardCopy(style, { ...run, mood, lang });
   c.clearRect(0, 0, 1080, 1920);
   if (style === 'newspaper') drawNewspaper(c, copy, shot, host);
   else if (style === 'wanted') drawWanted(c, copy, shot, host);
   else if (style === 'marksheet') drawMarksheet(c, copy, shot, host);
-  else drawRickshaw(c, copy, run.duel ? pick(DUEL_HEADLINES[mood], lang) : lang === 'bn' ? run.line : pick(HEADLINES[mood], lang), shot, host);
-  return run.duel ? duelSentence(run, lang) : shareSentence({ ...run, mood, lang });
+  else drawRickshaw(c, copy, lang === 'bn' ? run.line : pick(HEADLINES[mood], lang), shot, host);
+  return shareSentence({ ...run, mood, lang });
 }
