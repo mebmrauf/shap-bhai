@@ -78,4 +78,3 @@ for (const [theme, world] of Object.entries(WORLDS)) {
 adventureVoices.stolen_rooftop = ['কবুতর মিষ্টি চুরি করে উড়াল! ভাড়াও দিল না!', 'Pigeon stole the sweet and flew off. Did not even leave a tip!'];
 adventureVoices.goal_jersey = ['তিন খাবার পৌঁছেছে! গোওওল! জার্সি সাপের হ্যাটট্রিক!', 'Three deliveries! Goooal! Jersey Snake scores a hat-trick!'];
 for (const [skin, trait] of Object.entries(TRAITS)) adventureVoices[`trait_${skin}`] = trait.voice;
-
