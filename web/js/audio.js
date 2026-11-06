@@ -284,8 +284,8 @@ export class GameAudio {
     if (this.musicBuffer) return this.musicBuffer;
     if (!this.context || this.musicFailed) return null;
     if (!this.musicLoading) {
-      // Voice comes first: on a weak connection the words matter more than the backing track.
-      this.musicLoading = Promise.resolve(this.voicesReady).then(() => fetch('/audio/pungi-loop.wav?v=nagin-been-2', { signal: AbortSignal.timeout(30000) }))
+      // Music must not wait for the whole voice library, which can outlast a short run.
+      this.musicLoading = fetch('/audio/pungi-loop.wav?v=nagin-been-2', { signal: AbortSignal.timeout(30000) })
         .then(response => { if (!response.ok) throw new Error('Music unavailable'); return response.arrayBuffer(); })
         .then(bytes => this.context.decodeAudioData(bytes))
         .then(buffer => { this.musicBuffer = buffer; return buffer; })
