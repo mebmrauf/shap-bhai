@@ -1,12 +1,47 @@
 import { adventureVoices } from './adventures.js';
 import { SIZE } from './engine.js';
 
+// Scenario variants of Chaos lines. Dhaka keeps the base line; a missing variant falls back to it.
+const SCENE = {
+  startChaos_rooftop: ['পুরান ঢাকার ছাদে স্বাগতম! এখানে রিকশাও ছাদে ওঠে।', 'Welcome to the Old Dhaka rooftop! Up here, even rickshaws take the stairs.'],
+  startChaos_coxs: ['কক্সবাজারে স্বাগতম! সাগর, বোট আর কাঁকড়া, সবাই তোমার পিছে!', "Welcome to Cox's Bazar! The sea, the boats and the crabs are all after you!"],
+  startChaos_sundarbans: ['সুন্দরবনে স্বাগতম! নেটওয়ার্ক নাই, বাঘ আছে।', 'Welcome to the Sundarbans! No phone signal, plenty of tigers.'],
+  chaosPower_rooftop: ['লোডশেডিং! ছাদে এখন শুধু চাঁদ আর মশা।', 'Load-shedding! Just the moon and the mosquitoes on the roof now.'],
+  chaosPower_coxs: ['সৈকতের বাতি নিভে গেছে! সাগর বলল, আমার কারেন্ট লাগে না।', "Beach lights out! The sea says it never needed electricity anyway."],
+  chaosPower_sundarbans: ['জঙ্গলে ঘুটঘুটে অন্ধকার! কারেন্ট তো এখানে আগেও ছিল না।', 'Pitch dark jungle! To be fair, there was never power here.'],
+  chaosPowerBack_rooftop: ['কারেন্ট আসছে! পুরা মহল্লা একসাথে চিৎকার দিলো!', "Power's back! The whole mohalla cheered at once!"],
+  chaosPowerBack_coxs: ['বাতি জ্বলছে! কাঁকড়ারা আবার সেলফি তুলছে।', 'Lights back on! The crabs are taking selfies again.'],
+  chaosPowerBack_sundarbans: ['চাঁদ উঠছে! বাঘ মামা আবার তোমাকে দেখতে পাচ্ছে।', 'The moon is out! Tiger uncle can see you again.'],
+  chaosTraffic_rooftop: ['ছাদে রিকশা উঠলো কেমনে?! লাল ঘর ছাড়ো!', 'How did rickshaws get on the roof?! Off the red tiles!'],
+  chaosTraffic_coxs: ['বিচ বাইক আর স্পিডবোট আসছে! লাল বালি ছাড়ো, এটা ফটোশুট না!', 'Beach buggies and speedboats incoming! Off the red sand, this is not a photo shoot!'],
+  chaosTraffic_sundarbans: ['বন্যপ্রাণী পার হচ্ছে! হাতি সাইড দেয় না, ভাই!', "Wildlife crossing! Elephants don't give way, bro!"],
+  chaosTrafficEnd_rooftop: ['রিকশা নেমে গেছে! নানু বলল, এটা ছাদ, গ্যারেজ না।', 'Rickshaws gone! Nanu says this is a roof, not a garage.'],
+  chaosTrafficEnd_coxs: ['বোট চলে গেছে! সৈকত আবার তোমার।', 'Boats are gone! The beach is all yours again.'],
+  chaosTrafficEnd_sundarbans: ['রাস্তা ফাঁকা! কুমির বলল, আবার দেখা হবে।', 'Path is clear! The crocodile says see you later.'],
+  chaosFlood_rooftop: ['ছাদে পানি জমছে! নানুর টব এখন নৌকা।', "Water pooling on the roof! Nanu's flowerpots are boats now."],
+  chaosFlood_coxs: ['জোয়ার আসছে! পানিতে মোড় ঘোরানো নিষেধ, সাগরের নিয়ম!', "High tide! No turning in the water. Sea rules, not yours!"],
+  chaosFlood_sundarbans: ['নদীতে জোয়ার! কুমির ভাই সাঁতারের ক্লাস খুলেছে।', 'River tide rising! Crocodile bro is offering swimming lessons.'],
+  chaosFloodEnd_rooftop: ['পানি নামছে! টবগুলো আবার টব হয়ে গেছে।', "Water's draining! The flowerpots are just pots again."],
+  chaosFloodEnd_coxs: ['ভাটা শুরু! ঢেউ বলল, আবার আসবো।', "Low tide! The waves promise they'll be back."],
+  chaosFloodEnd_sundarbans: ['ভাটা! কুমির ভাইয়ের ক্লাস ছুটি।', "Low tide! Crocodile bro's class is dismissed."],
+  chaosWedding_rooftop: ['ছাদে বিয়ের প্যান্ডেল! দাওয়াত ছাড়াই বিরিয়ানি খাও!', 'Wedding on the rooftop! Grab the biryani, no invite needed!'],
+  chaosWedding_coxs: ['সৈকতে বিয়ে! বালি ছাড়া বিরিয়ানি পেলে ভাগ্য ভালো।', 'Beach wedding! Lucky if the biryani comes without sand.'],
+  chaosWedding_sundarbans: ['বনে বিয়ে! বাঘ মামার দাওয়াত, খেয়াল রেখো তুমি যেন মেনুতে না থাকো!', "Jungle wedding! Tiger uncle's invite. Just make sure you're not on the menu!"],
+  roastTraffic1_coxs: ['স্পিডবোটের সাথে রেস? সাপের তো ইঞ্জিনই নাই!', "Racing a speedboat? Snakes don't even have engines!"],
+  roastTraffic2_coxs: ['বিচ বাইক থামবে ভাবছিলা? এটা কক্সবাজার, ভাই।', "Thought the beach buggy would stop? This is Cox's Bazar, bro."],
+  roastTraffic1_sundarbans: ['হাতির সাথে ধাক্কা? হাতি টেরও পায় নাই!', "Bumped into an elephant? It didn't even notice!"],
+  roastTraffic2_sundarbans: ['কুমিরকে গাছের গুঁড়ি ভাবছিলা? ভুল গুঁড়ি।', 'Thought the crocodile was a log? Wrong log.'],
+};
+const sceneBank = (base, theme) => Object.keys(SCENE).filter(k => k.endsWith(`_${theme}`) && k.replace(/\d?_[a-z]+$/, '') === base);
+const SCENE_BANKS = { startChaos: 'startChaos', loadshedding: 'chaosPower', loadsheddingEnd: 'chaosPowerBack', traffic: 'chaosTraffic', trafficEnd: 'chaosTrafficEnd', flood: 'chaosFlood', floodEnd: 'chaosFloodEnd', wedding: 'chaosWedding', roastTraffic: 'roastTraffic' };
+const sceneReactions = Object.fromEntries(['rooftop', 'coxs', 'sundarbans'].flatMap(theme => Object.entries(SCENE_BANKS)
+  .map(([bank, base]) => [`${bank}_${theme}`, [...sceneBank(base, theme), ...(bank === 'traffic' ? ['help'] : [])]])
+  .filter(([, lines]) => lines.length && lines[0] !== 'help')));
+
 export const phrases = Object.freeze({
+  ...Object.fromEntries(Object.entries(SCENE).map(([key, pair]) => [key, pair[0]])),
   ...Object.fromEntries(Object.entries(adventureVoices).map(([key, pair]) => [key, pair[0]])),
   start: 'চলো ভাই, খেলা শুরু!', eat: 'উউহু!', combo: 'ওস্তাদ! দারুণ খেলছো!',
-  wall: 'ওমাগো! মরে গেলাম গো!', self: 'আই ইয়ো!',
-  win: 'জিতছি রে! মিষ্টি খাওয়াও!', lose: 'ও আল্লাহ! কী মারটাই না মারলো!',
-  scream: 'আআআআআ!', ah: 'আআআহহ!',
   help: 'ও বাবা গো! কেউ বাঁচাও আমাকে!', run: 'পালাওওওও!',
   roastWall1: 'দেয়াল তো নড়ে নাই, ভাই।', roastWall2: 'শুরু হইতেই শেষ! এইটা কি ট্রেলার ছিল?',
   roastWall3: 'চোখ কই থাকে তোমার? ফোনে?', roastWall4: 'ভালোই তো চলতেছিল, দেয়াল দেইখা প্রেমে পড়ে গেলা?',
@@ -27,18 +62,16 @@ export const phrases = Object.freeze({
   startChaos: 'ঢাকায় স্বাগতম! সাবধানে চালাও।', startGhost: 'ভূত রেডি! দৌড় দাও!',
   closeCall1: 'অল্পের জন্য বাঁচলা!',
   closeCall2: 'আরেকটু হইলেই শেষ ছিল!', chaosPowerBack: 'কারেন্ট আসছে! বাঁচলাম!',
-  chaosTrafficEnd: 'জ্যাম ছুটছে, টান দাও!', chaosFloodEnd: 'পানি নামছে!',
+  chaosTrafficEnd: 'জ্যাম ছুটছে, টান দাও!', chaosFloodEnd: 'পানি নামছে! রিকশাওয়ালা মামা চাকা খুঁজে পাইছে।',
   chaosWeddingEnd: 'বিরিয়ানি শেষ! দাওয়াত খতম।', chaosSlip: 'সাঁতার জানো তো?',
   roastZero: 'একটাও খাইতে পারলা না?', roastGhostWon: 'ভূতরে হারাইলা! সাবাশ!',
   roastGhostTie: 'ভূতের সাথে ড্র! ভূতও অবাক।', roastFull: 'পুরা মাঠ তোমার! তুমিই ওস্তাদ!',
-  momGone: 'আম্মু গেছে! চলো আবার!', rankOne: 'আজকের এক নম্বর তুমি!', kalNagini: 'কালনাগিনী আসছে! সবাই সরে দাঁড়াও!'
+  momGone: 'আম্মু গেছে! চলো আবার!', kalNagini: 'কালনাগিনী আসছে! সবাই সরে দাঁড়াও!'
 });
 export const phrasesEn = Object.freeze({
+  ...Object.fromEntries(Object.entries(SCENE).map(([key, pair]) => [key, pair[1]])),
   ...Object.fromEntries(Object.entries(adventureVoices).map(([key, pair]) => [key, pair[1]])),
   start: "Let's go, game on!", eat: 'Ooh yeah!', combo: 'Masterclass! Great play!',
-  wall: 'Oh no! Hit the wall!', self: 'Ouch! Bit my own tail!',
-  win: 'Victory! Sweet victory!', lose: 'Oh man! What a crash!',
-  scream: 'Aaahhhh!', ah: 'Aahh!',
   help: 'Help! Somebody save me!', run: 'Run for it!',
   roastWall1: "The wall didn't move, bro.", roastWall2: 'Done already? Was that a trailer?',
   roastWall3: 'Where are you looking? At your phone?', roastWall4: 'Going so well, did you fall in love with the wall?',
@@ -47,7 +80,7 @@ export const phrasesEn = Object.freeze({
   roastSelf2: 'Who needs enemies when you play like that?', roastSelf3: 'Fighting yourself? Take a break, bro.',
   roastSelf4: 'You got so long, you forgot your own tail?', roastSelf5: "Tied in a knot! Who's untangling that?",
   roastTraffic1: 'Stuck in traffic! Welcome to Dhaka.', roastTraffic2: 'Did you think the bus would give way?',
-  roastBest1: 'New record! Feeling unstoppable today?', roastBest2: "That's it! Now go flex that screenshot.",
+  roastBest1: 'New record! Extra rice at lunch today?', roastBest2: "That's it! Now go flex that screenshot.",
   roastGhost1: 'Lost to a ghost? Seriously?', roastGhost2: 'The ghost completely schooled you.',
   chaosPower: 'Power cut! Again?', chaosTraffic: 'Traffic jam ahead! Watch for buses!',
   chaosFlood: 'Flash flood! Water on the road!', chaosWedding: 'Wedding feast! Eat the biryani!',
@@ -59,27 +92,27 @@ export const phrasesEn = Object.freeze({
   startChaos: 'Welcome to Dhaka! Drive carefully.', startGhost: 'Ghost is ready! Run!',
   closeCall1: 'Close call!',
   closeCall2: 'That was inches from disaster!', chaosPowerBack: 'Power is back! We survived!',
-  chaosTrafficEnd: 'Traffic cleared, floor it!', chaosFloodEnd: 'Water is draining!',
+  chaosTrafficEnd: 'Traffic cleared, floor it!', chaosFloodEnd: "Water's draining! The rickshaw uncle found his wheels again.",
   chaosWeddingEnd: "Biryani is gone! Party's over.", chaosSlip: 'Hope you know how to swim!',
   roastZero: 'Not even a single bite?', roastGhostWon: 'You beat the ghost! Well done!',
   roastGhostTie: "Tied with a ghost! Even it's shocked.", roastFull: 'Whole board is yours! You are the master!',
-  momGone: 'Mom left! Back to the game!', rankOne: 'Number one on the board today!', kalNagini: 'Kal Nagini has arrived! Clear the way!'
+  momGone: 'Mom left! Back to the game!', kalNagini: 'Kal Nagini has arrived! Clear the way!'
 });
 export const reactions = Object.freeze({
   ...Object.fromEntries(Object.keys(adventureVoices).map(key => [key, [key]])),
-  start: ['start'], eat: ['eat'], combo: ['combo', 'eat'], win: ['win'], wall: ['wall', 'scream', 'ah'], self: ['self', 'ah', 'scream'],
-  lose: ['lose', 'wall', 'scream', 'ah'], danger: ['closeCall1', 'closeCall2', 'run'],
-  preview: [...Object.keys(adventureVoices), 'wall', 'help', 'run', 'lose', 'scream', 'ah', 'eat', 'self', 'win', 'start', 'combo', 'roastWall1', 'roastWall2', 'roastWall3', 'roastWall4', 'roastWall5', 'roastWall6', 'roastWall7', 'roastSelf1', 'roastSelf2', 'roastSelf3', 'roastSelf4', 'roastSelf5', 'roastTraffic1', 'roastTraffic2', 'roastBest1', 'roastBest2', 'roastGhost1', 'roastGhost2', 'chaosPower', 'chaosTraffic', 'chaosFlood', 'chaosWedding', 'foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish', 'foodBiryani', 'speedUp', 'bite10', 'bite20', 'bite30', 'startDaily', 'startChaos', 'startGhost', 'closeCall1', 'closeCall2', 'chaosPowerBack', 'chaosTrafficEnd', 'chaosFloodEnd', 'chaosWeddingEnd', 'chaosSlip', 'roastZero', 'roastGhostWon', 'roastGhostTie', 'roastFull', 'momGone', 'rankOne', 'kalNagini'],
+  ...sceneReactions,
+  start: ['start'], combo: ['combo', 'eat'], danger: ['closeCall1', 'closeCall2', 'run'],
   roastWallLow: ['roastWall1', 'roastWall2', 'roastWall3'], roastWallMid: ['roastWall4', 'roastWall5', 'roastWall1'], roastWallHigh: ['roastWall6', 'roastWall7'],
-  roastSelfLow: ['roastSelf1', 'roastSelf2', 'roastSelf3'], roastSelfHigh: ['roastSelf4', 'roastSelf5', 'roastSelf2'], roastTraffic: ['roastTraffic1', 'roastTraffic2'], roastTrafficOther: ['roastWall6', 'roastWall7'],
+  roastSelfLow: ['roastSelf1', 'roastSelf2', 'roastSelf3'], roastSelfHigh: ['roastSelf4', 'roastSelf5', 'roastSelf2'], roastTraffic: ['roastTraffic1', 'roastTraffic2'],
   roastBest: ['roastBest1', 'roastBest2'], roastGhost: ['roastGhost1', 'roastGhost2'],
-  loadshedding: ['chaosPower'], traffic: ['chaosTraffic', 'help'], trafficSundarban: ['help', 'run'], trafficCoxs: ['help', 'run'], flood: ['chaosFlood'], wedding: ['chaosWedding'],
+  loadshedding: ['chaosPower'], traffic: ['chaosTraffic', 'help'], flood: ['chaosFlood'], wedding: ['chaosWedding'],
   loadsheddingEnd: ['chaosPowerBack'], trafficEnd: ['chaosTrafficEnd'], floodEnd: ['chaosFloodEnd'], weddingEnd: ['chaosWeddingEnd'], slip: ['chaosSlip'],
   roastZero: ['roastZero'], roastGhostWon: ['roastGhostWon'], roastGhostTie: ['roastGhostTie'], roastFull: ['roastFull'],
   foodFuchka: ['foodFuchka'], foodJhal: ['foodJhal'], foodRosho: ['foodRosho'], foodIlish: ['foodIlish'], foodBiryani: ['foodBiryani'],
   speedUp: ['speedUp'], bite10: ['bite10'], bite20: ['bite20'], bite30: ['bite30'],
-  startDaily: ['startDaily'], startChaos: ['startChaos'], startGhost: ['startGhost'], momGone: ['momGone'], rankOne: ['rankOne'], kalNagini: ['kalNagini'], help: ['help']
+  startDaily: ['startDaily'], startChaos: ['startChaos'], startGhost: ['startGhost'], momGone: ['momGone'], kalNagini: ['kalNagini'], help: ['help']
 });
+export const themed = (bank, theme) => reactions[`${bank}_${theme}`] ? `${bank}_${theme}` : bank;
 // Every spoken line answers something that just happened. These are pure so each scenario can be tested.
 export function roastBank({ reason, score = 0, newBest = false, ghost = null, theme = 'dhaka' } = {}) {
   if (reason === 'board-full' || reason === 'limit') return 'roastFull';
@@ -88,7 +121,7 @@ export function roastBank({ reason, score = 0, newBest = false, ghost = null, th
   if (ghost === 'lost') return 'roastGhost';
   if (newBest) return 'roastBest';
   if (score === 0) return 'roastZero';
-  if (reason === 'traffic') return ['coxs', 'sundarbans'].includes(theme) ? 'roastTrafficOther' : 'roastTraffic';
+  if (reason === 'traffic') return themed('roastTraffic', theme);
   if (reason === 'self') return score >= 10 ? 'roastSelfHigh' : 'roastSelfLow';
   return score >= 20 ? 'roastWallHigh' : score >= 5 ? 'roastWallMid' : 'roastWallLow';
 }
@@ -120,9 +153,10 @@ export function biteBank({ apples, points = 1, feast = false, kind = 0, arcade =
   return ['foodFuchka', 'foodJhal', 'foodRosho', 'foodIlish'][kind];
 }
 export function startBank({ adventure = false, style = 'classic', skin = 'nagin', theme = 'dhaka' } = {}) {
+  if (style === 'daily') return 'startDaily';
   if (adventure) return `intro_${theme}_${skin}`;
   if (skin === 'kalnagini') return 'kalNagini';
-  if (style === 'chaos') return ['coxs', 'sundarbans'].includes(theme) ? 'start' : 'startChaos';
+  if (style === 'chaos') return themed('startChaos', theme);
   if (style === 'ghost') return 'startGhost';
   if (style === 'daily') return 'startDaily';
   return 'start';
@@ -195,7 +229,7 @@ export class GameAudio {
     if (!this.context) return;
     const target = this.lang === 'en' ? this.clipsEn : this.clipsBn;
     const prefix = this.lang === 'en' ? '/audio/en' : '/audio';
-    const ver = this.lang === 'en' ? 'adventure-en-2' : 'adventure-bn-4';
+    const ver = this.lang === 'en' ? 'adventure-en-3' : 'adventure-bn-5';
     for (const name of Object.keys(phrases)) {
       if (!target.has(name)) target.set(name, new DecodedClip(this.context, `${prefix}/${name}.mp3?v=${ver}`));
     }

@@ -1,6 +1,6 @@
 import { createGame, queueTurn, clearTurns, step, stepDuration, makeRecording, replayRecording, dailySeed, dhakaDay, swipeTurn, canTurn } from './engine.js';
 import { ArenaRenderer } from './render.js';
-import { GameAudio, escapedDanger, resultBank, adventureReaction, biteBank, startBank, phrases } from './audio.js';
+import { GameAudio, escapedDanger, resultBank, adventureReaction, biteBank, startBank, themed, phrases } from './audio.js';
 import { THEMES, SKINS, foodKind } from './themes.js';
 import { t, num, lang, applyLanguage } from './i18n.js';
 import { keepUpdated } from './update.js';
@@ -37,11 +37,24 @@ const CHAOS_STATUS = {
 const positions = g => ({ snakes: g.snakes.map(s => ({ body: s.body.map(p => ({ ...p })) })), ...(g.adventure ? { adventure: { actor: g.adventure.actor ? { ...g.adventure.actor } : null } } : {}) });
 function randomSeed() { return crypto.getRandomValues(new Uint32Array(1))[0] || 1; }
 function bestKey(style = ui.style.value, speed = ui.speed.value) { return `best.adventure3.${style === 'ghost' ? 'classic' : style}.${prefs.theme}.${prefs.skin}.${speed}`; }
-function best(style, speed) { const n = get(bestKey(style, speed), 0); return Number.isInteger(n) && n >= 0 ? n : 0; }
+// Daily: one shared board per Dhaka day, a best for today, and a streak of consecutive days played.
+const dayBefore = day => new Date(Date.parse(day) - 864e5).toISOString().slice(0, 10);
+function dailyStatus(today = dhakaDay()) {
+  const d = get('daily', null), alive = d && (d.day === today || d.day === dayBefore(today));
+  return { streak: alive ? d.streak : 0, played: d?.day === today, best: d?.day === today ? d.best : 0 };
+}
+function recordDaily(day, score) {
+  const d = get('daily', null) ?? { day: '', best: 0, streak: 0 };
+  if (d.day > day) return true; // A run that began before midnight cannot rewind a newer day.
+  if (d.day !== day) { d.streak = d.day === dayBefore(day) ? d.streak + 1 : 1; d.day = day; d.best = 0; }
+  d.best = Math.max(d.best, score);
+  return put('daily', d);
+}
+function best(style, speed) { if (style === 'daily') return dailyStatus().best; const n = get(bestKey(style, speed), 0); return Number.isInteger(n) && n >= 0 ? n : 0; }
 function loadGhost(speed) {
   const record = get(`ghost.adventure3.${prefs.theme}.${prefs.skin}.${speed}`, null);
   if (!record) return null;
-  try { if (record.version !== 3 || record.speed !== speed || record.theme !== prefs.theme || record.skin !== prefs.skin) return null; replayRecording(record); return record; } catch { return null; }
+  try { if (![3, 4].includes(record.version) || record.speed !== speed || record.theme !== prefs.theme || record.skin !== prefs.skin) return null; replayRecording(record); return record; } catch { return null; }
 }
 function error(message = '') { ui.setupError.textContent = message; ui.setupError.hidden = !message; }
 function updateSetup() {
@@ -53,14 +66,17 @@ function updateSetup() {
   for (const [tag, text] of [['h4', world.title], ['p', world.story], ['p', world.rule]]) { const el = document.createElement(tag); el.textContent = storyText(text, lang()); ui.worldBrief.append(el); }
   error();
   const record = style === 'ghost' ? friendGhost?.record ?? loadGhost(ui.speed.value) : null;
-  ui.speed.disabled = style === 'ghost' && !!friendGhost;
+  if (style === 'daily') ui.speed.value = 'normal';
+  ui.speed.disabled = (style === 'ghost' && !!friendGhost) || style === 'daily';
+  const daily = dailyStatus();
   const descriptions = {
     classic: storyText(world.story, lang()),
-    chaos: `${storyText(world.story, lang())} ${storyText(['ক্যাওসে বিপদ ঘন ঘন আসে, সাবধানের সময়ও কম!', 'Chaos brings encounters sooner, with shorter warnings!'], lang())}`,
+    daily: `${daily.played ? t('Day {n} of your streak is safe. Today\'s best: {best}. Beat it, or come back tomorrow.', { n: daily.streak, best: daily.best }) : daily.streak ? t('Your {n}-day streak ends at midnight unless you play today!', { n: daily.streak }) : t('Same board for everyone today. Play every day to build a streak.')} ${t('New board every midnight, Dhaka time. Standard speed.')}`,
+    chaos: `${storyText(world.story, lang())} ${storyText(['ক্যাওসে বিপদ ঘন ঘন আসে, সাবধানের সময়ও কম!', 'Chaos brings encounters sooner, with shorter warnings!'], lang())} ${storyText(['সাথে লোডশেডিং, জ্যাম, বন্যা আর বিয়েবাড়ির বিরিয়ানি!', 'Plus power cuts, traffic jams, floods and wedding biryani!'], lang())}`,
     ghost: friendGhost ? t("Race {name}'s {score}-point run on the same starting board. Their blue ghost cannot hit you.", { name: friendGhost.name, score: record.score }) : record ? t('Race your {score}-point best on the same starting board. The blue ghost cannot hit you.', { score: record.score }) : t('Finish a Classic run to set a ghost. Your first race records one automatically.')
   };
   ui.modeDescription.textContent = descriptions[style];
-  const label = style === 'ghost' ? (friendGhost ? t('Race {name}', { name: friendGhost.name }) : record ? t('Race your ghost') : t('Record first ghost')) : style === 'chaos' ? t('Start the chaos') : t('Play Classic');
+  const label = style === 'ghost' ? (friendGhost ? t('Race {name}', { name: friendGhost.name }) : record ? t('Race your ghost') : t('Record first ghost')) : style === 'daily' ? t("Play today's challenge") : style === 'chaos' ? t('Start the chaos') : t('Play Classic');
   playLabel(label);
   for (const el of document.querySelectorAll('[data-description]')) el.textContent = ui.modeDescription.textContent;
   renderCards();
@@ -87,6 +103,7 @@ function updateSetup() {
       title: t('Rules & mechanics'),
       items: [
         t('Eat food to grow longer and increase your score. Speed rises slightly every 5 bites.'),
+        t('Chain bites: reach the next food within 30 moves for x2, then x3 points.'),
         t('Crashing into walls or your own tail ends the run.'),
         t('You cannot reverse directly 180° into your neck.'),
         t('You can queue up to 2 quick turns in advance for fast corners.')
@@ -95,7 +112,7 @@ function updateSetup() {
     ...(style === 'chaos' ? [{
       title: t('Chaos: Bangladesh edition'),
       items: [
-        storyText(['একই গল্প, আরও তাড়া। বিপদ ঘন ঘন আসে এবং সতর্কতার সময় কম।', 'The same story with more bustle: encounters arrive more often and warnings are shorter.'], lang())
+        storyText(['একই গল্প, আরও তাড়া। বিপদ ঘন ঘন আসে, সতর্কতার সময় কম, আর মাঝে মাঝে লোডশেডিং, জ্যাম, বন্যা বা বিয়েবাড়ি।', 'The same story with more bustle: encounters arrive more often, warnings are shorter, and power cuts, traffic jams, floods or weddings break out.'], lang())
       ]
     }] : style === 'ghost' ? [{
       title: t('Race your ghost'),
@@ -141,11 +158,13 @@ function enterGame() {
 }
 function beginLocalRound() {
   playControls(true);
+  if (session.day) session.day = dhakaDay(); // Play again after midnight gets the new board.
   earlyTurns = []; resultSaved = ''; recording = session.style === 'ghost' ? friendGhost?.record ?? loadGhost(session.speed) : null;
-  const seed = recording?.seed ?? randomSeed();
+  const seed = recording?.seed ?? (session.day ? dailySeed(session.day) : randomSeed());
   game = createGame({ mode: session.style === 'chaos' ? 'chaos' : 'classic', speed: session.speed, seed, theme: session.theme, skin: session.skin });
   previous = positions(game); accumulator = 0; ghostIndex = 0;
   ghost = recording ? createGame({ seed: recording.seed, speed: recording.speed, theme: recording.theme, skin: recording.skin }) : null;
+  if (ghost) ghost.version = recording.version;
   screen = 'countdown'; countdownEnd = performance.now() + 3000; lastCount = null;
   ui.overlay.hidden = true; ui.countdown.hidden = false; ui.countdownText.textContent = storyText(WORLDS[session.theme].title, lang());
   ui.pauseButton.hidden = false; ui.pauseButton.textContent = t('Pause'); audio.stop(); updateHud();
@@ -154,7 +173,7 @@ function playLabel(text) {
   ui.startButton.replaceChildren(document.createTextNode(text)); const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true'); ui.startButton.append(arrow);
   for (const button of document.querySelectorAll('[data-play]')) button.textContent = text;
 }
-const CARD_NOTES = { classic: 'A story, a snack, a little trouble', chaos: 'More encounters. Less time to react', ghost: 'Your best with this world and snake' };
+const CARD_NOTES = { classic: 'A story, a snack, a little trouble', daily: 'Same board for everyone. Keep your streak', chaos: 'More encounters. Less time to react', ghost: 'Your best with this world and snake' };
 // The selects stay as the single source of truth; each card just sets one.
 function cardsFor(select, container, decorate) {
   if (!select || !container) return;
@@ -192,7 +211,7 @@ function showScreen(name, push = true) {
 async function start() {
   if (ui.startButton.disabled || updater.applyPending(true)) return;
   error(); audio.unlock();
-  session = { mode: 'solo', style: ui.style.value, speed: ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.speed.value, theme: prefs.theme, skin: prefs.skin };
+  session = { mode: 'solo', style: ui.style.value, speed: ui.style.value === 'ghost' && friendGhost ? friendGhost.record.speed : ui.style.value === 'daily' ? 'normal' : ui.speed.value, theme: prefs.theme, skin: prefs.skin, day: ui.style.value === 'daily' ? dhakaDay() : null };
   enterGame(); beginLocalRound();
 }
 function updateHud() {
@@ -202,14 +221,16 @@ function updateHud() {
   ui.p2Name.textContent = ghost ? t('Ghost') : t('Best');
   ui.p1Score.textContent = num(game.snakes[0].score); ui.p2Score.textContent = num(ghost ? ghost.snakes[0].score : best(session.style, session.speed));
   ui.middleScore.textContent = session.style === 'ghost' ? (recording ? t('TARGET {n}', { n: recording.score }) : t('RECORDING')) : t('BITES');
-  ui.timerText.textContent = t('{n} segments', { n: game.snakes[0].body.length });
+  const streak = game.snakes[0].combo;
+  ui.timerText.textContent = streak > 1 ? t('Streak x{n}', { n: streak }) : t('{n} segments', { n: game.snakes[0].body.length });
   const chaosMap = CHAOS_STATUS[prefs.theme] ?? CHAOS_STATUS.dhaka;
   ui.statusText.textContent = game.chaos ? t(chaosMap[game.chaos.name] ?? t('Enjoy the quiet while it lasts.')) : session.style === 'ghost' ? (recording ? (ghost?.status === 'finished' ? t('Ghost finished. Keep going to beat its score.') : t('The blue outline is your rival.')) : t('Finish this run to save your first ghost.')) : t('Find your rhythm. Watch your tail.');
   if (game.adventure) {
     const a = game.adventure, world = WORLDS[game.theme];
     ui.middleScore.textContent = `${num(a.delivered)}/${num(STORY_GOALS[2])}`;
-    ui.statusText.textContent = storyText(a.phase === 'warn' ? world.warning : a.phase === 'active' ? world.active : game.food.some(f => f.gift) ? world.reward : world.chapters[Math.min(1, Math.max(0, a.chapter - 1))], lang());
-    if (a.chapter === 0 && a.phase === 'rest' && !game.food.some(f => f.gift)) ui.statusText.textContent = storyText(world.title, lang());
+    // A live Chaos event outranks the story line.
+    if (!game.chaos?.name) ui.statusText.textContent = storyText(a.phase === 'warn' ? world.warning : a.phase === 'active' ? world.active : game.food.some(f => f.gift) ? world.reward : world.chapters[Math.min(1, Math.max(0, a.chapter - 1))], lang());
+    if (!game.chaos?.name && a.chapter === 0 && a.phase === 'rest' && !game.food.some(f => f.gift)) ui.statusText.textContent = storyText(world.title, lang());
   }
   ui.board.setAttribute('aria-label', storyText([`খেলার মাঠ। স্কোর ${num(game.snakes[0].score)}। সাপ ${num(game.snakes[0].body.length)} ঘর লম্বা।`, `Board. Score ${game.snakes[0].score}. Length ${game.snakes[0].body.length}.`], lang()));
   ui.board3d.setAttribute('aria-label', ui.board.getAttribute('aria-label'));
@@ -222,18 +243,17 @@ function handleEvents(events) {
     if (e.type === 'eat') {
       view3d?.effect('eat', e); audio.effect('eat');
       if (!e.gift) {
-        const bank = biteBank({ apples: game.snakes[0].apples, points: e.points, feast: e.feast, kind: e.kind ?? foodKind(e.cell) });
+        const bank = biteBank({ apples: game.snakes[0].apples, points: e.points, feast: e.feast, kind: e.kind ?? foodKind(e.cell), arcade: true });
         offer({ bank, force: e.feast || bank.startsWith('bite'), priority: 30 });
       }
     }
     if (e.type === 'adventure' && (e.phase !== 'warn' || game.adventure?.phase === 'warn')) offer(adventureReaction(e));
     if (e.type === 'crash') { view3d?.effect('crash'); audio.effect('crash'); }
     if (e.type === 'chaos') {
-      if (e.phase === 'end') { slipSaid = false; offer({ bank: `${e.name}End`, priority: 20, force: false }); }
-      else if (e.phase === 'warn') {
-        const bank = e.name === 'traffic' ? (prefs.theme === 'sundarbans' ? 'trafficSundarban' : prefs.theme === 'coxs' ? 'trafficCoxs' : 'traffic') : e.name;
-        offer({ bank, priority: 100, force: true });
-      } else if (!['traffic', 'flood'].includes(e.name)) offer({ bank: e.name, priority: 90, force: true });
+      const theme = game.theme ?? prefs.theme;
+      if (e.phase === 'end') { slipSaid = false; offer({ bank: themed(`${e.name}End`, theme), priority: 20, force: false }); }
+      else if (e.phase === 'warn') offer({ bank: themed(e.name, theme), priority: 100, force: true });
+      else if (!['traffic', 'flood'].includes(e.name)) offer({ bank: themed(e.name, theme), priority: 90, force: true });
     }
   }
   if (!slipSaid && game?.chaos?.water.some(p => p.x === game.snakes[0].body[0].x && p.y === game.snakes[0].body[0].y)) { slipSaid = true; offer({ bank: 'slip', priority: 40, force: true }); }
@@ -243,10 +263,11 @@ function handleEvents(events) {
 function saveRun() {
   const score = game.snakes[0].score, key = bestKey(session.style, session.speed);
   let ok = true;
-  const newBest = score > best(session.style, session.speed);
-  if (newBest) ok = put(key, score);
+  const previousBest = best(session.style, session.speed), newBest = score > previousBest;
+  if (session.day) ok = recordDaily(session.day, score);
+  else if (newBest) ok = put(key, score);
   const record = makeRecording(game);
-  lastRun = { newBest, record, reason: game.reason, score, apples: game.adventure?.delivered ?? game.snakes[0].apples, theme: game.theme, skin: game.skin, chapter: game.adventure?.chapter ?? 0, line: null };
+  lastRun = { newBest, previousBest, record, reason: game.reason, score, apples: game.adventure?.delivered ?? game.snakes[0].apples, theme: game.theme, skin: game.skin, chapter: game.adventure?.chapter ?? 0, line: null };
   if (record) {
     const old = loadGhost(session.speed);
     if (!old || record.score > old.score || (record.score === old.score && record.ticks > old.ticks)) {
@@ -261,6 +282,8 @@ function showResults() {
   const score = game.snakes[0].score;
   const rival = friendGhost ? t("{name}'s ghost", { name: friendGhost.name }) : t('your ghost');
   const ghostResult = recording ? score > recording.score ? t('You beat {rival}.', { rival }) : score === recording.score ? t('A tie with {rival}.', { rival }) : t('{rival} keeps the crown.', { rival }) : null;
+  // The gap to your best is the hook for one more run.
+  const gap = lastRun.previousBest - score, chase = !lastRun.previousBest ? '' : lastRun.newBest ? t('New best by {n}! Can you beat it again?', { n: -gap }) : gap === 0 ? t('You matched your best. Break it next time!') : t('Just {n} short of your best. One more run?', { n: gap });
   const line = audio.pick(resultBank({ adventure: !!game.adventure, reason: game.reason, theme: game.theme ?? prefs.theme, score }));
   const lineText = audio.phrase(line);
   const title = lineText;
@@ -269,7 +292,8 @@ function showResults() {
   ui.overlayTitle.lang = audio.lang; ui.resultScore.hidden = false; ui.resultScore.textContent = num(score); audio.play(line);
   ui.resultActions.hidden = false; ui.shareButton.hidden = false;
   if (game.adventure) {
-    ui.overlayText.textContent = `${ghostResult ? `${ghostResult}\n` : ''}${num(game.adventure.delivered)}/${num(20)} · ${storyText(TRAITS[game.skin].title, lang())}\n${resultSaved}`;
+    const streakLine = session.day ? `${t('Day streak: {n}. A new board arrives at midnight.', { n: dailyStatus(session.day).streak })}\n` : '';
+    ui.overlayText.textContent = `${streakLine}${chase ? `${chase}\n` : ''}${ghostResult ? `${ghostResult}\n` : ''}${num(game.adventure.delivered)}/${num(20)} · ${storyText(TRAITS[game.skin].title, lang())}\n${resultSaved}`;
   }
   lastRun.shot = copyBoard();
 }

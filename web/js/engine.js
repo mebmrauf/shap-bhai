@@ -4,6 +4,8 @@ export const SIZE = 20;
 export const DIRECTIONS = Object.freeze({ up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] });
 export const SPEEDS = Object.freeze({ relaxed: 180, normal: 140, fast: 105 });
 export const COMBO_MS = 8000;
+// Story runs (version 4) chain bites: the next food within this many moves raises the multiplier, up to x3.
+export const STREAK_MOVES = 30;
 export const MAX_TICKS = 18000;
 export const CHAOS_EVENTS = Object.freeze(['loadshedding', 'traffic', 'flood', 'wedding']);
 const key = p => `${p.x},${p.y}`;
@@ -37,8 +39,7 @@ export function createGame({ mode = 'classic', speed = 'normal', seed = 1, theme
   g.food = [{ x: 10, y: 10 }];
   if (mode === 'chaos') g.chaos = { name: null, phase: 'idle', until: 40, last: null, warnings: [], obstacles: [], water: [], blackout: false };
   if (theme) {
-    g.version = 3; g.theme = theme; g.skin = skin;
-    delete g.chaos;
+    g.version = 4; g.theme = theme; g.skin = skin;
     g.food[0].kind = WORLDS[theme].food;
     g.adventure = { theme, skin, phase: 'rest', next: mode === 'chaos' ? 24 : 34, until: 0, phaseAt: 0, path: [], warnings: [], obstacles: [], water: [], actor: null, delivered: 0, chapter: 0, dodged: 0, stolen: 0, gifts: 0, giftExpires: 0 };
   }
@@ -252,8 +253,8 @@ export function step(g) {
     else {
       g.food = g.food.filter(f => f !== eaten);
       s.apples++;
-      s.combo = g.mode === 'arcade' ? Math.min(3, s.combo + 1) : 1;
-      s.comboUntil = g.elapsedMs + COMBO_MS;
+      s.combo = g.mode === 'arcade' || g.version >= 4 ? Math.min(3, s.combo + 1) : 1;
+      s.comboUntil = g.elapsedMs + (g.version >= 4 ? STREAK_MOVES * dt : COMBO_MS);
       // Biryani is worth 3 points and two extra segments.
       const points = eaten.gift ? (g.skin === 'tiger' ? 5 : 3) : eaten.feast ? 3 : s.combo;
       if (eaten.feast) s.pending = (s.pending ?? 0) + 2;
@@ -283,13 +284,14 @@ export function makeRecording(g) {
   return { version: g.version, seed: g.seed, speed: g.speed, ticks: g.tick, score: g.snakes[0].score, actions: g.actions.map(a => [...a]), ...(g.adventure ? { theme: g.theme, skin: g.skin } : {}) };
 }
 export function replayRecording(record) {
-  if (!record || ![2, 3].includes(record.version) || (record.version === 3 && (!Object.hasOwn(WORLDS, record.theme) || !Object.hasOwn(TRAITS, record.skin))) || !Number.isInteger(record.seed) || !Object.hasOwn(SPEEDS, record.speed) || !Number.isInteger(record.ticks) || record.ticks < 1 || record.ticks > MAX_TICKS || !Number.isInteger(record.score) || !Array.isArray(record.actions) || record.actions.length > MAX_TICKS) throw new Error('Invalid replay');
+  if (!record || ![2, 3, 4].includes(record.version) || (record.version >= 3 && (!Object.hasOwn(WORLDS, record.theme) || !Object.hasOwn(TRAITS, record.skin))) || !Number.isInteger(record.seed) || !Object.hasOwn(SPEEDS, record.speed) || !Number.isInteger(record.ticks) || record.ticks < 1 || record.ticks > MAX_TICKS || !Number.isInteger(record.score) || !Array.isArray(record.actions) || record.actions.length > MAX_TICKS) throw new Error('Invalid replay');
   let last = 0;
   for (const action of record.actions) {
     if (!Array.isArray(action) || action.length !== 3 || !Number.isInteger(action[0]) || action[0] <= last || action[0] > record.ticks || action[1] !== 0 || !Object.hasOwn(DIRECTIONS, action[2])) throw new Error('Invalid replay input');
     last = action[0];
   }
-  const g = createGame({ seed: record.seed, speed: record.speed, ...(record.version === 3 ? { theme: record.theme, skin: record.skin } : {}) });
+  const g = createGame({ seed: record.seed, speed: record.speed, ...(record.version >= 3 ? { theme: record.theme, skin: record.skin } : {}) });
+  g.version = record.version; // Older ghosts replay under the rules they were recorded with.
   let index = 0;
   while (g.tick < record.ticks && g.status === 'playing') {
     if (record.actions[index]?.[0] === g.tick + 1) {

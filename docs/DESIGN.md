@@ -1,6 +1,6 @@
 # Rebuild decisions
 
-The game is solo-only. The playable modes are Classic, Chaos and Ghost. Four worlds each have a three-chapter community story, distinct food and a different interactive encounter. Five snakes have visible, deterministic traits. Scores and ghosts are separate for each world, snake and speed.
+The game is solo-only. The playable modes are Classic, Daily, Chaos and Ghost. Daily gives everyone the same board for the Dhaka day at Standard speed, in the player's chosen world and snake, with unlimited attempts, a best for today and a streak of consecutive days played (stored on the device). Four worlds each have a three-chapter community story, distinct food and a different interactive encounter. Five snakes have visible, deterministic traits. Scores and ghosts are separate for each world, snake and speed.
 
 The home screen has one primary action, which starts the selected mode, and tiles that open separate menus. Bangla is the default language. Buttons that do nothing in a state are hidden. The scoreboard shows the current score and local best or ghost score. Sound, pause and leave controls remain beside the active arena; view options live in the appearance menu.
 
@@ -12,4 +12,4 @@ The UI/UX skill's arcade guidance informed clear contrast, keyboard operation, r
 
 Layout is set by the shape of the screen rather than by device names. Portrait stacks the board over the panel or controls; landscape puts them side by side. The board always takes the leftover space, and the camera refits to any shape. On-screen controls follow touch support, not width, so tablets get them and desktops do not.
 
-Encounter warnings are gameplay, never decoration. A bus crosses its marked lane; a tiger crouches on a marked trail and pounces; a pigeon steals its marked sweet unless the player reaches it first; a tide carries the snake straight until dry ground. Surviving or helping earns themed rewards. Every story ends at 20 regular deliveries. See ADVENTURES.md for the complete bilingual stories.
+Encounter warnings are gameplay, never decoration. A bus crosses its marked lane; a tiger crouches on a marked trail and pounces; a pigeon steals its marked sweet unless the player reaches it first; a tide carries the snake straight until dry ground. Surviving or helping earns themed rewards. Every story ends at 20 regular deliveries. Bites chain into a streak: reaching the next food within 30 moves scores x2, then x3, so a capped story is still a routing-skill chase. Chaos adds power cuts, traffic, floods and weddings on top of the world encounter. The result screen shows the gap to your best. Ghosts recorded before streaks (version 3) replay under their original rules. See ADVENTURES.md for the complete bilingual stories.
