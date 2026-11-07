@@ -30,23 +30,27 @@ const SCENE = {
   roastTraffic1_coxs: ['স্পিডবোটের সাথে রেস? সাপের তো ইঞ্জিনই নাই!', "Racing a speedboat? Snakes don't even have engines!"],
   roastTraffic2_coxs: ['বিচ বাইক থামবে ভাবছিলা? এটা কক্সবাজার, ভাই।', "Thought the beach buggy would stop? This is Cox's Bazar, bro."],
   roastTraffic1_sundarbans: ['হাতির সাথে ধাক্কা? হাতি টেরও পায় নাই!', "Bumped into an elephant? It didn't even notice!"],
+  combo_dhaka: ['টানা ফুচকা! মামা হাত চালায়ে কূল পাইতেছে না!', "Fuchka streak! Uncle can't fill them fast enough!"],
+  combo_rooftop: ['টানা রসগোল্লা! কবুতর হা কইরা তাকায় আছে।', 'Rosogolla streak! The pigeon is staring with its beak open.'],
+  combo_coxs: ['টানা ইলিশ! জেলেরা জাল ফালায়ে তোমার পিছে দৌড়াইতেছে।', 'Ilish streak! The fishers dropped their nets to follow you.'],
+  combo_sundarbans: ['টানা ঝালমুড়ি! বাঘ মামাও এত জোরে খায় না।', "Jhalmuri streak! Even tiger uncle doesn't eat this fast."],
   roastTraffic2_sundarbans: ['কুমিরকে গাছের গুঁড়ি ভাবছিলা? ভুল গুঁড়ি।', 'Thought the crocodile was a log? Wrong log.'],
 };
 const sceneBank = (base, theme) => Object.keys(SCENE).filter(k => k.endsWith(`_${theme}`) && k.replace(/\d?_[a-z]+$/, '') === base);
-const SCENE_BANKS = { startChaos: 'startChaos', loadshedding: 'chaosPower', loadsheddingEnd: 'chaosPowerBack', traffic: 'chaosTraffic', trafficEnd: 'chaosTrafficEnd', flood: 'chaosFlood', floodEnd: 'chaosFloodEnd', wedding: 'chaosWedding', roastTraffic: 'roastTraffic' };
-const sceneReactions = Object.fromEntries(['rooftop', 'coxs', 'sundarbans'].flatMap(theme => Object.entries(SCENE_BANKS)
+const SCENE_BANKS = { startChaos: 'startChaos', loadshedding: 'chaosPower', loadsheddingEnd: 'chaosPowerBack', traffic: 'chaosTraffic', trafficEnd: 'chaosTrafficEnd', flood: 'chaosFlood', floodEnd: 'chaosFloodEnd', wedding: 'chaosWedding', roastTraffic: 'roastTraffic', combo: 'combo' };
+const sceneReactions = Object.fromEntries(['dhaka', 'rooftop', 'coxs', 'sundarbans'].flatMap(theme => Object.entries(SCENE_BANKS)
   .map(([bank, base]) => [`${bank}_${theme}`, [...sceneBank(base, theme), ...(bank === 'traffic' ? ['help'] : [])]])
   .filter(([, lines]) => lines.length && lines[0] !== 'help')));
 
 export const phrases = Object.freeze({
   ...Object.fromEntries(Object.entries(SCENE).map(([key, pair]) => [key, pair[0]])),
   ...Object.fromEntries(Object.entries(adventureVoices).map(([key, pair]) => [key, pair[0]])),
-  start: 'চলো ভাই, খেলা শুরু!', eat: 'উউহু!', combo: 'ওস্তাদ! দারুণ খেলছো!',
+  start: 'চলো ভাই, খেলা শুরু!', eat: 'উউহু!', combo: 'টানা খাইতেছো! থামাথামি নাই!',
   help: 'ও বাবা গো! কেউ বাঁচাও আমাকে!', run: 'পালাওওওও!',
   roastWall1: 'দেয়াল তো নড়ে নাই, ভাই।', roastWall2: 'শুরু হইতেই শেষ! এইটা কি ট্রেলার ছিল?',
   roastWall3: 'চোখ কই থাকে তোমার? ফোনে?', roastWall4: 'ভালোই তো চলতেছিল, দেয়াল দেইখা প্রেমে পড়ে গেলা?',
   roastWall5: 'ব্রেক কই ভাই? লোকাল বাসও এর চেয়ে ভালো চালায়।', roastWall6: 'এত কষ্টের সাপ, এক ধাক্কায় শেষ!',
-  roastWall7: 'সবাই দেখছে, ওস্তাদ দেয়ালে গিয়া ঠেকছে।', roastSelf1: 'নিজের লেজ খাইয়া ফেললা? এত ক্ষুধা?',
+  roastWall7: 'সবাই দেখছে, সাপ সোজা দেয়ালে চুমা দিলো।', roastSelf1: 'নিজের লেজ খাইয়া ফেললা? এত ক্ষুধা?',
   roastSelf2: 'শত্রু লাগে না, তুমি নিজেই যথেষ্ট।', roastSelf3: 'নিজের সাথেই মারামারি? থামো ভাই।',
   roastSelf4: 'এত লম্বা হইলা, নিজের লেজ চিনো না?', roastSelf5: 'গিঁট্টু লাইগা গেছে! এখন খুলবে কে?',
   roastTraffic1: 'জ্যামে মরলা! ঢাকায় স্বাগতম।', roastTraffic2: 'বাস কি তোমারে সাইড দিবো ভাবছিলা?',
@@ -65,18 +69,18 @@ export const phrases = Object.freeze({
   chaosTrafficEnd: 'জ্যাম ছুটছে, টান দাও!', chaosFloodEnd: 'পানি নামছে! রিকশাওয়ালা মামা চাকা খুঁজে পাইছে।',
   chaosWeddingEnd: 'বিরিয়ানি শেষ! দাওয়াত খতম।', chaosSlip: 'সাঁতার জানো তো?',
   roastZero: 'একটাও খাইতে পারলা না?', roastGhostWon: 'ভূতরে হারাইলা! সাবাশ!',
-  roastGhostTie: 'ভূতের সাথে ড্র! ভূতও অবাক।', roastFull: 'পুরা মাঠ তোমার! তুমিই ওস্তাদ!',
+  roastGhostTie: 'ভূতের সাথে ড্র! ভূতও অবাক।', roastFull: 'পুরা মাঠ ভইরা গেছে! আর জায়গা নাই, তুমিই জিতছো!',
   momGone: 'আম্মু গেছে! চলো আবার!', kalNagini: 'কালনাগিনী আসছে! সবাই সরে দাঁড়াও!'
 });
 export const phrasesEn = Object.freeze({
   ...Object.fromEntries(Object.entries(SCENE).map(([key, pair]) => [key, pair[1]])),
   ...Object.fromEntries(Object.entries(adventureVoices).map(([key, pair]) => [key, pair[1]])),
-  start: "Let's go, game on!", eat: 'Ooh yeah!', combo: 'Masterclass! Great play!',
+  start: "Let's go, game on!", eat: 'Ooh yeah!', combo: 'On a streak! No stopping now!',
   help: 'Help! Somebody save me!', run: 'Run for it!',
   roastWall1: "The wall didn't move, bro.", roastWall2: 'Done already? Was that a trailer?',
   roastWall3: 'Where are you looking? At your phone?', roastWall4: 'Going so well, did you fall in love with the wall?',
   roastWall5: 'Where are the brakes? A bus drives better than this.', roastWall6: 'All that hard work, ruined in one crash!',
-  roastWall7: 'Everyone saw that. Straight into the wall.', roastSelf1: 'Ate your own tail? That hungry?',
+  roastWall7: 'Everyone saw that. The snake just kissed the wall.', roastSelf1: 'Ate your own tail? That hungry?',
   roastSelf2: 'Who needs enemies when you play like that?', roastSelf3: 'Fighting yourself? Take a break, bro.',
   roastSelf4: 'You got so long, you forgot your own tail?', roastSelf5: "Tied in a knot! Who's untangling that?",
   roastTraffic1: 'Stuck in traffic! Welcome to Dhaka.', roastTraffic2: 'Did you think the bus would give way?',
@@ -95,7 +99,7 @@ export const phrasesEn = Object.freeze({
   chaosTrafficEnd: 'Traffic cleared, floor it!', chaosFloodEnd: "Water's draining! The rickshaw uncle found his wheels again.",
   chaosWeddingEnd: "Biryani is gone! Party's over.", chaosSlip: 'Hope you know how to swim!',
   roastZero: 'Not even a single bite?', roastGhostWon: 'You beat the ghost! Well done!',
-  roastGhostTie: "Tied with a ghost! Even it's shocked.", roastFull: 'Whole board is yours! You are the master!',
+  roastGhostTie: "Tied with a ghost! Even it's shocked.", roastFull: "The board is full! There's no room left, so you win!",
   momGone: 'Mom left! Back to the game!', kalNagini: 'Kal Nagini has arrived! Clear the way!'
 });
 export const reactions = Object.freeze({
@@ -229,7 +233,7 @@ export class GameAudio {
     if (!this.context) return;
     const target = this.lang === 'en' ? this.clipsEn : this.clipsBn;
     const prefix = this.lang === 'en' ? '/audio/en' : '/audio';
-    const ver = this.lang === 'en' ? 'adventure-en-3' : 'adventure-bn-5';
+    const ver = this.lang === 'en' ? 'adventure-en-4' : 'adventure-bn-6';
     for (const name of Object.keys(phrases)) {
       if (!target.has(name)) target.set(name, new DecodedClip(this.context, `${prefix}/${name}.mp3?v=${ver}`));
     }

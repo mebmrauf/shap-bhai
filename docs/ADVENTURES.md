@@ -10,9 +10,9 @@ The tea-stall uncle needs a hand. Deliver 20 fuchka to the neighbourhood adda. L
 
 **Play:** Moving buses are solid. The red lane warns you before they arrive.
 
-**Chapter 1:** First adda served! The next hungry crew is down the lane.
+**Chapter 1:** Five fuchka delivered! The adda stopped arguing politics to argue about fuchka.
 
-**Chapter 2:** The stall is buzzing! Eight more deliveries, then a well-earned break.
+**Chapter 2:** Twelve! The stall is so packed even the buses stopped. Eight to go!
 
 **Ending:** The whole neighbourhood is fed. Uncle grins: “Tea is on me today!”
 
@@ -26,13 +26,13 @@ Nanu's kite party needs 20 roshogolla. A cheeky pigeon keeps eyeing the sweets! 
 
 **Play:** The pigeon steals food rather than hurting you. Beat its countdown.
 
-**Chapter 1:** The first kite is up! Nanu orders another plate.
+**Chapter 1:** Five sweets delivered! Nanu says keep them coming, the guests are on the stairs.
 
-**Chapter 2:** The rooftop is full of laughter. Just eight sweets to go!
+**Chapter 2:** Twelve! The uncles let go of their kites to queue for sweets. Eight to go!
 
-**Ending:** Kites in the sky, sweets for everyone. You even saved one for the pigeon!
+**Ending:** All twenty rosogolla delivered! Nanu made you rooftop manager. The pigeon is fired!
 
-ঘুড়ি উড়ছে, সবাই মিষ্টি খাচ্ছে। কবুতরকেও একটা দিলে!
+বিশটা রসগোল্লা পৌঁছে গেছে! নানু তোমারে ছাদের ম্যানেজার বানাইছে। কবুতর বরখাস্ত!
 
 ## Picnic before the tide · জোয়ারের আগে বনভোজন
 
@@ -42,13 +42,13 @@ Bring 20 ilish to the fishers' picnic. Blue tidewater carries you straight until
 
 **Play:** You cannot turn in blue water. Plan your exit before entering.
 
-**Chapter 1:** The first boat is home! The picnic is coming together.
+**Chapter 1:** Five ilish! The fishermen say the snake is doing the fishing now, so they're napping.
 
-**Chapter 2:** Fish on the stove, songs on the sand. Eight ilish to go!
+**Chapter 2:** Twelve ilish! The tourists think you're the beach's new show. Eight to go!
 
-**Ending:** Every boat is home. You have the best seat at the beach picnic!
+**Ending:** Twenty ilish! The fishers' picnic is on, and even the crab is queuing with a plate.
 
-সব নৌকা ফিরেছে। সৈকতের বনভোজনে তোমার জন্য সেরা জায়গা!
+বিশটা ইলিশ! জেলেদের বনভোজন জমে গেছে, কাঁকড়াও প্লেট নিয়া লাইনে।
 
 ## Tiger uncle's picnic · বাঘ মামার বনভোজন
 
@@ -58,13 +58,13 @@ Tiger uncle has a rumbling tummy! Gather 20 jhalmuri for the forest picnic. He s
 
 **Play:** The tiger really pounces. Stay off the red paw trail.
 
-**Chapter 1:** The deer have arrived. Tiger uncle is still hungry!
+**Chapter 1:** Five bags of jhalmuri! Tiger uncle tried one and is now searching for water.
 
-**Chapter 2:** The monkeys have laid the leaves. Eight jhalmuri to go!
+**Chapter 2:** Twelve bags! Tiger uncle says forget deer, he's a jhalmuri tiger now. Eight to go!
 
-**Ending:** Tiger, deer and crocodile share a picnic. Today you're the forest's favourite guest!
+**Ending:** Twenty bags! Tiger uncle's tummy is happy, so no more chasing today. Probably.
 
-বাঘ, হরিণ, কুমির—সবাই একসাথে খাচ্ছে। আজ তুমি বনের প্রিয় অতিথি!
+বিশ ঠোঙা! বাঘ মামার পেট ঠান্ডা, আজ আর কাউরে তাড়া করবে না। মনে হয়।
 
 ## Five snake personalities
 

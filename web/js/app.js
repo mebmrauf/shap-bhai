@@ -243,7 +243,7 @@ function handleEvents(events) {
     if (e.type === 'eat') {
       view3d?.effect('eat', e); audio.effect('eat');
       if (!e.gift) {
-        const bank = biteBank({ apples: game.snakes[0].apples, points: e.points, feast: e.feast, kind: e.kind ?? foodKind(e.cell), arcade: true });
+        const bank = themed(biteBank({ apples: game.snakes[0].apples, points: e.points, feast: e.feast, kind: e.kind ?? foodKind(e.cell), arcade: true }), game.theme);
         offer({ bank, force: e.feast || bank.startsWith('bite'), priority: 30 });
       }
     }
